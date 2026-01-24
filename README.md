@@ -4,6 +4,74 @@
 
 An MCP-powered plugin that gives Claude Code the ability to transcribe, search, and analyze audio files locally. Perfect for agentic automation loops like [Ralph-Wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) and [Gas Town](https://github.com/steveyegge/gastown).
 
+---
+
+## User Manual
+
+### Step 1: Install
+
+```bash
+pip install augent[web]
+```
+
+This installs Augent with Web UI support. Requires Python 3.9+ and FFmpeg.
+
+**Don't have FFmpeg?**
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Windows
+choco install ffmpeg
+```
+
+### Step 2: Run Web UI
+
+```bash
+python3 -m augent.web
+```
+
+Open your browser to: **http://127.0.0.1:8888**
+
+### Step 3: Use It
+
+1. **Upload** an audio file (MP3, WAV, M4A, etc.)
+2. **Enter keywords** separated by commas (e.g., `money, success, growth`)
+3. **Click SEARCH**
+4. **View results** with timestamps - click any timestamp to jump to that moment
+
+### Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `python3 -m augent.web` | Start Web UI on port 8888 |
+| `python3 -m augent.web --port 3000` | Use custom port |
+| `python3 -m augent.web --share` | Create public shareable link |
+| `augent help` | Show full help manual |
+| `augent search audio.mp3 "keyword"` | CLI search |
+| `augent transcribe audio.mp3` | Full transcription |
+| `augent cache stats` | View cache info |
+| `augent cache clear` | Clear cache |
+
+### Troubleshooting
+
+**"command not found: augent"**
+```bash
+# Use python module directly (always works)
+python3 -m augent.web
+```
+
+**Port already in use?**
+No worries - Augent auto-kills the previous instance and restarts.
+
+**Slow transcription?**
+First run downloads the AI model (~75MB for tiny). Subsequent runs are instant due to caching.
+
+---
+
 ## Why Augent?
 
 Claude Code agents can now:
