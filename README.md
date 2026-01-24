@@ -2,6 +2,8 @@
 
 **Audio intelligence for Claude Code agents and agentic swarms**
 
+Built by [Augent](https://augent.app)
+
 An MCP-powered plugin that gives Claude Code the ability to transcribe, search, and analyze audio files locally. Perfect for agentic automation loops like [Ralph-Wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) and [Gas Town](https://github.com/steveyegge/gastown).
 
 ## Why Augent?
