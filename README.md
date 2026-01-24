@@ -122,25 +122,21 @@ Verify CLI: `augent help`
 
 ## Claude Code Setup
 
-Add to your Claude Code project (`.mcp.json` in project root):
-
-```json
-{
-  "mcpServers": {
-    "augent": {
-      "command": "augent-mcp"
-    }
-  }
-}
+**One-liner (recommended):**
+```bash
+claude mcp add augent "python3 -m augent.mcp"
 ```
 
-Or for Claude Desktop (`claude_desktop_config.json`):
+Then restart Claude Code. Run `/mcp` to verify it's connected.
 
+**Alternative - manual config:**
+
+Add `.mcp.json` to your project root:
 ```json
 {
   "mcpServers": {
     "augent": {
-      "command": "python",
+      "command": "python3",
       "args": ["-m", "augent.mcp"]
     }
   }
