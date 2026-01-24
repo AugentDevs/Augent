@@ -87,24 +87,26 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 
 ## Quick Install
 
-**Prerequisites:** Python 3.9+ and FFmpeg
+**Prerequisites:** Python 3.9+, pip, git, FFmpeg
 
 ```bash
-# Install FFmpeg (if not installed)
+# 1. Install FFmpeg (if not installed)
 brew install ffmpeg        # macOS
 # sudo apt install ffmpeg  # Ubuntu/Debian
 # choco install ffmpeg     # Windows
 
-# Install Augent
+# 2. Clone and install
 git clone https://github.com/AugentDevs/Augent.git
 cd Augent
 pip install -e .[web]
 
-# Run Web UI
+# 3. Run
 python3 -m augent.web
 ```
 
 Open browser: **http://127.0.0.1:8888**
+
+**No git?** Download ZIP from GitHub → Extract → `cd Augent-main` → continue from step 2.
 
 Verify CLI: `augent help`
 
