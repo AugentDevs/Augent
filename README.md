@@ -225,8 +225,8 @@ csv_output = export_matches(results, format="csv")
 
 ## Web UI
 
-<img width="2002" height="1018" alt="Web_UI_demo-1_1_80" src="https://github.com/user-attachments/assets/5487b6b0-4966-4667-9b01-30e0488a6551" />
-<img width="2002" height="1018" alt="Web_UI_demo-2_80" src="https://github.com/user-attachments/assets/a7b6c9c0-4cf0-41c8-b0fb-047c78be34ad" />
+![Augent Web UI - Upload](./images/webui-1.png)
+![Augent Web UI - Results](./images/webui-2.png)
 
 ```bash
 # Start Web UI
