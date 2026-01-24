@@ -11,10 +11,12 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 ### Step 1: Install
 
 ```bash
-pip install augent[web]
+git clone https://github.com/AugentDevs/Augent.git
+cd Augent
+pip install -e .[web]
 ```
 
-This installs Augent with Web UI support. Requires Python 3.9+ and FFmpeg.
+Requires Python 3.9+ and FFmpeg.
 
 **Don't have FFmpeg?**
 ```bash
@@ -86,26 +88,15 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 ## Quick Install
 
 ```bash
-# Install with Web UI support
-pip install augent[web]
-
-# Start Web UI
-python3 -m augent.web
-
-# Open in browser
-# http://127.0.0.1:8888
-```
-
-### From Source
-
-```bash
 git clone https://github.com/AugentDevs/Augent.git
 cd Augent
 pip install -e .[web]
-
-# Verify
-augent help
+python3 -m augent.web
 ```
+
+Open browser: **http://127.0.0.1:8888**
+
+Verify CLI: `augent help`
 
 ## Claude Code Setup
 
@@ -238,10 +229,7 @@ csv_output = export_matches(results, format="csv")
 <img width="2002" height="1018" alt="Web_UI_demo-2_80" src="https://github.com/user-attachments/assets/a7b6c9c0-4cf0-41c8-b0fb-047c78be34ad" />
 
 ```bash
-# Install with web support
-pip install augent[web]
-
-# Start Web UI (always works)
+# Start Web UI
 python3 -m augent.web
 
 # Open browser: http://127.0.0.1:8888
@@ -300,20 +288,20 @@ Cache key = file hash + model size, so:
 ## Installation Options
 
 ```bash
-# Basic
-pip install augent
+# Basic (CLI only)
+pip install -e .
 
-# With web UI
-pip install augent[web]
+# With Web UI
+pip install -e .[web]
 
 # With clip extraction
-pip install augent[clips]
+pip install -e .[clips]
 
 # Everything
-pip install augent[all]
+pip install -e .[all]
 
 # Development
-pip install -e ".[dev]"
+pip install -e .[dev]
 ```
 
 ## Export Formats

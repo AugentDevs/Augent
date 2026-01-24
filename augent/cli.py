@@ -354,8 +354,10 @@ def cmd_help(args: argparse.Namespace):
 
 QUICK START
 -----------
-1. Install:
-   pip install augent[web]
+1. Clone & Install:
+   git clone https://github.com/AugentDevs/Augent.git
+   cd Augent
+   pip install -e .[web]
 
 2. Run Web UI:
    python3 -m augent.web
@@ -414,8 +416,8 @@ REQUIREMENTS
 ------------
   - Python 3.9+
   - FFmpeg (for audio processing)
-  - pip install augent[web] for Web UI
-  - pip install augent[all] for all features
+  - pip install -e .[web] for Web UI
+  - pip install -e .[all] for all features
 
 MORE INFO
 ---------
