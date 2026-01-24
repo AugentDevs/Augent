@@ -87,10 +87,20 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 
 ## Quick Install
 
+**Prerequisites:** Python 3.9+ and FFmpeg
+
 ```bash
+# Install FFmpeg (if not installed)
+brew install ffmpeg        # macOS
+# sudo apt install ffmpeg  # Ubuntu/Debian
+# choco install ffmpeg     # Windows
+
+# Install Augent
 git clone https://github.com/AugentDevs/Augent.git
 cd Augent
 pip install -e .[web]
+
+# Run Web UI
 python3 -m augent.web
 ```
 
