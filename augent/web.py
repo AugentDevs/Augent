@@ -2,6 +2,38 @@
 Augent Web UI - Gradio interface with live transcription streaming
 """
 
+# ============================================
+# RUNTIME PATCH: Fix gradio_client schema bug
+# Must run BEFORE importing gradio
+# ============================================
+def _patch_gradio_client():
+    """Patch gradio_client to handle bool schemas (upstream bug)."""
+    try:
+        import gradio_client.utils as client_utils
+
+        # Patch get_type to handle non-dict schemas
+        original_get_type = client_utils.get_type
+        def patched_get_type(schema):
+            if not isinstance(schema, dict):
+                return "any"
+            return original_get_type(schema)
+        client_utils.get_type = patched_get_type
+
+        # Patch _json_schema_to_python_type to handle bool schemas
+        original_json_schema = client_utils._json_schema_to_python_type
+        def patched_json_schema(schema, defs=None):
+            if schema is True or schema is False:
+                return "Any"
+            if schema == {}:
+                return "Any"
+            return original_json_schema(schema, defs)
+        client_utils._json_schema_to_python_type = patched_json_schema
+    except Exception:
+        pass  # If patch fails, continue anyway
+
+_patch_gradio_client()
+# ============================================
+
 import json
 import os
 import re
@@ -16,71 +48,38 @@ CUSTOM_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 
 /* ============================================
-   CSS VARIABLES - Override Gradio defaults
-   ============================================ */
-
-:root, * {
-    --color-accent: #00F060 !important;
-    --color-accent-soft: #003020 !important;
-    --background-fill-primary: #000 !important;
-    --background-fill-secondary: #000 !important;
-    --border-color-primary: #00F060 !important;
-    --border-color-accent: #00F060 !important;
-    --body-text-color: #00F060 !important;
-    --block-background-fill: #000 !important;
-    --block-border-color: #00F060 !important;
-    --input-background-fill: #000 !important;
-    --button-primary-background-fill: #00F060 !important;
-    --button-primary-text-color: #000 !important;
-    --button-secondary-background-fill: #000 !important;
-    --button-secondary-text-color: #00F060 !important;
-    --neutral-900: #000 !important;
-    --neutral-800: #001a0d !important;
-    --neutral-700: #002a15 !important;
-    --primary-500: #00F060 !important;
-    --primary-600: #00D050 !important;
-    --secondary-500: #00F060 !important;
-}
-
-/* ============================================
-   GLOBAL RESET - Force black/green everywhere
+   GLOBAL RESET - KILL ALL BORDERS BY DEFAULT
    ============================================ */
 
 * {
     font-family: 'Montserrat', sans-serif !important;
     color: #00F060 !important;
-    border-color: #00F060 !important;
+    background: #000 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    accent-color: #00F060 !important;
 }
 
-html, body {
-    background: #000 !important;
+:root {
+    --color-accent: #00F060 !important;
+    --background-fill-primary: #000 !important;
+    --background-fill-secondary: #000 !important;
+    --border-color-primary: transparent !important;
+    --block-border-color: transparent !important;
+    --block-background-fill: #000 !important;
+    --input-background-fill: #000 !important;
+    --button-primary-background-fill: #00F060 !important;
+    --button-primary-text-color: #000 !important;
 }
 
-/* Every single div, section, container - black background */
-div, section, main, aside, header, nav, article,
-form, fieldset, label, span, p, h1, h2, h3, h4, h5, h6 {
+html, body, div, section, main, aside, header, footer,
+form, fieldset, label, span, p, h1, h2, h3, h4, h5, h6,
+.gradio-container, .gradio-container *, .block, .wrap, .panel,
+[class*="block"], [class*="container"], [class*="wrapper"] {
     background: #000 !important;
-    background-color: #000 !important;
-}
-
-/* Gradio specific containers */
-.gradio-container,
-.gradio-container *,
-.main,
-.wrap,
-.contain,
-.app,
-.block,
-.form,
-.panel,
-[class*="block"],
-[class*="container"],
-[class*="wrapper"],
-[class*="panel"],
-[class*="group"],
-[class*="box"] {
-    background: #000 !important;
-    background-color: #000 !important;
+    border: none !important;
+    outline: none !important;
 }
 
 /* ============================================
@@ -101,459 +100,274 @@ form, fieldset, label, span, p, h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================
-   AUDIO COMPONENT - Kill that scrollbar
+   AUDIO WAVEFORM - GREEN & NO SCROLLBARS
    ============================================ */
 
-/* Target by component type */
-[data-testid="audio"],
-[data-testid="waveform"],
-.audio-container,
-.waveform-container {
-    overflow: hidden !important;
+/* Style audio scrollbar - black bg, green thumb */
+.scroll, .scroll[part="scroll"], div.scroll, [part="scroll"] {
+    scrollbar-width: thin !important;
+    scrollbar-color: #00F060 #000 !important;
+}
+.scroll::-webkit-scrollbar,
+div.scroll::-webkit-scrollbar,
+[part="scroll"]::-webkit-scrollbar,
+[data-testid="audio"] *::-webkit-scrollbar {
+    height: 6px !important;
     background: #000 !important;
 }
-
-/* WaveSurfer specific elements */
-wave,
-.wavesurfer-region,
-[class*="wavesurfer"],
-[class*="waveform"],
-[class*="audio"] {
-    overflow: hidden !important;
+.scroll::-webkit-scrollbar-track,
+div.scroll::-webkit-scrollbar-track,
+[part="scroll"]::-webkit-scrollbar-track,
+[data-testid="audio"] *::-webkit-scrollbar-track {
     background: #000 !important;
 }
-
-/* Any element inside audio that might scroll */
-[data-testid="audio"] *,
-[data-testid="waveform"] *,
-.audio-container *,
-.waveform-container * {
-    overflow: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    background: #000 !important;
-}
-
-[data-testid="audio"] *::-webkit-scrollbar,
-[data-testid="waveform"] *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Canvas elements - green tint */
-canvas {
-    filter: hue-rotate(85deg) saturate(3) brightness(1.5) !important;
-}
-
-/* ============================================
-   BUTTONS - Default: black bg with green content
-   ============================================ */
-
-button,
-.btn,
-[role="button"],
-input[type="button"],
-input[type="submit"] {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00F060 !important;
-    border: 1px solid #00F060 !important;
-}
-
-/* Content inside default buttons - green */
-button *,
-.btn *,
-[role="button"] *,
-button span,
-button svg,
-button path,
-button i,
-button div {
-    color: #00F060 !important;
-    fill: #00F060 !important;
-    stroke: #00F060 !important;
-    background: transparent !important;
-}
-
-/* SVG icons - green */
-svg {
-    fill: #00F060 !important;
-    stroke: #00F060 !important;
-}
-
-/* PRIMARY BUTTON ONLY - Green bg with black content */
-.primary-btn,
-button.primary,
-[class*="primary"],
-.lg[class*="primary"],
-button[variant="primary"] {
+.scroll::-webkit-scrollbar-thumb,
+div.scroll::-webkit-scrollbar-thumb,
+[part="scroll"]::-webkit-scrollbar-thumb,
+[data-testid="audio"] *::-webkit-scrollbar-thumb {
     background: #00F060 !important;
-    background-color: #00F060 !important;
-    color: #000 !important;
-    border: none !important;
+    border-radius: 3px !important;
 }
-
-.primary-btn *,
-button.primary *,
-[class*="primary"] *,
-[class*="primary"] span,
-[class*="primary"] svg {
-    color: #000 !important;
-    fill: #000 !important;
-    stroke: #000 !important;
-}
-
-/* Hide undo button in audio player - target parent button */
-button:has(svg[aria-label="undo"]),
-button:has([aria-label="undo"]) {
-    display: none !important;
-}
-
-/* Fallback: hide the SVG itself */
-svg[aria-label="undo"] {
-    display: none !important;
-}
-
-/* Audio control buttons - black bg with green icons */
-[data-testid="audio"] button,
-[data-testid="audio"] [role="button"],
-[class*="audio"] button,
-[class*="Audio"] button {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00F060 !important;
-    border: 1px solid #00F060 !important;
-}
-
-
-[data-testid="audio"] button *,
-[data-testid="audio"] button svg,
-[data-testid="audio"] button svg *,
-[data-testid="audio"] [role="button"] *,
-[class*="audio"] button *,
-[class*="audio"] button svg,
-[class*="audio"] button svg *,
-[class*="Audio"] button *,
-[class*="Audio"] button svg * {
-    fill: #00F060 !important;
-    stroke: #00F060 !important;
-    color: #00F060 !important;
-    background: transparent !important;
-}
-
-/* Upload/dropzone area */
-[data-testid="dropzone"],
-[class*="upload"],
-[class*="Upload"],
-[class*="drop"],
-[class*="Drop"] {
-    background: #000 !important;
-    background-color: #000 !important;
-}
-
-/* Everything in upload area - transparent bg, green content */
-[data-testid="dropzone"] *,
-[class*="upload"] *,
-[class*="Upload"] * {
-    background: transparent !important;
-    background-color: transparent !important;
-    color: #00F060 !important;
-    fill: #00F060 !important;
-    stroke: #00F060 !important;
-}
-
-/* Tab buttons - special case: black bg with green text when not selected */
-button[role="tab"] {
-    background: #000 !important;
-    color: #00F060 !important;
-    border: 1px solid #00F060 !important;
-}
-
-button[role="tab"] * {
-    color: #00F060 !important;
-    fill: #00F060 !important;
-}
-
-button[role="tab"][aria-selected="true"] {
-    background: #00F060 !important;
-    color: #000 !important;
-}
-
-button[role="tab"][aria-selected="true"] * {
-    color: #000 !important;
-    fill: #000 !important;
-}
-
-/* Tab indicator line - remove orange, make green */
-[class*="tab"] [class*="indicator"],
-[class*="tab"] [class*="selected"],
-[class*="Tab"] [class*="indicator"],
-[role="tablist"]::after,
-[role="tablist"] *::after,
-.tabs > div,
-[class*="tablist"] > div,
-.tab-nav,
-.tab-nav * {
-    background: #00F060 !important;
-    background-color: #00F060 !important;
-    border-color: #00F060 !important;
-}
-
-/* Specifically target the orange indicator bar */
-[role="tablist"] + div,
-[role="tablist"] ~ div:not([role="tabpanel"]),
-.tabs .tabitem,
-.tab-nav .selected,
-div[class*="border-b"],
-div[class*="border-bottom"] {
-    border-color: #00F060 !important;
-    border-bottom-color: #00F060 !important;
-}
-
-/* Any element with inline orange style */
-*[style*="rgb(249"] {
-    background: #00F060 !important;
-}
-
-*[style*="rgb(251"] {
-    background: #00F060 !important;
-}
-
-*[style*="#f"] {
-    background: #00F060 !important;
-}
-
-/* Override any accent/orange colors */
-[style*="orange"],
-[style*="accent"] {
-    background: #00F060 !important;
-    border-color: #00F060 !important;
-    color: #00F060 !important;
-}
-
-/* ============================================
-   INPUTS - Black bg, green text/border
-   ============================================ */
-
-input,
-textarea,
-select,
-[contenteditable] {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00F060 !important;
-    border: 1px solid #00F060 !important;
-    caret-color: #00F060 !important;
-}
-
-input::placeholder,
-textarea::placeholder {
-    color: #006830 !important;
-    opacity: 1 !important;
-}
-
-/* Dropdown/Select styling */
-select option,
-[role="listbox"],
-[role="listbox"] *,
-[role="option"],
-ul[role="listbox"],
-ul[role="listbox"] li,
-.dropdown,
-.dropdown * {
-    background: #000 !important;
-    background-color: #000 !important;
-    color: #00F060 !important;
-}
-
-/* ============================================
-   LOG OUTPUT - Terminal style with visible scrollbar
-   ============================================ */
-
-.log-output textarea {
-    background: #000 !important;
-    color: #00F060 !important;
-    font-family: 'Monaco', 'Menlo', monospace !important;
-    font-size: 13px !important;
-    line-height: 1.4 !important;
-    border: 1px solid #00F060 !important;
-    overflow-y: scroll !important;
+[data-testid="audio"] * {
     scrollbar-width: thin !important;
     scrollbar-color: #00F060 #000 !important;
 }
 
-.log-output textarea::-webkit-scrollbar {
-    display: block !important;
-    width: 10px !important;
-}
-
-.log-output textarea::-webkit-scrollbar-track {
-    background: #001a0d !important;
-}
-
-.log-output textarea::-webkit-scrollbar-thumb {
-    background: #00F060 !important;
-    border-radius: 5px !important;
-}
-
 /* ============================================
-   CODE BLOCKS
+   VOLUME SLIDER - GREEN
    ============================================ */
 
-pre,
-code,
-.code,
-[class*="code"] {
-    background: #000 !important;
-    color: #00F060 !important;
-    border: 1px solid #00F060 !important;
-}
-
-/* ============================================
-   LABELS AND TEXT
-   ============================================ */
-
-label,
-.label,
-span,
-p,
-h1, h2, h3, h4, h5, h6,
-.info,
-[class*="info"],
-[class*="label"] {
-    color: #00F060 !important;
-    background: transparent !important;
-}
-
-/* Subtle/secondary text */
-.secondary,
-.subtle,
-.muted,
-small,
-.info {
-    color: #00A040 !important;
-}
-
-/* ============================================
-   BORDERS - All green, minimal
-   ============================================ */
-
-[class*="border"],
-.block,
-.panel {
-    border-color: #00F060 !important;
-}
-
-/* Remove excessive outlines */
-*:focus {
-    outline: 1px solid #00F060 !important;
-    outline-offset: 0 !important;
-}
-
-/* ============================================
-   MISC CLEANUP
-   ============================================ */
-
-/* Hide footer */
-footer {
-    display: none !important;
-}
-
-/* Links */
-a {
-    color: #00FF60 !important;
-}
-
-a:hover {
-    color: #00FF90 !important;
-}
-
-/* Progress bars */
-progress,
-.progress,
-[role="progressbar"] {
-    background: #000 !important;
-}
-
-progress::-webkit-progress-bar {
-    background: #000 !important;
-}
-
-progress::-webkit-progress-value {
-    background: #00F060 !important;
-}
-
-/* Sliders/Range inputs */
 input[type="range"] {
-    background: transparent !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: #003318 !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
 }
-
-input[type="range"]::-webkit-slider-track {
-    background: #003020 !important;
-}
-
 input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50% !important;
+    background: #00F060 !important;
+    cursor: pointer !important;
+    border: none !important;
+}
+input[type="range"]::-moz-range-thumb {
+    width: 14px !important;
+    height: 14px !important;
+    border-radius: 50% !important;
+    background: #00F060 !important;
+    cursor: pointer !important;
+    border: none !important;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+    background: #003318 !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+}
+input[type="range"]::-moz-range-track {
+    background: #003318 !important;
+    height: 4px !important;
+    border-radius: 2px !important;
+}
+
+/* Audio controls - center volume slider */
+[data-testid="audio"] .controls,
+[data-testid="audio"] [class*="control"],
+[data-testid="audio"] [class*="actions"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+[data-testid="audio"] input[type="range"] {
+    margin: 0 8px !important;
+    vertical-align: middle !important;
+}
+
+/* Make waveform completely green */
+[data-testid="audio"] canvas {
+    filter: sepia(100%) saturate(1000%) hue-rotate(70deg) !important;
+}
+wave, wave > wave, .wavesurfer-region {
     background: #00F060 !important;
 }
 
-/* Hover states - subtle highlight */
-button:hover,
-[role="button"]:hover {
-    background: #001a0d !important;
+/* Hide undo button - target by SVG path (refresh/undo icon) */
+button:has(path[d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"]),
+button:has(path[d*="M3.51 15"]),
+button:has(path[d*="2.13-9.36"]) {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
 }
 
-/* Primary button hover */
-.primary-btn:hover,
-[class*="primary"]:hover {
-    background: #00D050 !important;
+/* ============================================
+   HIDE UNDO BUTTON IN AUDIO CONTROLS
+   ============================================ */
+
+/* Hide UNDO and TRIM buttons in audio controls */
+[data-testid="audio"] button:has([data-testid="undo"]),
+[data-testid="audio"] button:has([data-testid="trim"]),
+[data-testid="audio"] button:has(svg[aria-label*="ndo"]),
+[data-testid="audio"] button:has(svg[aria-label*="rim"]),
+[data-testid="audio"] button:has(svg[aria-label*="cut"]),
+[data-testid="audio"] button:has(svg[aria-label*="cissor"]),
+[aria-label="undo"], [aria-label="Undo"],
+[aria-label="trim"], [aria-label="Trim"],
+[aria-label*="scissor"], [aria-label*="cut"],
+button[aria-label*="ndo"], button[aria-label*="rim"],
+/* Target the last two buttons in audio controls (undo & trim) */
+[data-testid="audio"] .controls > button:nth-last-child(1),
+[data-testid="audio"] .controls > button:nth-last-child(2),
+[data-testid="audio"] [class*="control"] > button:nth-last-child(1),
+[data-testid="audio"] [class*="control"] > button:nth-last-child(2),
+[data-testid="audio"] .actions button,
+[data-testid="audio"] [class*="action"] button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+    pointer-events: none !important;
 }
 
-button[role="tab"]:hover:not([aria-selected="true"]) {
-    background: #001a0d !important;
+/* ============================================
+   BUTTONS - Minimal styling
+   ============================================ */
+
+button, .btn, [role="button"] {
+    background: #000 !important;
+    color: #00F060 !important;
+    border: none !important;
 }
 
-/* Selection highlight */
-::selection {
+button svg, button path, svg {
+    fill: #00F060 !important;
+    stroke: #00F060 !important;
+}
+
+/* PRIMARY BUTTON - Green bg, black text */
+.primary-btn, button.primary, [class*="primary"]:not([role="tabpanel"]) {
     background: #00F060 !important;
     color: #000 !important;
 }
+[class*="primary"]:not([role="tabpanel"]) *, [class*="primary"]:not([role="tabpanel"]) svg {
+    color: #000 !important;
+    fill: #000 !important;
+}
 
-/* KILL THE FADE OVERLAY */
-.scroll-fade,
-div.scroll-fade,
-.gradio-container .scroll-fade,
-[class*="scroll-fade"],
-[class*="ScrollFade"],
-[class*="scrollfade"] {
+/* Upload/dropzone area - no hover effects */
+[data-testid="dropzone"],
+[class*="upload"],
+[class*="Upload"],
+[class*="drop"],
+[class*="Drop"],
+.upload-container,
+.audio-upload,
+[class*="svelte"][class*="wrap"] {
+    background: #000 !important;
+    transition: none !important;
+    border: none !important;
+}
+[data-testid="dropzone"]:hover,
+[class*="upload"]:hover,
+[class*="drop"]:hover,
+[class*="upload"]:hover *,
+.upload-container:hover,
+[class*="svelte"]:hover {
+    background: #000 !important;
+    border: none !important;
+    border-color: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+[data-testid="dropzone"] *,
+[class*="upload"] * {
+    background: transparent !important;
+    color: #00F060 !important;
+    fill: #00F060 !important;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+
+button[role="tab"] {
+    background: #000 !important;
+    color: #00F060 !important;
+    border: none !important;
+}
+button[role="tab"][aria-selected="true"] {
+    background: #00F060 !important;
+    color: #000 !important;
+}
+button[role="tab"][aria-selected="true"] * {
+    color: #000 !important;
+}
+
+/* ============================================
+   INPUTS - Minimal border only on inputs
+   ============================================ */
+
+input, textarea, select {
+    background: #000 !important;
+    color: #00F060 !important;
+    border: 1px solid #003318 !important;
+    caret-color: #00F060 !important;
+}
+input::placeholder, textarea::placeholder {
+    color: #004422 !important;
+}
+
+/* ============================================
+   LOG OUTPUT - Keep scrollbar for logs only
+   ============================================ */
+
+.log-output textarea,
+.log-output textarea *,
+textarea.scroll-hide,
+[class*="log"] textarea,
+[class*="textbox"] textarea {
+    font-family: 'Monaco', 'Menlo', monospace !important;
+    font-size: 13px !important;
+    color: #00F060 !important;
+    -webkit-text-fill-color: #00F060 !important;
+    background: #000 !important;
+    border: 1px solid #003318 !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #00F060 #000 !important;
+}
+.log-output textarea::-webkit-scrollbar { display: block !important; width: 8px !important; }
+.log-output textarea::-webkit-scrollbar-thumb { background: #00F060 !important; }
+.log-output textarea::-webkit-scrollbar-track { background: #001108 !important; }
+
+/* Hide footer */
+footer { display: none !important; }
+
+/* Selection & hover */
+::selection { background: #00F060 !important; color: #000 !important; }
+button:hover { background: #001a0d !important; }
+[class*="primary"]:hover { background: #00D050 !important; }
+
+/* Kill all loading/animations/overlays */
+.scroll-fade, [class*="scroll-fade"], [class*="loading"], [class*="spinner"],
+[class*="progress"], [class*="generating"], [class*="pending"], .loader,
+.wrap.generating, .wrap.pending, [class*="eta"] {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
-    height: 0 !important;
-    width: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    pointer-events: none !important;
-    position: absolute !important;
-    z-index: -9999 !important;
 }
 
-/* Kill any linear gradient overlays */
-*[style*="linear-gradient"] {
-    background: none !important;
-    background-image: none !important;
-}
-
-/* Kill progress/loading animations */
-.progress-bar,
-.progress,
-[class*="progress"],
-[class*="loading"],
-[class*="spinner"],
-.eta-bar,
-[class*="eta"] {
-    display: none !important;
-    opacity: 0 !important;
+/* No animations */
+*, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
 }
 """
 
@@ -567,7 +381,7 @@ def format_time(seconds: float) -> str:
 def highlight_keyword_in_snippet(snippet: str, keyword: str) -> str:
     clean_snippet = snippet.replace("...", "").strip()
     pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-    return pattern.sub(f"<strong style='color:#00FF00;'>{keyword}</strong>", clean_snippet)
+    return pattern.sub(f"<strong style='color:#FFFFFF !important; font-weight:700 !important;'>{keyword}</strong>", clean_snippet)
 
 
 def search_audio_streaming(
@@ -722,7 +536,8 @@ def search_audio_streaming(
 def create_demo() -> gr.Blocks:
     with gr.Blocks(
         title="Augent Web UI",
-        analytics_enabled=False
+        analytics_enabled=False,
+        css=CUSTOM_CSS
     ) as demo:
         gr.Markdown("# Augent")
 
@@ -731,11 +546,7 @@ def create_demo() -> gr.Blocks:
                 audio_input = gr.Audio(
                     type="filepath",
                     label="Audio File",
-                    sources=["upload"],
-                    waveform_options=gr.WaveformOptions(
-                        waveform_color="#00F060",
-                        waveform_progress_color="#00FF90"
-                    )
+                    sources=["upload"]
                 )
 
                 keywords_input = gr.Textbox(
@@ -769,12 +580,152 @@ def create_demo() -> gr.Blocks:
                     elem_classes=["log-output"]
                 )
 
-                # ALWAYS force scroll to bottom
+                # ALWAYS force scroll to bottom + Shadow DOM fixes
                 gr.HTML("""<script>
+// Auto-scroll log
 setInterval(function() {
     var ta = document.querySelector('.log-output textarea');
     if (ta) ta.scrollTop = ta.scrollHeight;
 }, 50);
+
+// Shadow DOM style injection - scrollbars, volume sliders, everything
+var shadowCSS = `
+    /* Scrollbar styling */
+    .scroll, [part="scroll"], div.scroll, * {
+        scrollbar-width: thin !important;
+        scrollbar-color: #00F060 #000 !important;
+    }
+    ::-webkit-scrollbar {
+        height: 8px !important;
+        width: 8px !important;
+        background: #000 !important;
+    }
+    ::-webkit-scrollbar-track {
+        background: #000 !important;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #00F060 !important;
+        border-radius: 4px !important;
+    }
+
+    /* Volume slider styling */
+    input[type="range"] {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        background: #003318 !important;
+        height: 4px !important;
+        border-radius: 2px !important;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none !important;
+        width: 14px !important;
+        height: 14px !important;
+        border-radius: 50% !important;
+        background: #00F060 !important;
+        border: none !important;
+    }
+    input[type="range"]::-moz-range-thumb {
+        width: 14px !important;
+        height: 14px !important;
+        border-radius: 50% !important;
+        background: #00F060 !important;
+        border: none !important;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+        background: #003318 !important;
+    }
+
+    /* Center volume slider */
+    .controls, [class*="control"] {
+        display: flex !important;
+        align-items: center !important;
+    }
+    input[type="range"] {
+        margin: 0 8px !important;
+        vertical-align: middle !important;
+    }
+`;
+
+function injectIntoShadow(shadowRoot) {
+    if (shadowRoot._augentInjected) return;
+    shadowRoot._augentInjected = true;
+
+    // Inject styles
+    var style = document.createElement('style');
+    style.textContent = shadowCSS;
+    shadowRoot.appendChild(style);
+
+    // Force style scroll elements directly
+    var scrollEls = shadowRoot.querySelectorAll('.scroll, [part="scroll"]');
+    scrollEls.forEach(function(el) {
+        el.style.scrollbarWidth = 'thin';
+        el.style.scrollbarColor = '#00F060 #000';
+        el.style.setProperty('--scrollbar-color', '#00F060');
+        el.style.setProperty('--scrollbar-track', '#000');
+    });
+
+    // Force style range inputs directly
+    var rangeEls = shadowRoot.querySelectorAll('input[type="range"]');
+    rangeEls.forEach(function(el) {
+        el.style.background = '#003318';
+        el.style.accentColor = '#00F060';
+        el.style.margin = '0 8px';
+        el.style.verticalAlign = 'middle';
+    });
+
+    // Center controls containers
+    var controlEls = shadowRoot.querySelectorAll('.controls, [class*="control"]');
+    controlEls.forEach(function(el) {
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+    });
+}
+
+// Hide undo button by finding SVG with specific path
+function hideUndoButton() {
+    // Find all buttons with SVGs
+    document.querySelectorAll('button svg, button path').forEach(function(el) {
+        var path = el.getAttribute('d') || '';
+        var parentPath = el.closest('path');
+        if (parentPath) path = parentPath.getAttribute('d') || path;
+
+        // Check for undo icon path patterns
+        if (path.includes('M3.51') || path.includes('2.13-9.36') || path.includes('L1 10')) {
+            var btn = el.closest('button');
+            if (btn) {
+                btn.style.display = 'none';
+                btn.style.visibility = 'hidden';
+                btn.style.width = '0';
+                btn.style.height = '0';
+                btn.style.position = 'absolute';
+                btn.style.left = '-9999px';
+            }
+        }
+    });
+}
+
+// Recursive shadow DOM traversal
+function findAllShadowRoots(root) {
+    root.querySelectorAll('*').forEach(function(el) {
+        if (el.shadowRoot) {
+            injectIntoShadow(el.shadowRoot);
+            findAllShadowRoots(el.shadowRoot);
+        }
+    });
+}
+
+// Run periodically
+setInterval(function() {
+    findAllShadowRoots(document);
+    hideUndoButton();
+}, 300);
+
+// Initial run
+setTimeout(function() {
+    findAllShadowRoots(document);
+    hideUndoButton();
+}, 100);
 </script>""")
 
 
@@ -801,6 +752,28 @@ setInterval(function() {
 demo = create_demo()
 
 
+def _kill_port(port: int):
+    """Kill any process using the specified port."""
+    import subprocess
+    import signal
+    try:
+        # Find process using the port
+        result = subprocess.run(
+            ["lsof", "-ti", f":{port}"],
+            capture_output=True,
+            text=True
+        )
+        pids = result.stdout.strip().split('\n')
+        for pid in pids:
+            if pid:
+                try:
+                    os.kill(int(pid), signal.SIGKILL)
+                except (ProcessLookupError, ValueError):
+                    pass
+    except Exception:
+        pass
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Augent Web UI")
@@ -808,11 +781,17 @@ def main():
     parser.add_argument("--share", action="store_true", help="Create public Gradio link")
     args = parser.parse_args()
 
+    # Auto-kill anything on the port first
+    _kill_port(args.port)
+
+    import time
+    time.sleep(0.5)  # Brief pause to ensure port is freed
+
     demo.launch(
-        server_name="0.0.0.0",
+        server_name="127.0.0.1",
         server_port=args.port,
         share=args.share,
-        css=CUSTOM_CSS
+        show_error=True
     )
 
 

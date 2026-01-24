@@ -345,6 +345,87 @@ def cmd_cache(args: argparse.Namespace):
         print("Cleared model cache")
 
 
+def cmd_help(args: argparse.Namespace):
+    """Show detailed help and quick start guide."""
+    help_text = """
+================================================================================
+                         AUGENT - Audio Intelligence Tool
+================================================================================
+
+QUICK START
+-----------
+1. Install:
+   pip install augent[web]
+
+2. Run Web UI:
+   python3 -m augent.web
+
+3. Open browser:
+   http://127.0.0.1:8888
+
+COMMANDS
+--------
+  augent search <audio> "<keywords>"    Search audio for keywords
+  augent transcribe <audio>             Full transcription
+  augent proximity <audio> "A" "B"      Find keyword A near keyword B
+  augent cache stats                    View cache statistics
+  augent cache clear                    Clear transcription cache
+  augent help                           Show this help
+
+WEB UI
+------
+  python3 -m augent.web                 Start web interface on port 8888
+  python3 -m augent.web --port 9000     Use custom port
+  python3 -m augent.web --share         Create public Gradio link
+
+MCP SERVER (for Claude Code)
+----------------------------
+  python3 -m augent.mcp                 Start MCP server for Claude integration
+
+EXAMPLES
+--------
+  # Search for keywords in audio
+  augent search podcast.mp3 "startup,funding,growth"
+
+  # Use better model for accuracy
+  augent search audio.mp3 "keyword" --model small
+
+  # Batch process multiple files
+  augent search "*.mp3" "keyword" --workers 4
+
+  # Export results
+  augent search audio.mp3 "keyword" --format csv --output results.csv
+
+  # Find two keywords appearing near each other
+  augent proximity audio.mp3 "problem" "solution" --distance 30
+
+  # Full transcription with subtitles
+  augent transcribe audio.mp3 --format srt --output subtitles.srt
+
+MODEL SIZES
+-----------
+  tiny   - Fastest, great accuracy (DEFAULT - use for most tasks)
+  base   - Fast, excellent accuracy
+  small  - Medium speed, superior accuracy
+  medium - Slow, outstanding accuracy
+  large  - Slowest, maximum accuracy (lyrics, accents, poor audio)
+
+REQUIREMENTS
+------------
+  - Python 3.9+
+  - FFmpeg (for audio processing)
+  - pip install augent[web] for Web UI
+  - pip install augent[all] for all features
+
+MORE INFO
+---------
+  GitHub: https://github.com/AugentDevs/Augent
+
+================================================================================
+"""
+    print(help_text)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Augent - Local audio keyword search using Whisper",
@@ -534,6 +615,9 @@ Model sizes:
         help="Cache action"
     )
 
+    # Help command
+    help_parser = subparsers.add_parser("help", help="Show detailed help and quick start guide")
+
     # Parse and dispatch
     args = parser.parse_args()
 
@@ -551,6 +635,8 @@ Model sizes:
             cmd_proximity(args)
         elif args.command == "cache":
             cmd_cache(args)
+        elif args.command == "help":
+            cmd_help(args)
     except KeyboardInterrupt:
         print("\nInterrupted", file=sys.stderr)
         sys.exit(1)

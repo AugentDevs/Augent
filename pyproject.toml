@@ -46,7 +46,8 @@ dependencies = [
 
 [project.optional-dependencies]
 web = [
-    "gradio>=4.0.0",
+    "gradio>=4.0.0,<5.0.0",
+    "huggingface-hub>=0.20.0,<0.24.0",
 ]
 clips = [
     "pydub>=0.25.0",

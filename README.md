@@ -18,13 +18,25 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 ## Quick Install
 
 ```bash
-# Clone and install
+# Install with Web UI support
+pip install augent[web]
+
+# Start Web UI
+python3 -m augent.web
+
+# Open in browser
+# http://127.0.0.1:8888
+```
+
+### From Source
+
+```bash
 git clone https://github.com/AugentDevs/Augent.git
 cd Augent
-pip install -e .
+pip install -e .[web]
 
-# Verify installation
-augent --help
+# Verify
+augent help
 ```
 
 ## Claude Code Setup
@@ -158,15 +170,19 @@ csv_output = export_matches(results, format="csv")
 <img width="2002" height="1018" alt="Web_UI_demo-2_80" src="https://github.com/user-attachments/assets/a7b6c9c0-4cf0-41c8-b0fb-047c78be34ad" />
 
 ```bash
+# Install with web support
 pip install augent[web]
-augent-web
-# Open http://localhost:8888
+
+# Start Web UI (always works)
+python3 -m augent.web
+
+# Open browser: http://127.0.0.1:8888
 
 # Custom port
-augent-web --port 3000
+python3 -m augent.web --port 3000
 
 # Create public shareable link
-augent-web --share
+python3 -m augent.web --share
 ```
 
 **Batch processing tip:** Open multiple browser tabs/windows to process files in parallel. Each tab operates independently.
