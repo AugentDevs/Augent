@@ -168,7 +168,7 @@ augent-web --share
 
 **Batch processing tip:** Open multiple browser tabs/windows to process files in parallel. Each tab operates independently.
 
-**Note:** The Web UI runs 100% locally - no cloud APIs, no Claude credits used.
+**Note:** The Web UI runs 100% locally - no cloud APIs, no Claude credits used. Transcriptions are cached, so repeat searches on the same file are instant.
 
 ## Model Sizes
 
@@ -244,6 +244,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Links
 
 - [GitHub Repository](https://github.com/AugentDevs/Augent)
-- [Issue Tracker](https://github.com/AugentDevs/Augent/issues)
 - [Ralph-Wiggum Plugin](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum)
 - [Gas Town](https://github.com/steveyegge/gastown)
