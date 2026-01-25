@@ -182,6 +182,14 @@ augent search "recordings/*.mp3" "AI,automation,future" --workers 4
 augent search audio.mp3 "keyword" --format json --output results.json
 ```
 
+### Voice Cloning & Style Replication
+
+Train an agent to replicate someone's ad tone or copywriting style using their transcribed audio. Extract speech patterns, phrases, and delivery style from podcasts or recordings.
+
+### Prediction Markets & Research
+
+Extract structured data from earnings calls, interviews, and podcasts for Polymarket research or quantitative analysis.
+
 ## CLI Usage
 
 ```bash
