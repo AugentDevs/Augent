@@ -395,8 +395,13 @@ EXAMPLES
   # Batch process multiple files
   augent search "*.mp3" "keyword" --workers 4
 
-  # Export results
+  # Export results to CSV/SRT
   augent search audio.mp3 "keyword" --format csv --output results.csv
+  augent search audio.mp3 "keyword" --format srt --output matches.srt
+
+  # Extract audio clips around keyword matches
+  augent search audio.mp3 "important" --export-clips ./clips
+  augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 10
 
   # Find two keywords appearing near each other
   augent proximity audio.mp3 "problem" "solution" --distance 30
