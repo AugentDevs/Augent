@@ -29,11 +29,12 @@ setup_colors() {
         BLUE='\033[0;34m'
         MAGENTA='\033[0;35m'
         CYAN='\033[0;36m'
+        WHITE='\033[1;37m'
         BOLD='\033[1m'
         DIM='\033[2m'
         NC='\033[0m'
     else
-        RED='' GREEN='' YELLOW='' BLUE='' MAGENTA='' CYAN='' BOLD='' DIM='' NC=''
+        RED='' GREEN='' YELLOW='' BLUE='' MAGENTA='' CYAN='' WHITE='' BOLD='' DIM='' NC=''
     fi
 }
 setup_colors
@@ -361,7 +362,7 @@ EOF
 # ============================================================================
 main() {
     echo ""
-    echo -e "${BOLD}"
+    echo -e "${WHITE}"
     cat << 'EOF'
     _                          _
    / \  _   _  __ _  ___ _ __ | |_
