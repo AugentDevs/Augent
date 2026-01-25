@@ -379,12 +379,8 @@ main() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     cat << 'EOF'
-    _                         _
-   / \  _   _  __ _  ___ _ __ | |_
-  / _ \| | | |/ _` |/ _ \ '_ \| __|
- / ___ \ |_| | (_| |  __/ | | | |_
-/_/   \_\__,_|\__, |\___|_| |_|\__|
-              |___/
+   ▄▀█ █ █ █▀▀ █▀▀ █▄ █ ▀█▀
+   █▀█ █▄█ █▄█ ██▄ █ ▀█  █
 EOF
     echo -e "${NC}${DIM}Audio intelligence for Claude agents${NC}"
     echo ""
@@ -422,7 +418,11 @@ EOF
     echo "  ${BOLD}augent-web${NC}              Launch Web UI"
     echo "  ${BOLD}augent transcribe f.mp3${NC} Transcribe audio"
     echo ""
-    [[ "$PATH_MODIFIED" == "true" ]] && echo -e "${YELLOW}↪ Restart terminal to update PATH${NC}" && echo ""
+    if [[ "$PATH_MODIFIED" == "true" ]]; then
+        echo -e "${YELLOW}↪ Restart terminal to update PATH${NC}"
+        echo ""
+    fi
 }
 
 main "$@"
+exit 0
