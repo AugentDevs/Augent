@@ -145,12 +145,12 @@ add_to_path() {
 # ============================================================================
 install_homebrew() {
     if command_exists brew; then
-        log_success "Homebrew found"
+        log_success "Homebrew"
         return 0
     fi
 
     log_info "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null >/dev/null 2>&1
 
     if [[ "$ARCH" == "arm64" ]]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -158,12 +158,10 @@ install_homebrew() {
         eval "$(/usr/local/bin/brew shellenv)"
     fi
 
-    log_success "Homebrew installed"
+    log_success "Homebrew"
 }
 
 install_python() {
-    log_step "Checking Python"
-
     for cmd in python3 python; do
         if command_exists "$cmd"; then
             local ver
@@ -180,24 +178,24 @@ install_python() {
 
     case "$PKG_MGR" in
         brew)
-            brew install python@3.12 2>/dev/null
+            brew install python@3.12 >/dev/null 2>&1
             PYTHON_CMD="python3"
             ;;
         apt)
-            sudo apt-get update -qq
-            sudo apt-get install -y python3 python3-pip python3-venv
+            sudo apt-get update -qq >/dev/null 2>&1
+            sudo apt-get install -y python3 python3-pip python3-venv >/dev/null 2>&1
             PYTHON_CMD="python3"
             ;;
         dnf|yum)
-            sudo $PKG_MGR install -y python3 python3-pip
+            sudo $PKG_MGR install -y python3 python3-pip >/dev/null 2>&1
             PYTHON_CMD="python3"
             ;;
         pacman)
-            sudo pacman -Sy --noconfirm python python-pip
+            sudo pacman -Sy --noconfirm python python-pip >/dev/null 2>&1
             PYTHON_CMD="python"
             ;;
         apk)
-            sudo apk add python3 py3-pip
+            sudo apk add python3 py3-pip >/dev/null 2>&1
             PYTHON_CMD="python3"
             ;;
         *)
@@ -206,14 +204,12 @@ install_python() {
             ;;
     esac
 
-    log_success "Python installed"
+    log_success "Python"
 }
 
 install_pip() {
-    log_step "Checking pip"
-
     if $PYTHON_CMD -m pip --version &>/dev/null; then
-        log_success "pip found"
+        log_success "pip"
         return 0
     fi
 
@@ -221,21 +217,19 @@ install_pip() {
 
     case "$PKG_MGR" in
         apt)
-            sudo apt-get install -y python3-pip
+            sudo apt-get install -y python3-pip >/dev/null 2>&1
             ;;
         *)
-            curl -fsSL https://bootstrap.pypa.io/get-pip.py | $PYTHON_CMD
+            curl -fsSL https://bootstrap.pypa.io/get-pip.py 2>/dev/null | $PYTHON_CMD >/dev/null 2>&1
             ;;
     esac
 
-    log_success "pip installed"
+    log_success "pip"
 }
 
 install_ffmpeg() {
-    log_step "Checking FFmpeg"
-
     if command_exists ffmpeg; then
-        log_success "FFmpeg found"
+        log_success "FFmpeg"
         return 0
     fi
 
@@ -243,25 +237,25 @@ install_ffmpeg() {
 
     case "$PKG_MGR" in
         brew)
-            brew install ffmpeg 2>/dev/null
+            brew install ffmpeg >/dev/null 2>&1
             ;;
         apt)
-            sudo apt-get update -qq
-            sudo apt-get install -y ffmpeg
+            sudo apt-get update -qq >/dev/null 2>&1
+            sudo apt-get install -y ffmpeg >/dev/null 2>&1
             ;;
         dnf)
-            sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm 2>/dev/null || true
-            sudo dnf install -y ffmpeg
+            sudo dnf install -y https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm >/dev/null 2>&1 || true
+            sudo dnf install -y ffmpeg >/dev/null 2>&1
             ;;
         yum)
-            sudo yum install -y epel-release
-            sudo yum install -y ffmpeg
+            sudo yum install -y epel-release >/dev/null 2>&1
+            sudo yum install -y ffmpeg >/dev/null 2>&1
             ;;
         pacman)
-            sudo pacman -Sy --noconfirm ffmpeg
+            sudo pacman -Sy --noconfirm ffmpeg >/dev/null 2>&1
             ;;
         apk)
-            sudo apk add ffmpeg
+            sudo apk add ffmpeg >/dev/null 2>&1
             ;;
         *)
             log_warn "Install FFmpeg manually for full functionality"
@@ -269,59 +263,53 @@ install_ffmpeg() {
             ;;
     esac
 
-    log_success "FFmpeg installed"
+    log_success "FFmpeg"
 }
 
 # ============================================================================
 # Augent Installation
 # ============================================================================
 install_augent() {
-    log_step "Installing Augent"
+    log_info "Installing Augent..."
 
     local script_dir=""
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
-        log_info "Installing from local source..."
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet || true
+        $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     elif [[ "$INSTALL_METHOD" == "git" ]]; then
         local install_dir="$HOME/.augent/src"
         ensure_dir "$install_dir"
 
         if [[ -d "$install_dir/Augent" ]]; then
-            log_info "Updating existing installation..."
-            cd "$install_dir/Augent"
-            git pull --quiet
+            cd "$install_dir/Augent" && git pull --quiet 2>/dev/null
         else
-            log_info "Cloning repository..."
-            git clone --quiet "https://github.com/$AUGENT_REPO.git" "$install_dir/Augent"
+            git clone --quiet "https://github.com/$AUGENT_REPO.git" "$install_dir/Augent" 2>/dev/null
             cd "$install_dir/Augent"
         fi
 
         $PYTHON_CMD -m pip install -e ".[all]" --quiet --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install -e ".[all]" --quiet || true
+        $PYTHON_CMD -m pip install -e ".[all]" --quiet 2>/dev/null || true
     else
         if [[ "$AUGENT_VERSION" == "latest" ]]; then
             $PYTHON_CMD -m pip install "augent[all]" --quiet --upgrade --user 2>/dev/null || \
-            $PYTHON_CMD -m pip install "augent[all]" --quiet --upgrade || true
+            $PYTHON_CMD -m pip install "augent[all]" --quiet --upgrade 2>/dev/null || true
         else
             $PYTHON_CMD -m pip install "augent[all]==$AUGENT_VERSION" --quiet --user 2>/dev/null || \
-            $PYTHON_CMD -m pip install "augent[all]==$AUGENT_VERSION" --quiet || true
+            $PYTHON_CMD -m pip install "augent[all]==$AUGENT_VERSION" --quiet 2>/dev/null || true
         fi
     fi
 
-    log_success "Augent installed"
+    log_success "Augent"
 }
 
 verify_installation() {
-    log_step "Verifying installation"
-
     local user_bin="$HOME/.local/bin"
     local pip_bin=""
     pip_bin="$($PYTHON_CMD -m site --user-base 2>/dev/null)/bin" || pip_bin="$user_bin"
 
-    # Add bin directories to PATH
+    # Add bin directories to PATH silently
     for bindir in "$user_bin" "$pip_bin" "$HOME/Library/Python/3.12/bin" "$HOME/Library/Python/3.11/bin" "$HOME/Library/Python/3.10/bin" "$HOME/Library/Python/3.9/bin"; do
         if [[ -d "$bindir" ]] && [[ ":$PATH:" != *":$bindir:"* ]]; then
             add_to_path "$bindir"
@@ -331,26 +319,17 @@ verify_installation() {
     # Set MCP_CMD
     if command_exists augent-mcp; then
         MCP_CMD="augent-mcp"
-        log_success "MCP server ready"
     else
         MCP_CMD="$PYTHON_CMD -m augent.mcp"
-        log_success "MCP server ready (via python -m)"
     fi
 
-    # Verify CLI
-    if command_exists augent; then
-        log_success "CLI ready: augent"
-    else
-        log_success "CLI ready: $PYTHON_CMD -m augent.cli"
-    fi
+    log_success "CLI ready"
 }
 
 # ============================================================================
 # Configuration
 # ============================================================================
 configure_mcp() {
-    log_step "Configuring MCP"
-
     # Claude Code config
     local mcp_json=".mcp.json"
     if [[ ! -f "$mcp_json" ]]; then
@@ -363,11 +342,9 @@ configure_mcp() {
   }
 }
 EOF
-        log_success "Created $mcp_json"
+        log_success "Created .mcp.json"
     elif ! grep -q "augent" "$mcp_json" 2>/dev/null; then
-        log_info "Add to your $mcp_json: \"augent\": {\"command\": \"$MCP_CMD\"}"
-    else
-        log_success "Already configured in $mcp_json"
+        log_info "Add augent to your existing .mcp.json"
     fi
 
     # Claude Desktop config
@@ -391,8 +368,6 @@ EOF
 }
 EOF
             log_success "Configured Claude Desktop"
-        elif ! grep -q "augent" "$config_file" 2>/dev/null; then
-            log_info "Add Augent to Claude Desktop config manually"
         fi
     fi
 }
@@ -411,11 +386,8 @@ main() {
 /_/   \_\__,_|\__, |\___|_| |_|\__|
               |___/
 EOF
-    echo -e "${NC}"
-    echo -e "${DIM}Audio intelligence for Claude agents${NC}"
+    echo -e "${NC}${DIM}Audio intelligence for Claude agents${NC}"
     echo ""
-
-    log_info "Detected: $OS ($ARCH)"
 
     # macOS: Ensure Homebrew first
     if [[ "$OS" == "macos" ]]; then
@@ -426,48 +398,31 @@ EOF
     install_python
     install_pip
     install_ffmpeg
-
-    # Install Augent
     install_augent
     verify_installation
 
-    # Configure MCP (skip interactive prompts when piped)
+    # Configure MCP (auto when piped)
     if [[ -t 0 ]]; then
-        # Interactive mode
-        echo ""
         read -r -p "Configure MCP for Claude? [Y/n] " response </dev/tty || response="y"
         case "$response" in
             [nN]) ;;
             *) configure_mcp ;;
         esac
     else
-        # Non-interactive (piped) - auto-configure
         configure_mcp
     fi
 
-    # Done!
+    # Done
     echo ""
-    echo -e "${GREEN}${BOLD}════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}${BOLD}  ✓ Installation Complete${NC}"
-    echo -e "${GREEN}${BOLD}════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}${BOLD}════════════════════════════════════════════"
+    echo "  ✓ Installation Complete"
+    echo "════════════════════════════════════════════${NC}"
     echo ""
-    echo "  Test it:"
-    echo "    ${BOLD}augent --help${NC}"
+    echo "  ${BOLD}augent --help${NC}           Show commands"
+    echo "  ${BOLD}augent-web${NC}              Launch Web UI"
+    echo "  ${BOLD}augent transcribe f.mp3${NC} Transcribe audio"
     echo ""
-    echo "  Quick start:"
-    echo "    ${BOLD}augent transcribe audio.mp3${NC}"
-    echo "    ${BOLD}augent search audio.mp3 \"keyword\"${NC}"
-    echo ""
-    echo "  Web UI:"
-    echo "    ${BOLD}augent-web${NC}"
-    echo ""
-    echo "  Docs: https://github.com/$AUGENT_REPO"
-    echo ""
-
-    if [[ "$PATH_MODIFIED" == "true" ]]; then
-        echo -e "${YELLOW}Note: Restart your terminal to update PATH${NC}"
-        echo ""
-    fi
+    [[ "$PATH_MODIFIED" == "true" ]] && echo -e "${YELLOW}↪ Restart terminal to update PATH${NC}" && echo ""
 }
 
 main "$@"
