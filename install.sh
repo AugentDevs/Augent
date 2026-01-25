@@ -276,29 +276,13 @@ install_augent() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
+        # Local install (development mode)
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
-    elif [[ "$INSTALL_METHOD" == "git" ]]; then
-        local install_dir="$HOME/.augent/src"
-        ensure_dir "$install_dir"
-
-        if [[ -d "$install_dir/Augent" ]]; then
-            cd "$install_dir/Augent" && git pull --quiet 2>/dev/null
-        else
-            git clone --quiet "https://github.com/$AUGENT_REPO.git" "$install_dir/Augent" 2>/dev/null
-            cd "$install_dir/Augent"
-        fi
-
-        $PYTHON_CMD -m pip install -e ".[all]" --quiet --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install -e ".[all]" --quiet 2>/dev/null || true
     else
-        if [[ "$AUGENT_VERSION" == "latest" ]]; then
-            $PYTHON_CMD -m pip install "augent[all]" --quiet --upgrade --user 2>/dev/null || \
-            $PYTHON_CMD -m pip install "augent[all]" --quiet --upgrade 2>/dev/null || true
-        else
-            $PYTHON_CMD -m pip install "augent[all]==$AUGENT_VERSION" --quiet --user 2>/dev/null || \
-            $PYTHON_CMD -m pip install "augent[all]==$AUGENT_VERSION" --quiet 2>/dev/null || true
-        fi
+        # Install from GitHub (always latest)
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade --user 2>/dev/null || \
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade 2>/dev/null || true
     fi
 
     log_success "Augent"

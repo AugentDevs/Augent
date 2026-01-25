@@ -24,7 +24,7 @@ curl -fsSL https://augent.app/install.sh | bash
 
 Works on macOS and Linux. Installs everything automatically.
 
-**Windows:** `pip install augent[all]`
+**Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
 ### Step 2: Run Web UI
 
@@ -87,7 +87,7 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 curl -fsSL https://augent.app/install.sh | bash
 ```
 
-**Windows:** `pip install augent[all]`
+**Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
 ## Claude Code Setup
 
