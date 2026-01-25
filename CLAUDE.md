@@ -10,7 +10,7 @@ You have access to these tools via the MCP server:
 Search for keywords in audio files with timestamped results.
 ```
 audio_path: "/path/to/audio.mp3"
-keywords: ["startup", "funding", "growth"]
+keywords: ["lucrative", "funding", "healthiest"]
 model_size: "tiny" (optional, default)
 include_full_text: false (optional)
 ```

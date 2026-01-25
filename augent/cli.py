@@ -387,7 +387,7 @@ MCP SERVER (for Claude Code)
 EXAMPLES
 --------
   # Search for keywords in audio
-  augent search podcast.mp3 "startup,funding,growth"
+  augent search podcast.mp3 "lucrative,funding,healthiest"
 
   # Use better model for accuracy
   augent search audio.mp3 "keyword" --model small
@@ -441,7 +441,7 @@ def main():
         epilog="""
 Examples:
   # Basic search
-  augent search audio.mp3 "money,success,growth"
+  augent search audio.mp3 "lucrative,funding,healthiest"
 
   # Search with larger model for better accuracy
   augent search podcast.mp3 "startup" --model small

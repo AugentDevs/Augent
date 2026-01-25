@@ -11,7 +11,7 @@ Usage:
     from augent import search_audio, transcribe_audio
 
     # Basic keyword search
-    results = search_audio("podcast.mp3", ["money", "success"])
+    results = search_audio("podcast.mp3", ["lucrative", "funding"])
 
     # Full transcription
     transcription = transcribe_audio("podcast.mp3")

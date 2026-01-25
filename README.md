@@ -37,7 +37,7 @@ Open your browser to: **http://127.0.0.1:8888**
 ### Step 3: Use It
 
 1. **Upload** an audio file (MP3, WAV, M4A, etc.)
-2. **Enter keywords** separated by commas (e.g., `money, success, growth`)
+2. **Enter keywords** separated by commas (e.g., `lucrative, funding, healthiest`)
 3. **Click SEARCH**
 4. **View results** with timestamps - click any timestamp to jump to that moment
 
@@ -163,7 +163,7 @@ Extract structured data from earnings calls, interviews, and podcasts for Polyma
 
 ```bash
 # Basic search
-augent search audio.mp3 "money,success,growth"
+augent search audio.mp3 "lucrative,funding,healthiest"
 
 # Better accuracy
 augent search podcast.mp3 "keyword" --model small
@@ -195,8 +195,8 @@ augent cache clear
 from augent import search_audio, transcribe_audio, search_audio_proximity
 
 # Basic keyword search
-results = search_audio("podcast.mp3", ["money", "success"])
-# {"money": [{"timestamp": "2:34", "snippet": "...talking about money..."}]}
+results = search_audio("podcast.mp3", ["lucrative", "funding"])
+# {"lucrative": [{"timestamp": "2:34", "snippet": "...a lucrative opportunity..."}]}
 
 # Full transcription
 transcription = transcribe_audio("podcast.mp3", model_size="small")
