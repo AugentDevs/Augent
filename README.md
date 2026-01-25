@@ -22,7 +22,9 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 curl -fsSL https://augent.app/install.sh | bash
 ```
 
-Works on macOS and Linux. Installs everything automatically (Python, FFmpeg, dependencies).
+Works on macOS and Linux. Installs everything automatically.
+
+**Windows:** `pip install augent[all]`
 
 ### Step 2: Run Web UI
 
@@ -85,12 +87,7 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 curl -fsSL https://augent.app/install.sh | bash
 ```
 
-Or manually:
-```bash
-pip install augent[all]
-```
-
-Verify: `augent --help`
+**Windows:** `pip install augent[all]`
 
 ## Claude Code Setup
 
