@@ -379,8 +379,12 @@ main() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     cat << 'EOF'
-   ▄▀█ █ █ █▀▀ █▀▀ █▄ █ ▀█▀
-   █▀█ █▄█ █▄█ ██▄ █ ▀█  █
+    _
+   / \  _   _  __ _  ___ _ __ | |_
+  / _ \| | | |/ _` |/ _ \ '_ \| __|
+ / ___ \ |_| | (_| |  __/ | | | |_
+/_/   \_\__,_|\__, |\___|_| |_|\__|
+              |___/
 EOF
     echo -e "${NC}${DIM}Audio intelligence for Claude agents${NC}"
     echo ""
