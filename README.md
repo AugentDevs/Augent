@@ -16,29 +16,13 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 
 ---
 
-## User Manual
-
-### Step 1: Install
+## Install
 
 ```bash
-git clone https://github.com/AugentDevs/Augent.git
-cd Augent
-pip install -e .[web]
+curl -fsSL https://augent.app/install.sh | bash
 ```
 
-Requires Python 3.9+ and FFmpeg.
-
-**Don't have FFmpeg?**
-```bash
-# macOS
-brew install ffmpeg
-
-# Ubuntu/Debian
-sudo apt install ffmpeg
-
-# Windows
-choco install ffmpeg
-```
+Works on macOS and Linux. Installs everything automatically (Python, FFmpeg, dependencies).
 
 ### Step 2: Run Web UI
 
@@ -97,28 +81,16 @@ Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-
 
 ## Quick Install
 
-**Prerequisites:** Python 3.9+, pip, git, FFmpeg
-
 ```bash
-# 1. Install FFmpeg (if not installed)
-brew install ffmpeg        # macOS
-# sudo apt install ffmpeg  # Ubuntu/Debian
-# choco install ffmpeg     # Windows
-
-# 2. Clone and install
-git clone https://github.com/AugentDevs/Augent.git
-cd Augent
-pip install -e .[web]
-
-# 3. Run
-python3 -m augent.web
+curl -fsSL https://augent.app/install.sh | bash
 ```
 
-Open browser: **http://127.0.0.1:8888**
+Or manually:
+```bash
+pip install augent[all]
+```
 
-**No git?** Download ZIP from GitHub → Extract → `cd Augent-main` → continue from step 2.
-
-Verify CLI: `augent help`
+Verify: `augent --help`
 
 ## Claude Code Setup
 
