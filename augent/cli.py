@@ -403,8 +403,9 @@ EXAMPLES
   augent search audio.mp3 "important" --export-clips ./clips
   augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 10
 
-  # Find two keywords appearing near each other
+  # Find two keywords within 30 words of each other
   augent proximity audio.mp3 "problem" "solution" --distance 30
+  # Example: finds "we had a problem... here's the solution" if within 30 words
 
   # Full transcription with subtitles
   augent transcribe audio.mp3 --format srt --output subtitles.srt
@@ -455,8 +456,8 @@ Examples:
   # Extract audio clips around matches
   augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 5
 
-  # Proximity search
-  augent proximity audio.mp3 "startup" "funding" --distance 30
+  # Proximity search - find keywords within N words of each other
+  augent proximity audio.mp3 "startup" "funding" --distance 30  # within 30 words
 
   # Full transcription
   augent transcribe audio.mp3 --format srt --output subtitles.srt
@@ -588,7 +589,7 @@ Model sizes:
         "--distance", "-d",
         type=int,
         default=30,
-        help="Maximum words between keywords (default: 30)"
+        help="Max words allowed between keyword1 and keyword2 (default: 30)"
     )
     proximity_parser.add_argument(
         "--model", "-m",
