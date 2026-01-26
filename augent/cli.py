@@ -458,7 +458,14 @@ MORE INFO
 def print_simple_help():
     """Print clean, simple help."""
     help_text = """
-Augent - Audio intelligence for Claude Code agents
+    _                          _
+   / \\  _   _  __ _  ___ _ __ | |_
+  / _ \\| | | |/ _` |/ _ \\ '_ \\| __|
+ / ___ \\ |_| | (_| |  __/ | | | |_
+/_/   \\_\\__,_|\\__, |\\___|_| |_|\\__|
+              |___/
+
+Audio intelligence for Claude Code agents
 
 COMMANDS
   augent search <file> "keywords"    Search audio for keywords
