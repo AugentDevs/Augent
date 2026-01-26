@@ -155,62 +155,73 @@ Open: **http://127.0.0.1:8888**
 ## Why Augent?
 
 Claude Code agents can now:
-- **Search podcasts, interviews, and recordings** for specific keywords with timestamps
-- **Find contextual discussions** using proximity search (e.g., "startup" near "funding")
-- **Batch process** multiple audio files in parallel
-- **Extract audio clips** around keyword matches
+- **Learn from video tutorials** without watching - search for specific techniques instantly
+- **Find exact instructions** using proximity search (e.g., "install" near "dependencies")
+- **Batch process** entire tutorial libraries in parallel
+- **Extract audio clips** around key moments
 - **Cache everything** - no re-transcription needed
 
 Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-4x faster transcription than original Whisper.
 
 ## Agentic Use Cases
 
-### Ralph-Wiggum Style Loops
+### Learn Any Skill from Tutorials
 
-Perfect for iterative content analysis:
+Download tutorials, let Claude find what you need:
 
 ```
-Iteration 1: Quick scan with tiny model
-Iteration 2: Deep dive on found segments with small model
-Iteration 3: Extract clips around key moments
+1. Download 10 Roblox game dev tutorials
+2. Ask Claude: "How do I add multiplayer?"
+3. Claude searches all 10, finds the exact timestamps
+4. Claude reads the instructions and executes them
 ```
 
-### Gas Town Multi-Agent Workflows
+### Batch Tutorial Processing
 
-Assign audio analysis to worker agents:
-- **Agent A**: Transcribe and search podcast library
-- **Agent B**: Generate summaries from search results
-- **Agent C**: Create clips for social media
-
-### Swarm Patterns
+Process entire course libraries at once:
 
 ```bash
-# Parallel processing across multiple files
-augent search "recordings/*.mp3" "AI,automation,future" --workers 4
+# Download a playlist of tutorials
+audio-downloader "url1" "url2" "url3"
 
-# Export for downstream agents
-augent search audio.mp3 "keyword" --format json --output results.json
+# Search all for specific techniques
+augent search "tutorials/*.webm" "authentication,API,database" --workers 4
 ```
 
-### Voice Cloning & Style Replication
+### Multi-Agent Learning Workflows
 
-Train an agent to replicate someone's ad tone or copywriting style using their transcribed audio. Extract speech patterns, phrases, and delivery style from podcasts or recordings.
+Assign tutorial analysis to worker agents:
+- **Agent A**: Download and transcribe tutorial library
+- **Agent B**: Search for specific techniques, extract instructions
+- **Agent C**: Execute the found instructions in your codebase
 
-### Prediction Markets & Research
+### Course Summarization
 
-Extract structured data from earnings calls, interviews, and podcasts for Polymarket research or quantitative analysis.
+Turn 10-hour courses into searchable knowledge:
+
+```bash
+# Transcribe entire course
+augent transcribe course.mp3 --format json --output course.json
+
+# Search for any topic instantly
+augent search course.mp3 "error handling,debugging,testing"
+```
+
+### Research & Documentation
+
+Extract structured information from video documentation, conference talks, or technical deep-dives for reference materials.
 
 ## CLI Usage
 
 ```bash
 # Basic search
-augent search audio.mp3 "lucrative,funding,healthiest"
+augent search tutorial.mp3 "install,setup,configure"
 
 # Better accuracy
-augent search podcast.mp3 "keyword" --model small
+augent search tutorial.mp3 "keyword" --model small
 
 # Batch processing
-augent search "podcasts/*.mp3" "keyword" --workers 4
+augent search "tutorials/*.mp3" "authentication,API" --workers 4
 
 # Export formats
 augent search audio.mp3 "keyword" --format csv --output results.csv
@@ -273,17 +284,17 @@ audio-downloader --help
 from augent import search_audio, transcribe_audio, search_audio_proximity
 
 # Basic keyword search
-results = search_audio("podcast.mp3", ["lucrative", "funding"])
-# {"lucrative": [{"timestamp": "2:34", "snippet": "...a lucrative opportunity..."}]}
+results = search_audio("tutorial.mp3", ["install", "setup"])
+# {"install": [{"timestamp": "2:34", "snippet": "...first install the dependencies..."}]}
 
 # Full transcription
-transcription = transcribe_audio("podcast.mp3", model_size="small")
+transcription = transcribe_audio("tutorial.mp3", model_size="small")
 
 # Proximity search
 matches = search_audio_proximity(
-    "podcast.mp3",
-    keyword1="startup",
-    keyword2="funding",
+    "tutorial.mp3",
+    keyword1="error",
+    keyword2="fix",
     max_distance=30
 )
 
