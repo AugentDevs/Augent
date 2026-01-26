@@ -106,12 +106,12 @@ Clear transcription cache - no parameters needed.
 
 **When to use larger models:**
 - Finding lyrics in a song you don't know the name of
-- Heavily accented speech or poor audio quality
+- Very heavy accents or extremely poor audio quality
 - Medical/legal transcriptions requiring maximum accuracy
 
 **Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines. Stick to `tiny` or `base` unless the user has a powerful machine.
 
-For tutorials, interviews, lectures - `tiny` handles it.
+`tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
 
 ## Caching Behavior
 

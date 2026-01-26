@@ -339,13 +339,12 @@ python3 -m augent.web --share
 
 **When to use larger models:**
 - Finding lyrics in a song you don't know the name of
-- Heavily accented speech or poor audio quality
+- Very heavy accents or extremely poor audio quality
 - Medical/legal transcriptions requiring maximum accuracy
-- Non-English languages with complex phonetics
 
 **Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
 
-For tutorials, interviews, lectures, and general audio - `tiny` is all you need.
+`tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
 
 ## Caching
 
