@@ -39,6 +39,40 @@ This works for any domain: coding tutorials, design workflows, business courses,
 
 ---
 
+## audio-downloader
+
+A speed-optimized audio downloader built by Augent. Downloads audio ONLY from any video URL at lightning speed.
+
+```bash
+audio-downloader "https://youtube.com/watch?v=xxx"
+```
+
+**Speed Optimizations:**
+- aria2c multi-connection downloads (16 parallel connections)
+- Concurrent fragment downloading (4 fragments)
+- No video download - audio extraction only
+- No format conversion - native audio format for maximum speed
+
+**Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
+
+```bash
+# Download to custom folder
+audio-downloader -o ~/Music "https://youtube.com/watch?v=xxx"
+
+# Multiple URLs at once
+audio-downloader url1 url2 url3
+
+# Show help
+audio-downloader --help
+```
+
+**Why audio-downloader?**
+- Built specifically for the Augent workflow: download → transcribe → search
+- Optimized for large files (5+ hour tutorials, full podcasts)
+- No unnecessary video data - just the audio you need
+
+---
+
 ## Install
 
 ```bash
@@ -68,6 +102,7 @@ Open your browser to: **http://127.0.0.1:8888**
 
 | Command | Description |
 |---------|-------------|
+| `audio-downloader URL` | Download audio from video URL (speed-optimized) |
 | `python3 -m augent.web` | Start Web UI on port 8888 |
 | `python3 -m augent.web --port 3000` | Use custom port |
 | `python3 -m augent.web --share` | Create public shareable link |

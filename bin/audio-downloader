@@ -1,0 +1,159 @@
+#!/bin/bash
+#
+# audio-downloader
+# A speed-optimized audio downloader built by Augent
+# Downloads audio ONLY from any video URL at maximum speed
+# Supports YouTube, Vimeo, TikTok, Twitter, and 1000+ sites
+#
+
+VERSION="1.0.0"
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+OUTPUT_DIR="${AUDIO_DOWNLOAD_DIR:-$HOME/Downloads}"
+
+show_help() {
+    echo -e "${CYAN}${BOLD}audio-downloader v$VERSION${NC}"
+    echo -e "A speed-optimized audio downloader built by Augent"
+    echo ""
+    echo -e "${BOLD}DESCRIPTION${NC}"
+    echo "  Downloads audio ONLY from any video URL at maximum speed."
+    echo "  Uses aria2c multi-connection downloads and concurrent fragments"
+    echo "  for lightning-fast extraction. Never downloads video - audio only."
+    echo ""
+    echo -e "${BOLD}USAGE${NC}"
+    echo "  audio-downloader [OPTIONS] <URL> [URL2] [URL3] ..."
+    echo ""
+    echo -e "${BOLD}OPTIONS${NC}"
+    echo "  -o, --output <dir>    Output directory (default: ~/Downloads)"
+    echo "  -h, --help            Show this help"
+    echo "  -v, --version         Show version"
+    echo ""
+    echo -e "${BOLD}EXAMPLES${NC}"
+    echo "  audio-downloader \"https://youtube.com/watch?v=xxx\""
+    echo "  audio-downloader -o ~/Music \"https://youtube.com/watch?v=xxx\""
+    echo "  audio-downloader url1 url2 url3"
+    echo ""
+    echo -e "${BOLD}SUPPORTED SITES${NC}"
+    echo "  YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites"
+    echo ""
+    echo -e "${BOLD}SPEED OPTIMIZATIONS${NC}"
+    echo "  - aria2c multi-connection downloads (16 connections)"
+    echo "  - Concurrent fragment downloading (4 fragments)"
+    echo "  - No video download - audio extraction only"
+    echo "  - No format conversion - native audio format"
+    echo ""
+    echo -e "${BOLD}REQUIREMENTS${NC}"
+    echo "  - yt-dlp    (brew install yt-dlp)"
+    echo "  - aria2c    (brew install aria2) - optional but recommended"
+    echo ""
+    echo -e "Built by ${CYAN}Augent${NC} - https://github.com/AugentDevs/Augent"
+}
+
+show_version() {
+    echo "audio-downloader v$VERSION (Augent)"
+}
+
+check_deps() {
+    if ! command -v yt-dlp &> /dev/null; then
+        echo -e "${RED}Error: yt-dlp not found${NC}"
+        echo "Install with: brew install yt-dlp"
+        exit 1
+    fi
+
+    if ! command -v aria2c &> /dev/null; then
+        echo -e "${YELLOW}Warning: aria2c not found (downloads will be slower)${NC}"
+        echo "Install with: brew install aria2"
+        USE_ARIA=false
+    else
+        USE_ARIA=true
+    fi
+}
+
+download() {
+    local url="$1"
+
+    echo -e "${CYAN}Downloading audio:${NC} $url"
+    echo -e "${CYAN}Saving to:${NC} $OUTPUT_DIR"
+    echo ""
+
+    local cmd=(yt-dlp
+        -f "bestaudio"
+        --concurrent-fragments 4
+        --no-playlist
+        -o "$OUTPUT_DIR/%(title)s.%(ext)s"
+    )
+
+    if [ "$USE_ARIA" = true ]; then
+        cmd+=(--downloader aria2c --downloader-args "-x 16 -s 16 -k 1M")
+    fi
+
+    cmd+=("$url")
+
+    if "${cmd[@]}"; then
+        echo -e "\n${GREEN}Done!${NC}"
+        return 0
+    else
+        echo -e "\n${RED}Failed${NC}"
+        return 1
+    fi
+}
+
+URLS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -v|--version)
+            show_version
+            exit 0
+            ;;
+        -o|--output)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -*)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_help
+            exit 1
+            ;;
+        *)
+            URLS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [ ${#URLS[@]} -eq 0 ]; then
+    show_help
+    exit 1
+fi
+
+check_deps
+mkdir -p "$OUTPUT_DIR"
+
+SUCCESS=0
+FAILED=0
+
+for url in "${URLS[@]}"; do
+    if download "$url"; then
+        ((SUCCESS++))
+    else
+        ((FAILED++))
+    fi
+    echo ""
+done
+
+if [ ${#URLS[@]} -gt 1 ]; then
+    echo -e "${CYAN}Summary:${NC} $SUCCESS succeeded, $FAILED failed"
+fi
+
+exit $FAILED

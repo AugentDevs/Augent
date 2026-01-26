@@ -367,12 +367,28 @@ QUICK START
 
 COMMANDS
 --------
+  audio-downloader <URL>                Download audio from video (speed-optimized)
   augent search <audio> "<keywords>"    Search audio for keywords
   augent transcribe <audio>             Full transcription
   augent proximity <audio> "A" "B"      Find keyword A near keyword B
   augent cache stats                    View cache statistics
   augent cache clear                    Clear transcription cache
   augent help                           Show this help
+
+AUDIO DOWNLOADER (Built by Augent)
+----------------------------------
+  audio-downloader <URL>                Download audio from any video URL
+  audio-downloader -o ~/Music <URL>     Download to custom folder
+  audio-downloader url1 url2 url3       Download multiple URLs
+  audio-downloader --help               Show audio-downloader help
+
+  Speed optimizations:
+  - aria2c multi-connection downloads (16 parallel connections)
+  - Concurrent fragment downloading (4 fragments)
+  - No video download - audio extraction only
+  - No format conversion - native audio format
+
+  Supports: YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
 
 WEB UI
 ------
@@ -386,6 +402,10 @@ MCP SERVER (for Claude Code)
 
 EXAMPLES
 --------
+  # Download audio from YouTube and transcribe
+  audio-downloader "https://youtube.com/watch?v=xxx"
+  augent transcribe ~/Downloads/video-title.webm
+
   # Search for keywords in audio
   augent search podcast.mp3 "lucrative,funding,healthiest"
 
@@ -422,6 +442,7 @@ REQUIREMENTS
 ------------
   - Python 3.9+
   - FFmpeg (for audio processing)
+  - yt-dlp + aria2 (for audio-downloader)
   - pip install -e .[web] for Web UI
   - pip install -e .[all] for all features
 

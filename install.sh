@@ -289,6 +289,45 @@ install_augent() {
     log_success "Augent"
 }
 
+install_audio_downloader() {
+    log_info "Installing audio-downloader..."
+
+    local script_dir=""
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
+
+    local user_bin="$HOME/.local/bin"
+    ensure_dir "$user_bin"
+
+    # Install yt-dlp and aria2 for speed optimization
+    case "$PKG_MGR" in
+        brew)
+            command_exists yt-dlp || brew install yt-dlp >/dev/null 2>&1
+            command_exists aria2c || brew install aria2 >/dev/null 2>&1
+            ;;
+        apt)
+            command_exists yt-dlp || (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || \
+            $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            command_exists aria2c || sudo apt-get install -y aria2 >/dev/null 2>&1
+            ;;
+        *)
+            command_exists yt-dlp || $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            ;;
+    esac
+
+    # Install the audio-downloader script
+    if [[ -n "$script_dir" ]] && [[ -f "$script_dir/bin/audio-downloader" ]]; then
+        cp "$script_dir/bin/audio-downloader" "$user_bin/"
+        chmod +x "$user_bin/audio-downloader"
+    else
+        # Download from GitHub
+        curl -fsSL "https://raw.githubusercontent.com/$AUGENT_REPO/main/bin/audio-downloader" -o "$user_bin/audio-downloader" 2>/dev/null || true
+        chmod +x "$user_bin/audio-downloader" 2>/dev/null || true
+    fi
+
+    add_to_path "$user_bin"
+    log_success "audio-downloader"
+}
+
 verify_installation() {
     local user_bin="$HOME/.local/bin"
     local pip_bin=""
@@ -384,6 +423,7 @@ EOF
     install_pip
     install_ffmpeg
     install_augent
+    install_audio_downloader
     verify_installation
 
     # Configure MCP (auto when piped)
@@ -403,9 +443,10 @@ EOF
     echo "  ✓ Installation Complete"
     echo "════════════════════════════════════════════${NC}"
     echo ""
-    echo "  ${BOLD}augent --help${NC}           Show commands"
-    echo "  ${BOLD}augent-web${NC}              Launch Web UI"
-    echo "  ${BOLD}augent transcribe f.mp3${NC} Transcribe audio"
+    echo "  ${BOLD}augent --help${NC}              Show commands"
+    echo "  ${BOLD}augent-web${NC}                 Launch Web UI"
+    echo "  ${BOLD}augent transcribe f.mp3${NC}   Transcribe audio"
+    echo "  ${BOLD}audio-downloader URL${NC}      Download audio from video"
     echo ""
     if [[ "$PATH_MODIFIED" == "true" ]]; then
         echo -e "${YELLOW}↪ Restart terminal to update PATH${NC}"

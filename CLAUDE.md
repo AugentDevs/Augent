@@ -2,6 +2,36 @@
 
 Augent is an MCP-powered audio intelligence plugin for Claude Code. It enables AI agents to transcribe, search, and analyze audio files locally using faster-whisper.
 
+## audio-downloader (Built by Augent)
+
+A speed-optimized audio downloader for downloading audio ONLY from any video URL at lightning speed.
+
+```bash
+# Download audio from YouTube (or any video URL)
+audio-downloader "https://youtube.com/watch?v=xxx"
+
+# Download to custom folder
+audio-downloader -o ~/Music "https://youtube.com/watch?v=xxx"
+
+# Download multiple URLs
+audio-downloader url1 url2 url3
+```
+
+**Speed Optimizations:**
+- aria2c multi-connection downloads (16 parallel connections)
+- Concurrent fragment downloading (4 fragments)
+- No video download - audio extraction only
+- No format conversion - native audio format
+
+**Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
+
+**Workflow:** Download → Transcribe → Search
+```bash
+audio-downloader "https://youtube.com/watch?v=tutorial"
+augent transcribe ~/Downloads/tutorial.webm
+augent search ~/Downloads/tutorial.webm "keyword1,keyword2"
+```
+
 ## Quick Start (For Claude)
 
 You have access to these tools via the MCP server:
@@ -84,6 +114,10 @@ For podcasts, interviews, lectures - `tiny` handles it.
 ## CLI Commands (via Bash)
 
 ```bash
+# Download audio from video URL (speed-optimized)
+audio-downloader "https://youtube.com/watch?v=xxx"
+audio-downloader -o ~/Music "https://youtube.com/watch?v=xxx"
+
 # Search audio
 augent search audio.mp3 "keyword1,keyword2"
 
@@ -146,4 +180,5 @@ For parallel processing: open multiple browser tabs to the same URL. Each tab pr
 
 - Python 3.9+
 - FFmpeg (for audio processing)
+- yt-dlp + aria2 (for audio-downloader)
 - CUDA (optional, for GPU acceleration)
