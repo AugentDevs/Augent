@@ -449,7 +449,8 @@ EOF
     echo -e "  ${BOLD}audio-downloader URL${NC}      Download audio from video"
     echo ""
     if [[ "$PATH_MODIFIED" == "true" ]]; then
-        echo -e "${YELLOW}↪ Restart terminal to update PATH${NC}"
+        echo -e "${YELLOW}Next step: Close this terminal and open a new one.${NC}"
+        echo -e "${DIM}Then the commands above will work.${NC}"
         echo ""
     fi
 }
