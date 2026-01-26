@@ -49,71 +49,25 @@ Works on macOS and Linux. Installs everything automatically.
 
 **Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
-### Step 2: Run Web UI
+---
 
-```bash
-python3 -m augent.web
-```
+## Usage
 
-Open your browser to: **http://127.0.0.1:8888**
+Augent can be used in three ways:
 
-### Step 3: Use It
-
-1. **Upload** an audio file (MP3, WAV, M4A, etc.)
-2. **Enter keywords** separated by commas (e.g., `lucrative, funding, healthiest`)
-3. **Click SEARCH**
-4. **View results** with timestamps - click any timestamp to jump to that moment
-
-### Commands Reference
-
-| Command | Description |
-|---------|-------------|
-| `audio-downloader URL` | Download audio from video URL to ~/Downloads (speed-optimized) |
-| `python3 -m augent.web` | Start Web UI on port 8888 |
-| `python3 -m augent.web --port 3000` | Use custom port |
-| `python3 -m augent.web --share` | Create public shareable link |
-| `augent help` | Show full help manual |
-| `augent search audio.mp3 "keyword"` | CLI search |
-| `augent transcribe audio.mp3` | Full transcription |
-| `augent cache stats` | View cache info |
-| `augent cache clear` | Clear cache |
-
-### Troubleshooting
-
-**"command not found: augent"**
-```bash
-# Use python module directly (always works)
-python3 -m augent.web
-```
-
-**Port already in use?**
-No worries - Augent auto-kills the previous instance and restarts.
-
-**Slow transcription?**
-First run downloads the AI model (~75MB for tiny). Subsequent runs are instant due to caching.
+| Mode | Best For |
+|------|----------|
+| **Claude Code (MCP)** | Automated agentic workflows - Claude transcribes and searches for you |
+| **CLI** | Quick terminal-based searches and batch processing |
+| **Web UI** | Visual interface for manual uploads and searches |
 
 ---
 
-## Why Augent?
+## Claude Code (MCP)
 
-Claude Code agents can now:
-- **Search podcasts, interviews, and recordings** for specific keywords with timestamps
-- **Find contextual discussions** using proximity search (e.g., "startup" near "funding")
-- **Batch process** multiple audio files in parallel
-- **Extract audio clips** around keyword matches
-- **Cache everything** - no re-transcription needed
+The primary way to use Augent. Claude Code gets direct access to audio intelligence tools.
 
-Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-4x faster transcription than original Whisper.
-
-## Quick Install
-
-```bash
-curl -fsSL https://augent.app/install.sh | bash
-```
-
-**Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
-
-## Claude Code Setup
+### Setup
 
 Add to `~/.claude.json` (global) or `.mcp.json` (project):
 
@@ -128,11 +82,11 @@ Add to `~/.claude.json` (global) or `.mcp.json` (project):
 }
 ```
 
-Then restart Claude Code. Run `/mcp` to verify connection.
+Restart Claude Code. Run `/mcp` to verify connection.
 
 **Note:** If `python3` isn't found, use full path (e.g., `/usr/bin/python3` or `/opt/homebrew/bin/python3`).
 
-## MCP Tools
+### MCP Tools
 
 Once configured, Claude has access to:
 
@@ -146,6 +100,68 @@ Once configured, Claude has access to:
 | `list_audio_files` | Discover audio files in a directory |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |
+
+### Example Workflow
+
+Ask Claude: *"Download this YouTube tutorial and find where they talk about multiplayer"*
+
+Claude will:
+1. `download_audio` → Downloads audio from the URL
+2. `search_audio` → Finds "multiplayer" mentions with timestamps
+3. Returns results with exact timestamps and context
+
+---
+
+## CLI
+
+For terminal-based usage without Claude.
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `audio-downloader URL` | Download audio from video URL to ~/Downloads |
+| `augent search audio.mp3 "keyword"` | Search for keywords |
+| `augent transcribe audio.mp3` | Full transcription |
+| `augent proximity audio.mp3 "A" "B"` | Find keyword A near keyword B |
+| `augent cache stats` | View cache info |
+| `augent help` | Show full help |
+
+---
+
+## Web UI
+
+Visual interface for manual use. Runs 100% locally - no cloud APIs, no Claude credits.
+
+```bash
+python3 -m augent.web
+```
+
+Open: **http://127.0.0.1:8888**
+
+1. **Upload** an audio file (MP3, WAV, M4A, etc.)
+2. **Enter keywords** separated by commas
+3. **Click SEARCH**
+4. **View results** with clickable timestamps
+
+| Command | Description |
+|---------|-------------|
+| `python3 -m augent.web` | Start on port 8888 |
+| `python3 -m augent.web --port 3000` | Custom port |
+| `python3 -m augent.web --share` | Create public link |
+
+---
+
+## Why Augent?
+
+Claude Code agents can now:
+- **Search podcasts, interviews, and recordings** for specific keywords with timestamps
+- **Find contextual discussions** using proximity search (e.g., "startup" near "funding")
+- **Batch process** multiple audio files in parallel
+- **Extract audio clips** around keyword matches
+- **Cache everything** - no re-transcription needed
+
+Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-4x faster transcription than original Whisper.
 
 ## Agentic Use Cases
 
