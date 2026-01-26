@@ -281,11 +281,12 @@ install_augent() {
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     else
-        # Uninstall old version first to ensure fresh install
+        # Uninstall old version and clear pip cache
         $PYTHON_CMD -m pip uninstall augent -y --quiet 2>/dev/null || true
+        $PYTHON_CMD -m pip cache purge 2>/dev/null || true
         # Install from GitHub (always latest)
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --no-cache-dir --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --no-cache-dir 2>/dev/null || true
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir --user 2>/dev/null || \
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir 2>/dev/null || true
     fi
 
     log_success "Augent"
