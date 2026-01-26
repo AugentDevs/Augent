@@ -109,7 +109,9 @@ Clear transcription cache - no parameters needed.
 - Heavily accented speech or poor audio quality
 - Medical/legal transcriptions requiring maximum accuracy
 
-For podcasts, interviews, lectures - `tiny` handles it.
+**Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines. Stick to `tiny` or `base` unless the user has a powerful machine.
+
+For tutorials, interviews, lectures - `tiny` handles it.
 
 ## Caching Behavior
 

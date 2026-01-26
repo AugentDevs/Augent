@@ -343,7 +343,9 @@ python3 -m augent.web --share
 - Medical/legal transcriptions requiring maximum accuracy
 - Non-English languages with complex phonetics
 
-For podcasts, interviews, lectures, and general audio - `tiny` is all you need.
+**Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
+
+For tutorials, interviews, lectures, and general audio - `tiny` is all you need.
 
 ## Caching
 
