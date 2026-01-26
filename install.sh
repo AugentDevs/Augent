@@ -281,9 +281,9 @@ install_augent() {
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
         $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     else
-        # Install from GitHub (always latest)
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade 2>/dev/null || true
+        # Install from GitHub (always latest, no cache to ensure fresh)
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade --no-cache-dir --user 2>/dev/null || \
+        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git" --quiet --upgrade --no-cache-dir 2>/dev/null || true
     fi
 
     log_success "Augent"
