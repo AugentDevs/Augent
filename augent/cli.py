@@ -460,25 +460,25 @@ def main():
         description="Augent - Local audio keyword search using Whisper",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  # Basic search
-  augent search audio.mp3 "lucrative,funding,healthiest"
+Other commands (not subcommands):
+  augent-web                 Launch Web UI at http://127.0.0.1:9797
+  audio-downloader URL       Download audio from YouTube/video URLs (speed-optimized)
 
-  # Search with larger model for better accuracy
-  augent search podcast.mp3 "startup" --model small
+Examples:
+  # Download audio from YouTube
+  audio-downloader "https://youtube.com/watch?v=xxx"
+
+  # Basic search
+  augent search audio.mp3 "install,setup,configure"
 
   # Batch processing
-  augent search "podcasts/*.mp3" "keyword" --workers 4
+  augent search "tutorials/*.mp3" "keyword" --workers 4
 
   # Export to different formats
   augent search audio.mp3 "keyword" --format csv --output results.csv
-  augent search audio.mp3 "keyword" --format srt --output matches.srt
-
-  # Extract audio clips around matches
-  augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 5
 
   # Proximity search - find keywords within N words of each other
-  augent proximity audio.mp3 "startup" "funding" --distance 30  # within 30 words
+  augent proximity audio.mp3 "error" "fix" --distance 30
 
   # Full transcription
   augent transcribe audio.mp3 --format srt --output subtitles.srt
