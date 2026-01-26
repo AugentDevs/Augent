@@ -363,7 +363,7 @@ QUICK START
    python3 -m augent.web
 
 3. Open browser:
-   http://127.0.0.1:8888
+   http://127.0.0.1:9797
 
 COMMANDS
 --------
@@ -392,7 +392,7 @@ AUDIO DOWNLOADER (Built by Augent)
 
 WEB UI
 ------
-  python3 -m augent.web                 Start web interface on port 8888
+  python3 -m augent.web                 Start web interface on port 9797
   python3 -m augent.web --port 9000     Use custom port
   python3 -m augent.web --share         Create public Gradio link
 

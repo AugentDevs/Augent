@@ -180,7 +180,7 @@ augent search audio.mp3 "important moment" --export-clips ./clips --clip-padding
 
 ## Web UI Batch Processing
 
-The Web UI at `http://localhost:8888` runs 100% locally (no Claude credits used).
+The Web UI at `http://localhost:9797` runs 100% locally (no Claude credits used).
 
 For parallel processing: open multiple browser tabs to the same URL. Each tab processes independently, enabling manual batch workflows.
 

@@ -777,7 +777,7 @@ def _kill_port(port: int):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Augent Web UI")
-    parser.add_argument("--port", "-p", type=int, default=8888, help="Port to run on (default: 8888)")
+    parser.add_argument("--port", "-p", type=int, default=9797, help="Port to run on (default: 9797)")
     parser.add_argument("--share", action="store_true", help="Create public Gradio link")
     args = parser.parse_args()
 

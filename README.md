@@ -137,7 +137,7 @@ Visual interface for manual use. Runs 100% locally - no cloud APIs, no Claude cr
 python3 -m augent.web
 ```
 
-Open: **http://127.0.0.1:8888**
+Open: **http://127.0.0.1:9797**
 
 1. **Upload** an audio file (MP3, WAV, M4A, etc.)
 2. **Enter keywords** separated by commas
@@ -146,7 +146,7 @@ Open: **http://127.0.0.1:8888**
 
 | Command | Description |
 |---------|-------------|
-| `python3 -m augent.web` | Start on port 8888 |
+| `python3 -m augent.web` | Start on port 9797 |
 | `python3 -m augent.web --port 3000` | Custom port |
 | `python3 -m augent.web --share` | Create public link |
 
@@ -312,7 +312,7 @@ csv_output = export_matches(results, format="csv")
 # Start Web UI
 python3 -m augent.web
 
-# Open browser: http://127.0.0.1:8888
+# Open browser: http://127.0.0.1:9797
 
 # Custom port
 python3 -m augent.web --port 3000
