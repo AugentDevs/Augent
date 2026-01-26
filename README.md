@@ -16,6 +16,29 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 
 ---
 
+## Watch Nothing. Learn Everything.
+
+Download audio from YouTube tutorials. Augent transcribes them. Claude reads and executes.
+
+**Example: Learning Roblox Game Development**
+
+1. Download audio from 10 Roblox dev tutorials
+2. Augent transcribes all of them locally
+3. Claude searches for specific techniques ("how to add multiplayer")
+4. Claude reads the instructions and runs the commands for you
+
+You skip watching. You skip doing. Claude handles both.
+
+**Why this matters:**
+
+- 10 hours of tutorials → searchable in seconds
+- Claude learns from multiple sources at once
+- You get the output without the input
+
+This works for any domain: coding tutorials, design workflows, business courses, technical documentation buried in video format.
+
+---
+
 ## Install
 
 ```bash
