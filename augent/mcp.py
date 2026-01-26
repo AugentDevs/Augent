@@ -374,7 +374,7 @@ def handle_download_audio(arguments: dict) -> dict:
     ]
 
     if has_aria2c:
-        cmd.extend(["--downloader", "aria2c", "--downloader-args", "-x 16 -s 16 -k 1M"])
+        cmd.extend(["--downloader", "aria2c", "--downloader-args", "aria2c:-x 16 -s 16 -k 1M"])
 
     cmd.append(url)
 

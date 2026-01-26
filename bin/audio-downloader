@@ -90,7 +90,7 @@ download() {
     )
 
     if [ "$USE_ARIA" = true ]; then
-        cmd+=(--downloader aria2c --downloader-args "-x 16 -s 16 -k 1M")
+        cmd+=(--downloader aria2c --downloader-args "aria2c:-x 16 -s 16 -k 1M")
     fi
 
     cmd+=("$url")
