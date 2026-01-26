@@ -5,6 +5,7 @@ Model Context Protocol server for Claude Desktop and Claude Code integration.
 Exposes Augent as a native tool that Claude can call directly.
 
 Tools exposed:
+- download_audio: Download audio from video URLs (YouTube, etc.) at maximum speed
 - search_audio: Search for keywords in audio files
 - transcribe_audio: Full transcription without keyword search
 - search_proximity: Find keywords appearing near each other
@@ -125,6 +126,24 @@ def handle_tools_list(id: Any) -> None:
         "id": id,
         "result": {
             "tools": [
+                {
+                    "name": "download_audio",
+                    "description": "Download audio from video URLs at maximum speed. Built by Augent with speed optimizations (aria2c multi-connection, concurrent fragments). Downloads audio ONLY - never video. Supports YouTube, Vimeo, TikTok, Twitter, SoundCloud, and 1000+ sites.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "Video URL to download audio from (YouTube, Vimeo, TikTok, etc.)"
+                            },
+                            "output_dir": {
+                                "type": "string",
+                                "description": "Directory to save the audio file. Default: ~/Downloads"
+                            }
+                        },
+                        "required": ["url"]
+                    }
+                },
                 {
                     "name": "search_audio",
                     "description": "Search audio files for keywords and return timestamped matches with context snippets. Useful for finding specific moments in podcasts, interviews, lectures, or any audio content.",
@@ -281,7 +300,9 @@ def handle_tools_call(id: Any, params: dict) -> None:
     arguments = params.get("arguments", {})
 
     try:
-        if tool_name == "search_audio":
+        if tool_name == "download_audio":
+            result = handle_download_audio(arguments)
+        elif tool_name == "search_audio":
             result = handle_search_audio(arguments)
         elif tool_name == "transcribe_audio":
             result = handle_transcribe_audio(arguments)
@@ -318,6 +339,74 @@ def handle_tools_call(id: Any, params: dict) -> None:
         send_error(id, -32602, str(e))
     except Exception as e:
         send_error(id, -32603, f"Error: {str(e)}")
+
+
+def handle_download_audio(arguments: dict) -> dict:
+    """Handle download_audio tool call."""
+    import subprocess
+    import os
+    import re
+
+    url = arguments.get("url")
+    output_dir = arguments.get("output_dir", os.path.expanduser("~/Downloads"))
+
+    if not url:
+        raise ValueError("Missing required parameter: url")
+
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Check for yt-dlp
+    if not subprocess.run(["which", "yt-dlp"], capture_output=True).returncode == 0:
+        raise RuntimeError("yt-dlp not found. Install with: brew install yt-dlp")
+
+    # Check for aria2c (optional but recommended)
+    has_aria2c = subprocess.run(["which", "aria2c"], capture_output=True).returncode == 0
+
+    # Build command
+    cmd = [
+        "yt-dlp",
+        "-f", "bestaudio",
+        "--concurrent-fragments", "4",
+        "--no-playlist",
+        "-o", f"{output_dir}/%(title)s.%(ext)s",
+        "--print", "after_move:filepath",  # Print the final file path
+    ]
+
+    if has_aria2c:
+        cmd.extend(["--downloader", "aria2c", "--downloader-args", "-x 16 -s 16 -k 1M"])
+
+    cmd.append(url)
+
+    # Run download
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip() or "Download failed"
+        raise RuntimeError(f"Download failed: {error_msg}")
+
+    # Extract the output file path from stdout
+    output_lines = result.stdout.strip().split('\n')
+    output_file = output_lines[-1] if output_lines else None
+
+    # Get file info if available
+    file_info = {}
+    if output_file and os.path.exists(output_file):
+        file_size = os.path.getsize(output_file)
+        file_info = {
+            "path": output_file,
+            "filename": os.path.basename(output_file),
+            "size_mb": round(file_size / (1024 * 1024), 2)
+        }
+
+    return {
+        "success": True,
+        "url": url,
+        "output_dir": output_dir,
+        "file": file_info,
+        "aria2c_used": has_aria2c,
+        "message": f"Audio downloaded to {output_file}" if output_file else "Download complete"
+    }
 
 
 def handle_search_audio(arguments: dict) -> dict:

@@ -36,6 +36,14 @@ augent search ~/Downloads/tutorial.webm "keyword1,keyword2"
 
 You have access to these tools via the MCP server:
 
+### download_audio
+Download audio from video URLs at maximum speed. Uses aria2c multi-connection downloads and concurrent fragments. Downloads audio ONLY - never video.
+```
+url: "https://youtube.com/watch?v=xxx"
+output_dir: "~/Downloads" (optional, default)
+```
+Returns the downloaded file path, ready for transcription.
+
 ### search_audio
 Search for keywords in audio files with timestamped results.
 ```
