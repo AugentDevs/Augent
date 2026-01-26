@@ -422,15 +422,18 @@ def handle_search_audio(arguments: dict) -> dict:
         raise ValueError("Missing required parameter: keywords")
 
     if include_full:
-        return search_audio_full(
+        result = search_audio_full(
             audio_path, keywords,
             model_size=model_size
         )
     else:
-        return search_audio(
+        result = search_audio(
             audio_path, keywords,
             model_size=model_size
         )
+
+    result["model_used"] = model_size
+    return result
 
 
 def handle_transcribe_audio(arguments: dict) -> dict:
@@ -449,7 +452,8 @@ def handle_transcribe_audio(arguments: dict) -> dict:
         "duration": result["duration"],
         "duration_formatted": f"{int(result['duration'] // 60)}:{int(result['duration'] % 60):02d}",
         "segment_count": len(result.get("segments", [])),
-        "cached": result.get("cached", False)
+        "cached": result.get("cached", False),
+        "model_used": model_size
     }
 
 
@@ -477,7 +481,8 @@ def handle_search_proximity(arguments: dict) -> dict:
     return {
         "query": f"'{keyword1}' within {max_distance} words of '{keyword2}'",
         "match_count": len(matches),
-        "matches": matches
+        "matches": matches,
+        "model_used": model_size
     }
 
 
@@ -531,7 +536,8 @@ def handle_batch_search(arguments: dict) -> dict:
         "files_with_errors": len(errors),
         "total_matches": total_matches,
         "results": results,
-        "errors": errors if errors else None
+        "errors": errors if errors else None,
+        "model_used": model_size
     }
 
 
