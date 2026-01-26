@@ -455,45 +455,43 @@ MORE INFO
     print(help_text)
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Augent - Local audio keyword search using Whisper",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Other commands (not subcommands):
-  augent-web                 Launch Web UI at http://127.0.0.1:9797
-  audio-downloader URL       Download audio from YouTube/video URLs (speed-optimized)
+def print_simple_help():
+    """Print clean, simple help."""
+    help_text = """
+Augent - Audio intelligence for Claude Code agents
 
-Examples:
-  # Download audio from YouTube
+COMMANDS
+  augent search <file> "keywords"    Search audio for keywords
+  augent transcribe <file>           Full transcription
+  augent proximity <file> "A" "B"    Find keyword A near keyword B
+  augent cache stats                 View cache statistics
+  augent cache clear                 Clear cache
+  augent help                        Show detailed help
+
+OTHER TOOLS
+  augent-web                         Launch Web UI (http://127.0.0.1:9797)
+  audio-downloader <URL>             Download audio from video URLs
+
+EXAMPLES
   audio-downloader "https://youtube.com/watch?v=xxx"
+  augent search tutorial.mp3 "install,setup,configure"
+  augent transcribe tutorial.mp3 --format srt
 
-  # Basic search
-  augent search audio.mp3 "install,setup,configure"
-
-  # Batch processing
-  augent search "tutorials/*.mp3" "keyword" --workers 4
-
-  # Export to different formats
-  augent search audio.mp3 "keyword" --format csv --output results.csv
-
-  # Proximity search - find keywords within N words of each other
-  augent proximity audio.mp3 "error" "fix" --distance 30
-
-  # Full transcription
-  augent transcribe audio.mp3 --format srt --output subtitles.srt
-
-  # Cache management
-  augent cache stats
-  augent cache clear
-
-Model sizes:
-  tiny   - Fastest, incredibly accurate, use for nearly everything (default)
-  base   - Fast, excellent accuracy
-  small  - Medium speed, superior accuracy
-  medium - Slow, outstanding accuracy
-  large  - Slowest, maximum accuracy (e.g., finding lyrics in unknown songs)
+Run 'augent help' for full documentation.
 """
+    print(help_text)
+
+
+def main():
+    # Handle --help and -h with clean output
+    if len(sys.argv) == 1 or sys.argv[1] in ('--help', '-h'):
+        print_simple_help()
+        sys.exit(0)
+
+    parser = argparse.ArgumentParser(
+        description="Augent - Audio intelligence for Claude Code agents",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False  # We handle help ourselves
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
