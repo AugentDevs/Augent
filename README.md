@@ -27,7 +27,7 @@ No commands to memorize. No syntax to learn. Just ask Claude.
 
 **Claude does:**
 1. Creates `~/Desktop/Huberman Podcasts/`
-2. Downloads all episodes
+2. Downloads audio only (no video, small files)
 3. Transcribes them locally
 4. Searches for supplement names, "I take", "recommend", dosages, benefits
 5. Returns a structured table ready for product research
