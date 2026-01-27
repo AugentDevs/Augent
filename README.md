@@ -116,6 +116,8 @@ Claude will:
 
 For terminal-based usage without Claude.
 
+![Augent CLI](./images/cli-help.png)
+
 ### Commands
 
 | Command | Description |
@@ -210,6 +212,42 @@ augent search course.mp3 "error handling,debugging,testing"
 ### Research & Documentation
 
 Extract structured information from video documentation, conference talks, or technical deep-dives for reference materials.
+
+### Clawdbot Integration
+
+[Clawdbot](https://github.com/clawdbot/clawdbot) is a personal AI assistant that runs locally and connects to WhatsApp, Telegram, X, Slack, Discord, iMessage, and more. With Augent, your Clawdbot gains ears.
+
+**Multi-Source Video Research**
+
+Text Clawdbot on any messaging platform:
+
+> "Here are 5 YC founder interviews. What patterns do they share about getting first customers?"
+> [URL1] [URL2] [URL3] [URL4] [URL5]
+
+Clawdbot will:
+1. Download all 5 with `audio-downloader`
+2. Batch search "first customers" "early users" "traction" across all videos
+3. Find relevant segments with timestamps
+4. Synthesize patterns and reply:
+
+**Pattern 1: Do things that don't scale**
+Mentioned in 4 of 5 interviews
+- *"We literally delivered the first orders ourselves..."* — Interview 1 at 12:34
+- *"I was manually onboarding every single user..."* — Interview 3 at 8:22
+
+**Pattern 2: Solve your own problem**
+Mentioned in 3 of 5 interviews
+- *"I built it because I needed it for my own workflow..."* — Interview 2 at 5:11
+
+**Pattern 3: Launch before you're ready**
+Mentioned in 3 of 5 interviews
+- *"We shipped with bugs everywhere, didn't matter..."* — Interview 4 at 18:45
+
+**Why this matters:**
+- **Research from any channel** — Ask questions on WhatsApp, get video insights
+- **Multi-source search** — Query across 10 videos at once, not just one
+- **Patterns, not transcripts** — Get synthesized insights with timestamps
+- **All local** — Your queries and content never leave your machine
 
 ## CLI Usage
 
@@ -400,5 +438,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Links
 
 - [GitHub Repository](https://github.com/AugentDevs/Augent)
+- [Clawdbot](https://github.com/clawdbot/clawdbot)
 - [Ralph-Wiggum Plugin](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum)
 - [Gas Town](https://github.com/steveyegge/gastown)
