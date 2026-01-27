@@ -18,22 +18,24 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 
 ## Watch Nothing. Learn Everything.
 
-Download audio from YouTube tutorials. Augent transcribes them. Claude reads and executes.
+No commands to memorize. No syntax to learn. Just ask Claude.
 
-**Example: Learning Roblox Game Development**
+**You type:**
+> "Here are some Huberman Lab episodes about supplements:
+> https://youtube.com/watch?v=abc123
+> https://youtube.com/watch?v=def456
+> https://youtube.com/watch?v=ghi789
+>
+> Download them to a new folder on my desktop called 'Huberman Podcasts'. Find every supplement he mentions, especially when he says 'I take' or 'recommend'. Include dosages and benefits. Give me a spreadsheet for product research."
 
-1. Download audio from 10 Roblox dev tutorials
-2. Augent transcribes all of them locally
-3. Claude searches for specific techniques ("how to add multiplayer")
-4. Claude reads the instructions and runs the commands for you
+**Claude does:**
+1. Creates `~/Desktop/Huberman Podcasts/`
+2. Downloads all episodes
+3. Transcribes them locally
+4. Searches for supplement names, "I take", "recommend", dosages, benefits
+5. Returns a structured table ready for product research
 
-You skip watching. You skip doing. Claude handles both.
-
-**Why this matters:**
-
-- 10 hours of tutorials → searchable in seconds
-- Claude learns from multiple sources at once
-- You get the output without the input
+**12 hours of content. Zero hours of listening. One prompt.**
 
 This works for any domain: coding tutorials, design workflows, business courses, technical documentation buried in video format.
 
