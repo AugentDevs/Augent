@@ -21,7 +21,7 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 No commands to memorize. No syntax to learn. Just ask Claude.
 
 **You type:**
-> "Here are some Huberman Lab episodes about supplements: [8 YouTube URLs]
+> "Here are some Huberman Lab episodes: [8 YouTube URLs]
 >
 > Download them to a new folder on my desktop called 'Huberman Podcasts'. Find every supplement he mentions, especially when he says 'I take' or 'recommend'. Include dosages and benefits. Give me a spreadsheet for product research."
 
