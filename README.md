@@ -114,7 +114,7 @@ Claude will:
 
 ## CLI
 
-For terminal-based usage — works standalone or inside Claude Code.
+For terminal-based usage. Works standalone or inside Claude Code.
 
 ![Augent CLI](./images/cli-help.png)
 
