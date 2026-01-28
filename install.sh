@@ -141,6 +141,28 @@ add_to_path() {
     log_success "Added $dir to PATH"
 }
 
+# Fix Python user base for multi-user systems
+setup_python_user_base() {
+    local py_user_base
+    py_user_base="$($PYTHON_CMD -m site --user-base 2>/dev/null)" || py_user_base=""
+
+    # If Python's user base doesn't match current $HOME, override it
+    if [[ -n "$py_user_base" ]] && [[ "$py_user_base" != "$HOME"* ]]; then
+        local py_ver
+        py_ver="$($PYTHON_CMD -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null)" || py_ver="3.9"
+
+        case "$OS" in
+            macos)
+                export PYTHONUSERBASE="$HOME/Library/Python/$py_ver"
+                ;;
+            *)
+                export PYTHONUSERBASE="$HOME/.local"
+                ;;
+        esac
+        ensure_dir "$PYTHONUSERBASE"
+    fi
+}
+
 # ============================================================================
 # Dependency Installation
 # ============================================================================
@@ -424,6 +446,7 @@ EOF
     # Install dependencies
     install_python
     install_pip
+    setup_python_user_base
     install_ffmpeg
     install_augent
     install_audio_downloader
