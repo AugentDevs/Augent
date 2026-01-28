@@ -143,7 +143,7 @@ Open: **http://127.0.0.1:9797**
 1. **Upload** an audio file (MP3, WAV, M4A, etc.)
 2. **Enter keywords** separated by commas
 3. **Click SEARCH**
-4. **View results** with clickable timestamps
+4. **View results** with timestamps and context
 
 | Command | Description |
 |---------|-------------|
