@@ -236,6 +236,8 @@ install_python() {
 
 install_pip() {
     if $PYTHON_CMD -m pip --version &>/dev/null; then
+        # Upgrade pip to avoid bugs with pyproject.toml in old versions
+        $PYTHON_CMD -m pip install --upgrade pip --quiet --user 2>/dev/null || true
         log_success "pip"
         return 0
     fi
