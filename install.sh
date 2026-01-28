@@ -142,6 +142,8 @@ add_to_path() {
 }
 
 # Fix Python user base for multi-user systems
+# Sets USER_PYTHON_BASE if Python's user directory doesn't match $HOME
+USER_PYTHON_BASE=""
 setup_python_user_base() {
     local py_user_base
     py_user_base="$($PYTHON_CMD -m site --user-base 2>/dev/null)" || py_user_base=""
@@ -153,13 +155,15 @@ setup_python_user_base() {
 
         case "$OS" in
             macos)
-                export PYTHONUSERBASE="$HOME/Library/Python/$py_ver"
+                USER_PYTHON_BASE="$HOME/Library/Python/$py_ver"
                 ;;
             *)
-                export PYTHONUSERBASE="$HOME/.local"
+                USER_PYTHON_BASE="$HOME/.local"
                 ;;
         esac
-        ensure_dir "$PYTHONUSERBASE"
+        ensure_dir "$USER_PYTHON_BASE/bin"
+        ensure_dir "$USER_PYTHON_BASE/lib/python/site-packages"
+        add_to_path "$USER_PYTHON_BASE/bin"
     fi
 }
 
@@ -298,17 +302,23 @@ install_augent() {
     local script_dir=""
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
+    # Set pip environment for multi-user fix
+    local pip_env=""
+    if [[ -n "$USER_PYTHON_BASE" ]]; then
+        pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+    fi
+
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
         # Local install (development mode)
-        $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
+        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     else
         # Uninstall old version and clear pip cache
         $PYTHON_CMD -m pip uninstall augent -y --quiet 2>/dev/null || true
         $PYTHON_CMD -m pip cache purge 2>/dev/null || true
         # Install from GitHub (always latest)
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir --user 2>/dev/null || \
-        $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir 2>/dev/null || true
+        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir --user 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir 2>/dev/null || true
     fi
 
     log_success "Augent"
@@ -323,6 +333,12 @@ install_audio_downloader() {
     local user_bin="$HOME/.local/bin"
     ensure_dir "$user_bin"
 
+    # Set pip environment for multi-user fix
+    local pip_env=""
+    if [[ -n "$USER_PYTHON_BASE" ]]; then
+        pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+    fi
+
     # Install yt-dlp and aria2 for speed optimization
     case "$PKG_MGR" in
         brew)
@@ -331,11 +347,11 @@ install_audio_downloader() {
             ;;
         apt)
             command_exists yt-dlp || (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || \
-            $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
             command_exists aria2c || sudo apt-get install -y aria2 >/dev/null 2>&1
             ;;
         *)
-            command_exists yt-dlp || $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            command_exists yt-dlp || env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
             ;;
     esac
 
