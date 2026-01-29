@@ -403,9 +403,19 @@ verify_installation() {
     local pip_bin=""
     pip_bin="$($PYTHON_CMD -m site --user-base 2>/dev/null)/bin" || pip_bin="$user_bin"
 
-    # Add bin directories to PATH silently
-    for bindir in "$user_bin" "$pip_bin" "$HOME/Library/Python/3.12/bin" "$HOME/Library/Python/3.11/bin" "$HOME/Library/Python/3.10/bin" "$HOME/Library/Python/3.9/bin"; do
-        if [[ -d "$bindir" ]] && [[ ":$PATH:" != *":$bindir:"* ]]; then
+    # Homebrew bin directory (where Homebrew Python installs scripts)
+    local brew_bin=""
+    if [[ "$OS" == "macos" ]]; then
+        if [[ "$ARCH" == "arm64" ]]; then
+            brew_bin="/opt/homebrew/bin"
+        else
+            brew_bin="/usr/local/bin"
+        fi
+    fi
+
+    # Add bin directories to PATH
+    for bindir in "$brew_bin" "$user_bin" "$pip_bin" "$HOME/Library/Python/3.12/bin" "$HOME/Library/Python/3.11/bin" "$HOME/Library/Python/3.10/bin"; do
+        if [[ -n "$bindir" ]] && [[ -d "$bindir" ]] && [[ ":$PATH:" != *":$bindir:"* ]]; then
             add_to_path "$bindir"
         fi
     done
