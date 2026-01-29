@@ -233,7 +233,12 @@ install_python() {
     case "$PKG_MGR" in
         brew)
             brew install python@3.12 >/dev/null 2>&1
-            PYTHON_CMD="python3"
+            # Use absolute path - bare "python3" may resolve to system Python
+            if [[ "$ARCH" == "arm64" ]]; then
+                PYTHON_CMD="/opt/homebrew/bin/python3"
+            else
+                PYTHON_CMD="/usr/local/bin/python3"
+            fi
             ;;
         apt)
             sudo apt-get update -qq >/dev/null 2>&1
