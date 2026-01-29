@@ -86,6 +86,7 @@ download() {
         -f "bestaudio"
         --concurrent-fragments 4
         --no-playlist
+        --extractor-args "youtube:player_client=ios,tv"
         -o "$OUTPUT_DIR/%(title)s.%(ext)s"
     )
 
@@ -104,6 +105,7 @@ download() {
             -f "bestaudio"
             --concurrent-fragments 4
             --no-playlist
+            --extractor-args "youtube:player_client=ios,tv"
             -o "$OUTPUT_DIR/%(title)s.%(ext)s"
             "$url"
         )
