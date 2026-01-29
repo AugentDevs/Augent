@@ -479,36 +479,13 @@ configure_mcp() {
         python_abs="$(readlink -f "$python_abs" 2>/dev/null || readlink "$python_abs" 2>/dev/null || echo "$python_abs")"
     fi
 
-    # Claude Code global config (~/.claude/settings.json)
-    local claude_dir="$HOME/.claude"
-    local settings_file="$claude_dir/settings.json"
-    ensure_dir "$claude_dir"
-
-    if [[ -f "$settings_file" ]]; then
-        if command_exists jq; then
-            # Always update augent entry to ensure correct path
-            local tmp_file="$claude_dir/settings.tmp.json"
-            jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$settings_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$settings_file"
-            log_success "Claude Code MCP"
-        elif grep -q '"augent"' "$settings_file" 2>/dev/null; then
-            log_success "Claude Code MCP (already configured)"
-        else
-            log_warn "Add augent to $settings_file manually (jq not installed)"
-            log_info "  \"augent\": {\"command\": \"$python_abs\", \"args\": [\"-m\", \"augent.mcp\"]}"
-        fi
-    else
-        # Create new settings file
-        cat > "$settings_file" << EOF
-{
-  "mcpServers": {
-    "augent": {
-      "command": "$python_abs",
-      "args": ["-m", "augent.mcp"]
-    }
-  }
-}
-EOF
+    # Claude Code MCP (uses claude mcp add for correct config location)
+    if command_exists claude; then
+        claude mcp add augent -s user -- "$python_abs" -m augent.mcp >/dev/null 2>&1
         log_success "Claude Code MCP"
+    else
+        log_warn "Claude Code not found - install it, then run:"
+        log_info "  claude mcp add augent -s user -- $python_abs -m augent.mcp"
     fi
 
     # Claude Desktop config
