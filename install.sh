@@ -600,7 +600,7 @@ EOF
     echo -e "  ${DIM}augent --help${NC}              Show commands"
     echo -e "  ${DIM}augent-web${NC}                 Launch Web UI"
     echo -e "  ${DIM}augent transcribe f.mp3${NC}   Transcribe audio"
-    echo -e "  ${DIM}audio-downloader URL${NC}      Download audio from video"
+    echo -e "  ${DIM}audio-downloader \"URL\"${NC}    Download audio from video"
     echo ""
     echo -e "  ${BOLD}Claude Integration${NC}"
     echo -e "  MCP configured globally - works in any project directory"
