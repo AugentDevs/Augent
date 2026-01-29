@@ -98,6 +98,22 @@ download() {
     if "${cmd[@]}"; then
         echo -e "\n${GREEN}Done!${NC}"
         return 0
+    elif [ "$USE_ARIA" = true ]; then
+        echo -e "\n${YELLOW}Retrying without aria2c...${NC}\n"
+        local fallback_cmd=(yt-dlp
+            -f "bestaudio"
+            --concurrent-fragments 4
+            --no-playlist
+            -o "$OUTPUT_DIR/%(title)s.%(ext)s"
+            "$url"
+        )
+        if "${fallback_cmd[@]}"; then
+            echo -e "\n${GREEN}Done!${NC}"
+            return 0
+        else
+            echo -e "\n${RED}Failed${NC}"
+            return 1
+        fi
     else
         echo -e "\n${RED}Failed${NC}"
         return 1

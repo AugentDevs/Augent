@@ -394,19 +394,25 @@ install_audio_downloader() {
         fi
     fi
 
-    # Install yt-dlp and aria2 for speed optimization
+    # Install yt-dlp (pinned version for aria2c compatibility) and aria2
+    local ytdlp_version="2025.03.31"
     case "$PKG_MGR" in
         brew)
-            command_exists yt-dlp || brew install yt-dlp >/dev/null 2>&1
+            if ! command_exists yt-dlp; then
+                $PYTHON_CMD -m pip install $pip_flags "yt-dlp==$ytdlp_version" --quiet 2>/dev/null || \
+                brew install yt-dlp >/dev/null 2>&1
+            fi
             command_exists aria2c || brew install aria2 >/dev/null 2>&1
             ;;
         apt)
-            command_exists yt-dlp || (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || \
-            env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet $pip_flags 2>/dev/null || true
+            if ! command_exists yt-dlp; then
+                env $pip_env $PYTHON_CMD -m pip install "yt-dlp==$ytdlp_version" --quiet $pip_flags 2>/dev/null || \
+                (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || true
+            fi
             command_exists aria2c || sudo apt-get install -y aria2 >/dev/null 2>&1
             ;;
         *)
-            command_exists yt-dlp || env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet $pip_flags 2>/dev/null || true
+            command_exists yt-dlp || env $pip_env $PYTHON_CMD -m pip install "yt-dlp==$ytdlp_version" --quiet $pip_flags 2>/dev/null || true
             ;;
     esac
 
