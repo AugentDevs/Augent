@@ -396,11 +396,16 @@ install_audio_downloader() {
 
     # Install yt-dlp (pinned to known working version) and aria2
     local YTDLP_PIN="2025.03.31"
+
+    # Remove any brew-installed yt-dlp so the pinned pip version takes priority
+    if command_exists brew && brew list yt-dlp &>/dev/null; then
+        brew uninstall yt-dlp >/dev/null 2>&1 || true
+    fi
+
     case "$PKG_MGR" in
         brew)
-            # Force pip-installed pinned version (overrides any brew version)
             $PYTHON_CMD -m pip install $pip_flags "yt-dlp==$YTDLP_PIN" --quiet 2>/dev/null || \
-            brew install yt-dlp >/dev/null 2>&1
+            $PYTHON_CMD -m pip install $pip_flags yt-dlp --quiet 2>/dev/null || true
             command_exists aria2c || brew install aria2 >/dev/null 2>&1
             ;;
         apt)
