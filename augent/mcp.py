@@ -162,7 +162,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Larger = more accurate but slower. Default: tiny"
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             },
                             "include_full_text": {
                                 "type": "boolean",
@@ -185,7 +185,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny"
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["audio_path"]
@@ -216,7 +216,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny"
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["audio_path", "keyword1", "keyword2"]
@@ -241,7 +241,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny"
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             },
                             "workers": {
                                 "type": "integer",
