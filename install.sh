@@ -399,8 +399,10 @@ install_audio_downloader() {
 
     # Remove any brew-installed yt-dlp so the pinned pip version takes priority
     if command_exists brew && brew list yt-dlp &>/dev/null; then
-        brew uninstall yt-dlp >/dev/null 2>&1 || true
+        brew uninstall --ignore-dependencies yt-dlp >/dev/null 2>&1 || true
     fi
+    # Clean up broken brew shim if leftover
+    rm -f /opt/homebrew/bin/yt-dlp /usr/local/bin/yt-dlp 2>/dev/null || true
 
     case "$PKG_MGR" in
         brew)
