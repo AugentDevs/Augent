@@ -485,20 +485,16 @@ configure_mcp() {
     ensure_dir "$claude_dir"
 
     if [[ -f "$settings_file" ]]; then
-        # Check if augent already configured
-        if grep -q '"augent"' "$settings_file" 2>/dev/null; then
+        if command_exists jq; then
+            # Always update augent entry to ensure correct path
+            local tmp_file="$claude_dir/settings.tmp.json"
+            jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$settings_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$settings_file"
+            log_success "Claude Code MCP"
+        elif grep -q '"augent"' "$settings_file" 2>/dev/null; then
             log_success "Claude Code MCP (already configured)"
         else
-            # File exists but no augent - need to merge
-            # Try jq first, fall back to manual instruction
-            if command_exists jq; then
-                local tmp_file="$claude_dir/settings.tmp.json"
-                jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$settings_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$settings_file"
-                log_success "Claude Code MCP (added to existing config)"
-            else
-                log_warn "Add augent to $settings_file manually (jq not installed)"
-                log_info "  \"augent\": {\"command\": \"$python_abs\", \"args\": [\"-m\", \"augent.mcp\"]}"
-            fi
+            log_warn "Add augent to $settings_file manually (jq not installed)"
+            log_info "  \"augent\": {\"command\": \"$python_abs\", \"args\": [\"-m\", \"augent.mcp\"]}"
         fi
     else
         # Create new settings file
