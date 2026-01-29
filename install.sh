@@ -331,22 +331,27 @@ install_augent() {
     local script_dir=""
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
-    # Set pip environment for multi-user fix
+    # Homebrew Python: install globally (to /opt/homebrew/bin)
+    # Other systems: install with --user flag
+    local user_flag=""
     local pip_env=""
-    if [[ -n "$USER_PYTHON_BASE" ]]; then
-        pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+    if [[ "$PKG_MGR" != "brew" ]]; then
+        user_flag="--user"
+        if [[ -n "$USER_PYTHON_BASE" ]]; then
+            pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+        fi
     fi
 
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
         # Local install (development mode)
-        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet --user 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet $user_flag 2>/dev/null || \
         env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     else
         # Uninstall old version and clear pip cache
         $PYTHON_CMD -m pip uninstall augent -y --quiet 2>/dev/null || true
         $PYTHON_CMD -m pip cache purge 2>/dev/null || true
         # Install from GitHub (always latest)
-        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir --user 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir $user_flag 2>/dev/null || \
         env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir 2>/dev/null || true
     fi
 
@@ -362,10 +367,14 @@ install_audio_downloader() {
     local user_bin="$HOME/.local/bin"
     ensure_dir "$user_bin"
 
-    # Set pip environment for multi-user fix
+    # Homebrew Python: no --user flag needed
+    local user_flag=""
     local pip_env=""
-    if [[ -n "$USER_PYTHON_BASE" ]]; then
-        pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+    if [[ "$PKG_MGR" != "brew" ]]; then
+        user_flag="--user"
+        if [[ -n "$USER_PYTHON_BASE" ]]; then
+            pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
+        fi
     fi
 
     # Install yt-dlp and aria2 for speed optimization
@@ -376,11 +385,11 @@ install_audio_downloader() {
             ;;
         apt)
             command_exists yt-dlp || (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || \
-            env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet $user_flag 2>/dev/null || true
             command_exists aria2c || sudo apt-get install -y aria2 >/dev/null 2>&1
             ;;
         *)
-            command_exists yt-dlp || env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet --user 2>/dev/null || true
+            command_exists yt-dlp || env $pip_env $PYTHON_CMD -m pip install yt-dlp --quiet $user_flag 2>/dev/null || true
             ;;
     esac
 
