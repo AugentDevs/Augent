@@ -216,12 +216,13 @@ check_homebrew_permissions() {
 }
 
 install_python() {
-    for cmd in python3 python; do
+    # Prefer python3.12 - has best wheel support; avoid 3.14 (missing prebuilt wheels)
+    for cmd in python3.12 python3.13 python3.11 python3.10 python3 python; do
         if command_exists "$cmd"; then
             local ver
             ver=$($cmd -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "0.0")
-            if version_gte "$ver" "$AUGENT_MIN_PYTHON"; then
-                PYTHON_CMD=$cmd
+            if version_gte "$ver" "$AUGENT_MIN_PYTHON" && ! version_gte "$ver" "3.14"; then
+                PYTHON_CMD=$(command -v "$cmd")
                 log_success "Python $ver"
                 return 0
             fi
@@ -233,11 +234,10 @@ install_python() {
     case "$PKG_MGR" in
         brew)
             brew install python@3.12 >/dev/null 2>&1
-            # Use absolute path - bare "python3" may resolve to system Python
             if [[ "$ARCH" == "arm64" ]]; then
-                PYTHON_CMD="/opt/homebrew/bin/python3"
+                PYTHON_CMD="/opt/homebrew/bin/python3.12"
             else
-                PYTHON_CMD="/usr/local/bin/python3"
+                PYTHON_CMD="/usr/local/bin/python3.12"
             fi
             ;;
         apt)
