@@ -188,6 +188,33 @@ install_homebrew() {
     log_success "Homebrew"
 }
 
+check_homebrew_permissions() {
+    # Only check on macOS with Homebrew
+    [[ "$OS" != "macos" ]] && return 0
+
+    local brew_prefix
+    if [[ "$ARCH" == "arm64" ]]; then
+        brew_prefix="/opt/homebrew"
+    else
+        brew_prefix="/usr/local"
+    fi
+
+    # If brew prefix exists but isn't writable, show helpful error
+    if [[ -d "$brew_prefix" ]] && [[ ! -w "$brew_prefix" ]]; then
+        echo ""
+        log_error "Homebrew permission denied"
+        echo ""
+        echo -e "  ${DIM}$brew_prefix is owned by another user.${NC}"
+        echo ""
+        echo -e "  ${BOLD}Fix with:${NC}"
+        echo -e "    sudo chown -R \$(whoami) $brew_prefix"
+        echo ""
+        echo -e "  Then re-run the installer."
+        echo ""
+        exit 1
+    fi
+}
+
 install_python() {
     for cmd in python3 python; do
         if command_exists "$cmd"; then
@@ -498,6 +525,7 @@ EOF
     # macOS: Ensure Homebrew first
     if [[ "$OS" == "macos" ]]; then
         install_homebrew
+        check_homebrew_permissions
     fi
 
     # Install dependencies
