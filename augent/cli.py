@@ -367,7 +367,7 @@ QUICK START
 
 COMMANDS
 --------
-  audio-downloader <URL>                Download audio from video (speed-optimized)
+  audio-downloader "URL"                Download audio from video (speed-optimized)
   augent search <audio> "<keywords>"    Search audio for keywords
   augent transcribe <audio>             Full transcription
   augent proximity <audio> "A" "B"      Find keyword A near keyword B
@@ -377,8 +377,8 @@ COMMANDS
 
 AUDIO DOWNLOADER (Built by Augent)
 ----------------------------------
-  audio-downloader <URL>                Download audio from any video URL
-  audio-downloader -o ~/Music <URL>     Download to custom folder
+  audio-downloader "URL"                Download audio from any video URL
+  audio-downloader -o ~/Music "URL"     Download to custom folder
   audio-downloader url1 url2 url3       Download multiple URLs
   audio-downloader --help               Show audio-downloader help
 
@@ -477,7 +477,7 @@ COMMANDS
 
 OTHER TOOLS
   augent-web                         Launch Web UI (http://127.0.0.1:9797)
-  audio-downloader <URL>             Download audio from video URLs
+  audio-downloader "URL"             Download audio from video URLs
 
 EXAMPLES
   audio-downloader "https://youtube.com/watch?v=xxx"

@@ -481,6 +481,7 @@ configure_mcp() {
 
     # Claude Code MCP (uses claude mcp add for correct config location)
     if command_exists claude; then
+        claude mcp remove augent -s user >/dev/null 2>&1 || true
         claude mcp add augent -s user -- "$python_abs" -m augent.mcp >/dev/null 2>&1
         log_success "Claude Code MCP"
     else
@@ -529,7 +530,7 @@ EOF
 # ============================================================================
 main() {
     echo ""
-    echo -e "${GREEN}"
+    echo ""
     cat << 'EOF'
     _                          _
    / \  _   _  __ _  ___ _ __ | |_
