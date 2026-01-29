@@ -10,7 +10,7 @@ set -eo pipefail
 # ============================================================================
 AUGENT_VERSION="${AUGENT_VERSION:-latest}"
 AUGENT_REPO="AugentDevs/Augent"
-AUGENT_MIN_PYTHON="3.9"
+AUGENT_MIN_PYTHON="3.10"
 INSTALL_METHOD="${AUGENT_INSTALL_METHOD:-pip}"
 NO_ONBOARD="${AUGENT_NO_ONBOARD:-false}"
 VERBOSE="${AUGENT_VERBOSE:-false}"
@@ -397,21 +397,49 @@ verify_installation() {
 # Configuration
 # ============================================================================
 configure_mcp() {
-    # Claude Code config
-    local mcp_json=".mcp.json"
-    if [[ ! -f "$mcp_json" ]]; then
-        cat > "$mcp_json" << EOF
+    # Get absolute path to Python (fixes multi-user and PATH issues)
+    local python_abs=""
+    python_abs="$(command -v $PYTHON_CMD 2>/dev/null)" || python_abs="$PYTHON_CMD"
+
+    # Resolve symlinks to get true path
+    if [[ -L "$python_abs" ]]; then
+        python_abs="$(readlink -f "$python_abs" 2>/dev/null || readlink "$python_abs" 2>/dev/null || echo "$python_abs")"
+    fi
+
+    # Claude Code global config (~/.claude/settings.json)
+    local claude_dir="$HOME/.claude"
+    local settings_file="$claude_dir/settings.json"
+    ensure_dir "$claude_dir"
+
+    if [[ -f "$settings_file" ]]; then
+        # Check if augent already configured
+        if grep -q '"augent"' "$settings_file" 2>/dev/null; then
+            log_success "Claude Code MCP (already configured)"
+        else
+            # File exists but no augent - need to merge
+            # Try jq first, fall back to manual instruction
+            if command_exists jq; then
+                local tmp_file="$claude_dir/settings.tmp.json"
+                jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$settings_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$settings_file"
+                log_success "Claude Code MCP (added to existing config)"
+            else
+                log_warn "Add augent to $settings_file manually (jq not installed)"
+                log_info "  \"augent\": {\"command\": \"$python_abs\", \"args\": [\"-m\", \"augent.mcp\"]}"
+            fi
+        fi
+    else
+        # Create new settings file
+        cat > "$settings_file" << EOF
 {
   "mcpServers": {
     "augent": {
-      "command": "$MCP_CMD"
+      "command": "$python_abs",
+      "args": ["-m", "augent.mcp"]
     }
   }
 }
 EOF
-        log_success "Created .mcp.json"
-    elif ! grep -q "augent" "$mcp_json" 2>/dev/null; then
-        log_info "Add augent to your existing .mcp.json"
+        log_success "Claude Code MCP"
     fi
 
     # Claude Desktop config
@@ -421,20 +449,31 @@ EOF
         linux|wsl) config_dir="$HOME/.config/Claude" ;;
     esac
 
-    if [[ -n "$config_dir" ]] && [[ -d "$config_dir" ]]; then
+    if [[ -n "$config_dir" ]]; then
+        ensure_dir "$config_dir"
         local config_file="$config_dir/claude_desktop_config.json"
-        if [[ ! -f "$config_file" ]]; then
+        if [[ -f "$config_file" ]]; then
+            if grep -q '"augent"' "$config_file" 2>/dev/null; then
+                log_success "Claude Desktop MCP (already configured)"
+            elif command_exists jq; then
+                local tmp_file="$config_dir/claude_desktop_config.tmp.json"
+                jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$config_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$config_file"
+                log_success "Claude Desktop MCP (added to existing config)"
+            else
+                log_warn "Add augent to Claude Desktop config manually"
+            fi
+        else
             cat > "$config_file" << EOF
 {
   "mcpServers": {
     "augent": {
-      "command": "$PYTHON_CMD",
+      "command": "$python_abs",
       "args": ["-m", "augent.mcp"]
     }
   }
 }
 EOF
-            log_success "Configured Claude Desktop"
+            log_success "Claude Desktop MCP"
         fi
     fi
 }
@@ -487,16 +526,23 @@ EOF
     echo -e "  ✓ Installation Complete"
     echo -e "════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${BOLD}augent --help${NC}              Show commands"
-    echo -e "  ${BOLD}augent-web${NC}                 Launch Web UI"
-    echo -e "  ${BOLD}augent transcribe f.mp3${NC}   Transcribe audio"
-    echo -e "  ${BOLD}audio-downloader URL${NC}      Download audio from video"
+    echo -e "  ${BOLD}CLI Commands${NC}"
+    echo -e "  ${DIM}augent --help${NC}              Show commands"
+    echo -e "  ${DIM}augent-web${NC}                 Launch Web UI"
+    echo -e "  ${DIM}augent transcribe f.mp3${NC}   Transcribe audio"
+    echo -e "  ${DIM}audio-downloader URL${NC}      Download audio from video"
+    echo ""
+    echo -e "  ${BOLD}Claude Integration${NC}"
+    echo -e "  MCP configured globally - works in any project directory"
     echo ""
     if [[ "$PATH_MODIFIED" == "true" ]]; then
-        echo -e "${YELLOW}Next step: Close this terminal and open a new one.${NC}"
-        echo -e "${DIM}Then the commands above will work.${NC}"
-        echo ""
+        echo -e "${YELLOW}Next steps:${NC}"
+        echo -e "  1. Close this terminal and open a new one"
+        echo -e "  2. Restart Claude Code (or Claude Desktop) to connect MCP"
+    else
+        echo -e "${YELLOW}Next step:${NC} Restart Claude Code (or Claude Desktop) to connect MCP"
     fi
+    echo ""
 }
 
 main "$@"
