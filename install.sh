@@ -216,7 +216,24 @@ check_homebrew_permissions() {
 }
 
 install_python() {
-    # Prefer python3.12 - has best wheel support; avoid 3.14 (missing prebuilt wheels)
+    # Prefer brew Python over system Python on macOS (system Python can't pip install reliably)
+    if [[ "$PKG_MGR" == "brew" ]]; then
+        local bp
+        bp="$(brew --prefix 2>/dev/null)" || bp="/opt/homebrew"
+        for cmd in "$bp/bin/python3.12" "$bp/bin/python3.13" "$bp/bin/python3.11" "$bp/bin/python3"; do
+            if [[ -x "$cmd" ]]; then
+                local ver
+                ver=$($cmd -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "0.0")
+                if version_gte "$ver" "$AUGENT_MIN_PYTHON" && ! version_gte "$ver" "3.14"; then
+                    PYTHON_CMD="$cmd"
+                    log_success "Python $ver"
+                    return 0
+                fi
+            fi
+        done
+    fi
+
+    # Fallback: search PATH (non-brew systems or brew Python not found)
     for cmd in python3.12 python3.13 python3.11 python3.10 python3 python; do
         if command_exists "$cmd"; then
             local ver
