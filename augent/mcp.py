@@ -74,6 +74,8 @@ if _MISSING_DEPS:
         return _dependency_error()
     def clear_cache():
         return 0
+    def list_cached():
+        return []
 else:
     from .core import (
         search_audio,
@@ -81,7 +83,8 @@ else:
         transcribe_audio,
         search_audio_proximity,
         get_cache_stats,
-        clear_cache
+        clear_cache,
+        list_cached
     )
 
 
@@ -288,6 +291,14 @@ def handle_tools_list(id: Any) -> None:
                         "type": "object",
                         "properties": {}
                     }
+                },
+                {
+                    "name": "list_cached",
+                    "description": "List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
                 }
             ]
         }
@@ -316,6 +327,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_cache_stats(arguments)
         elif tool_name == "clear_cache":
             result = handle_clear_cache(arguments)
+        elif tool_name == "list_cached":
+            result = handle_list_cached(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -597,6 +610,16 @@ def handle_clear_cache(arguments: dict) -> dict:
     return {
         "cleared": count,
         "message": f"Cleared {count} cached transcriptions"
+    }
+
+
+def handle_list_cached(arguments: dict) -> dict:
+    """Handle list_cached tool call."""
+    entries = list_cached()
+    return {
+        "count": len(entries),
+        "transcriptions": entries,
+        "message": f"Found {len(entries)} cached transcription(s)"
     }
 
 

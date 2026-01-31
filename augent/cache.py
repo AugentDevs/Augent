@@ -8,10 +8,12 @@ the same audio files, and in-memory model caching to avoid reloading.
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import threading
+from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, asdict
 import time
 
@@ -28,6 +30,7 @@ class CachedTranscription:
     segments: list
     created_at: float
     file_path: str  # Original file path (for reference)
+    title: str = ""  # Derived from filename, for UX display
 
 
 class TranscriptionCache:
@@ -45,6 +48,8 @@ class TranscriptionCache:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.db_path = self.cache_dir / "transcriptions.db"
+        self.md_dir = self.cache_dir / "transcriptions"
+        self.md_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._init_db()
 
@@ -69,6 +74,20 @@ class TranscriptionCache:
                 CREATE INDEX IF NOT EXISTS idx_audio_hash
                 ON transcriptions(audio_hash)
             """)
+
+            # Migration: add title and md_path columns for existing DBs
+            for column, col_type in [("title", "TEXT"), ("md_path", "TEXT")]:
+                try:
+                    conn.execute(
+                        f"ALTER TABLE transcriptions ADD COLUMN {column} {col_type} DEFAULT ''"
+                    )
+                except sqlite3.OperationalError:
+                    pass  # Column already exists
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_title
+                ON transcriptions(title)
+            """)
             conn.commit()
 
     @staticmethod
@@ -88,6 +107,64 @@ class TranscriptionCache:
     def _cache_key(audio_hash: str, model_size: str) -> str:
         """Generate cache key from audio hash and model size."""
         return f"{audio_hash}:{model_size}"
+
+    @staticmethod
+    def _title_from_path(file_path: str) -> str:
+        """Derive a human-readable title from an audio file path."""
+        basename = os.path.basename(file_path)
+        title, _ = os.path.splitext(basename)
+        return title
+
+    @staticmethod
+    def _sanitize_filename(title: str) -> str:
+        """Sanitize a title for use as a filename."""
+        sanitized = "".join(
+            c if c.isalnum() or c in "-_ " else "_"
+            for c in title
+        ).strip()
+        sanitized = re.sub(r'[_\s]+', '_', sanitized)
+        return sanitized[:200] if sanitized else "untitled"
+
+    def _write_markdown(self, title: str, transcription: Dict[str, Any], file_path: str) -> Optional[Path]:
+        """Write a markdown transcription file. Returns the path or None on error."""
+        try:
+            sanitized = self._sanitize_filename(title)
+            md_path = self.md_dir / f"{sanitized}.md"
+
+            duration = transcription.get('duration', 0)
+            mins = int(duration // 60)
+            secs = int(duration % 60)
+
+            lines = [
+                f"# {title}",
+                "",
+                f"**Source:** `{os.path.basename(file_path)}`  ",
+                f"**Duration:** {mins}:{secs:02d}  ",
+                f"**Language:** {transcription.get('language', 'unknown')}  ",
+                "",
+                "---",
+                "",
+                "## Transcription",
+                "",
+            ]
+
+            segments = transcription.get('segments', [])
+            for seg in segments:
+                start = seg.get('start', 0)
+                m = int(start // 60)
+                s = int(start % 60)
+                text = seg.get('text', '').strip()
+                lines.append(f"**[{m}:{s:02d}]** {text}")
+                lines.append("")
+
+            if not segments:
+                lines.append(transcription.get('text', ''))
+                lines.append("")
+
+            md_path.write_text("\n".join(lines), encoding='utf-8')
+            return md_path
+        except Exception:
+            return None
 
     def get(self, file_path: str, model_size: str) -> Optional[CachedTranscription]:
         """
@@ -125,7 +202,8 @@ class TranscriptionCache:
                         words=json.loads(row['words']),
                         segments=json.loads(row['segments']),
                         created_at=row['created_at'],
-                        file_path=row['file_path']
+                        file_path=row['file_path'],
+                        title=row['title'] if 'title' in row.keys() else ''
                     )
         except Exception:
             # Cache miss on any error
@@ -143,14 +221,18 @@ class TranscriptionCache:
         try:
             audio_hash = self.hash_audio_file(file_path)
             cache_key = self._cache_key(audio_hash, model_size)
+            title = self._title_from_path(file_path)
+
+            # Write markdown file
+            md_path = self._write_markdown(title, transcription, file_path)
 
             with self._lock:
                 with sqlite3.connect(self.db_path) as conn:
                     conn.execute("""
                         INSERT OR REPLACE INTO transcriptions
                         (cache_key, audio_hash, model_size, language, duration,
-                         text, words, segments, created_at, file_path)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         text, words, segments, created_at, file_path, title, md_path)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
                         cache_key,
                         audio_hash,
@@ -161,7 +243,9 @@ class TranscriptionCache:
                         json.dumps(transcription.get('words', [])),
                         json.dumps(transcription.get('segments', [])),
                         time.time(),
-                        file_path
+                        file_path,
+                        title,
+                        str(md_path) if md_path else ''
                     ))
                     conn.commit()
         except Exception:
@@ -170,7 +254,7 @@ class TranscriptionCache:
 
     def clear(self) -> int:
         """
-        Clear all cached transcriptions.
+        Clear all cached transcriptions and markdown files.
 
         Returns:
             Number of entries cleared
@@ -179,12 +263,28 @@ class TranscriptionCache:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.execute("SELECT COUNT(*) FROM transcriptions")
                 count = cursor.fetchone()[0]
+
+                # Collect md_path values before deleting rows
+                md_cursor = conn.execute(
+                    "SELECT md_path FROM transcriptions WHERE md_path IS NOT NULL AND md_path != ''"
+                )
+                md_paths = [row[0] for row in md_cursor.fetchall()]
+
                 conn.execute("DELETE FROM transcriptions")
                 conn.commit()
-                return count
+
+            # Delete markdown files outside the DB transaction
+            for md_path in md_paths:
+                try:
+                    if os.path.exists(md_path):
+                        os.remove(md_path)
+                except OSError:
+                    pass
+
+            return count
 
     def stats(self) -> Dict[str, Any]:
-        """Get cache statistics."""
+        """Get cache statistics including title listing."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM transcriptions")
             count = cursor.fetchone()[0]
@@ -194,15 +294,107 @@ class TranscriptionCache:
             )
             total_duration = cursor.fetchone()[0] or 0
 
+            # Get titles
+            cursor = conn.execute(
+                "SELECT title, model_size, duration FROM transcriptions ORDER BY created_at DESC"
+            )
+            titles = []
+            for row in cursor.fetchall():
+                titles.append({
+                    "title": row[0] or "(untitled)",
+                    "model": row[1],
+                    "duration": row[2] or 0
+                })
+
             # Get DB file size
             db_size = self.db_path.stat().st_size if self.db_path.exists() else 0
+
+            # Get md dir size
+            md_size = sum(
+                f.stat().st_size for f in self.md_dir.glob("*.md")
+            ) if self.md_dir.exists() else 0
 
             return {
                 "entries": count,
                 "total_audio_duration_hours": round(total_duration / 3600, 2),
-                "cache_size_mb": round(db_size / (1024 * 1024), 2),
-                "cache_path": str(self.db_path)
+                "cache_size_mb": round((db_size + md_size) / (1024 * 1024), 2),
+                "cache_path": str(self.db_path),
+                "md_dir": str(self.md_dir),
+                "titles": titles
             }
+
+
+    def get_by_title(self, title: str) -> List[CachedTranscription]:
+        """
+        Look up cached transcriptions by title (substring match, case-insensitive).
+
+        Args:
+            title: Title to search for (supports partial match)
+
+        Returns:
+            List of CachedTranscription objects matching the title
+        """
+        results = []
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.execute(
+                        "SELECT * FROM transcriptions WHERE title LIKE ?",
+                        (f"%{title}%",)
+                    )
+                    for row in cursor.fetchall():
+                        results.append(CachedTranscription(
+                            audio_hash=row['audio_hash'],
+                            model_size=row['model_size'],
+                            language=row['language'],
+                            duration=row['duration'],
+                            text=row['text'],
+                            words=json.loads(row['words']),
+                            segments=json.loads(row['segments']),
+                            created_at=row['created_at'],
+                            file_path=row['file_path'],
+                            title=row['title'] if 'title' in row.keys() else ''
+                        ))
+        except Exception:
+            pass
+        return results
+
+    def list_all(self) -> List[Dict[str, Any]]:
+        """
+        List all cached transcriptions with metadata.
+
+        Returns:
+            List of dicts with title, duration, date, model_size, md_path, file_path
+        """
+        entries = []
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute(
+                    "SELECT title, duration, created_at, model_size, md_path, file_path "
+                    "FROM transcriptions ORDER BY created_at DESC"
+                )
+                for row in cursor.fetchall():
+                    created = row['created_at']
+                    date_str = datetime.fromtimestamp(created).strftime('%Y-%m-%d %H:%M') if created else ''
+
+                    duration = row['duration'] or 0
+                    mins = int(duration // 60)
+                    secs = int(duration % 60)
+
+                    entries.append({
+                        "title": row['title'] or os.path.basename(row['file_path'] or ''),
+                        "duration": duration,
+                        "duration_formatted": f"{mins}:{secs:02d}",
+                        "date": date_str,
+                        "model_size": row['model_size'],
+                        "md_path": row['md_path'] or '',
+                        "file_path": row['file_path'] or ''
+                    })
+        except Exception:
+            pass
+        return entries
 
 
 class ModelCache:

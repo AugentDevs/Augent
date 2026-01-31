@@ -365,6 +365,18 @@ def clear_cache() -> int:
     return cache.clear()
 
 
+def list_cached() -> list:
+    """List all cached transcriptions with metadata."""
+    cache = get_transcription_cache()
+    return cache.list_all()
+
+
+def get_cached_by_title(title: str) -> list:
+    """Look up cached transcriptions by title."""
+    cache = get_transcription_cache()
+    return cache.get_by_title(title)
+
+
 def clear_model_cache() -> None:
     """Clear loaded models from memory."""
     model_cache = get_model_cache()

@@ -37,6 +37,8 @@ from .core import (
     get_cache_stats,
     clear_cache,
     clear_model_cache,
+    list_cached,
+    get_cached_by_title,
     TranscriptionProgress,
 )
 
@@ -79,6 +81,8 @@ __all__ = [
     "get_cache_stats",
     "clear_cache",
     "clear_model_cache",
+    "list_cached",
+    "get_cached_by_title",
     "get_transcription_cache",
     "get_model_cache",
     # Search

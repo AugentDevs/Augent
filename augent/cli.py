@@ -28,6 +28,7 @@ from .core import (
     get_cache_stats,
     clear_cache,
     clear_model_cache,
+    list_cached,
     TranscriptionProgress
 )
 from .search import find_keyword_matches
@@ -337,6 +338,18 @@ def cmd_cache(args: argparse.Namespace):
     if args.cache_action == "stats":
         stats = get_cache_stats()
         print(json.dumps(stats, indent=2))
+    elif args.cache_action == "list":
+        entries = list_cached()
+        if not entries:
+            print("No cached transcriptions.")
+        else:
+            print(f"Cached transcriptions ({len(entries)}):\n")
+            for e in entries:
+                print(f"  {e['title']}")
+                print(f"    Duration: {e['duration_formatted']} | Model: {e['model_size']} | Date: {e['date']}")
+                if e.get('md_path'):
+                    print(f"    Markdown: {e['md_path']}")
+                print()
     elif args.cache_action == "clear":
         count = clear_cache()
         print(f"Cleared {count} cached transcriptions")
@@ -372,6 +385,7 @@ COMMANDS
   augent transcribe <audio>             Full transcription
   augent proximity <audio> "A" "B"      Find keyword A near keyword B
   augent cache stats                    View cache statistics
+  augent cache list                     List cached transcriptions by title
   augent cache clear                    Clear transcription cache
   augent help                           Show this help
 
@@ -472,6 +486,7 @@ COMMANDS
   augent transcribe <file>           Full transcription
   augent proximity <file> "A" "B"    Find keyword A near keyword B
   augent cache stats                 View cache statistics
+  augent cache list                  List cached transcriptions
   augent cache clear                 Clear cache
   augent help                        Show detailed help
 
@@ -645,7 +660,7 @@ def main():
     cache_parser = subparsers.add_parser("cache", help="Manage transcription cache")
     cache_parser.add_argument(
         "cache_action",
-        choices=["stats", "clear", "clear-models"],
+        choices=["stats", "list", "clear", "clear-models"],
         help="Cache action"
     )
 

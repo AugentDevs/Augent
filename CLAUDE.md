@@ -92,6 +92,10 @@ View cache statistics - no parameters needed.
 ### clear_cache
 Clear transcription cache - no parameters needed.
 
+### list_cached
+List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
+No parameters needed.
+
 ## Model Sizes
 
 **`tiny` is the default** - it's the fastest and already incredibly accurate. Use it for nearly everything.
@@ -120,6 +124,9 @@ Clear transcription cache - no parameters needed.
 - Same file, different model = new transcription
 - Modified file = new transcription
 - Cache persists at `~/.augent/cache/transcriptions.db`
+- Each cached transcription also writes a `.md` file to `~/.augent/cache/transcriptions/`
+- Titles are derived from filenames (yt-dlp names files by video title)
+- Use `list_cached` tool or `augent cache list` to browse cached transcriptions by title
 
 ## CLI Commands (via Bash)
 
@@ -145,6 +152,7 @@ augent search audio.mp3 "keyword" --format csv --output results.csv
 
 # Cache management
 augent cache stats
+augent cache list
 augent cache clear
 ```
 
