@@ -44,7 +44,7 @@ No commands to memorize. No syntax to learn. Just ask Claude.
 2. Downloads audio only (no video, small files)
 3. Transcribes them locally
 4. Searches for supplement names, "I take", "recommend", dosages, benefits
-5. Returns a structured table ready for product research
+5. Returns a structured table for new advertising angles
 
 **12 hours of content. Zero hours of listening. One prompt.**
 
