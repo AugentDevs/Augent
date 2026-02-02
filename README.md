@@ -12,7 +12,7 @@
 
 <p align="center"><strong>Audio intelligence for Claude Code agents and agentic swarms</strong><br>Built by <a href="https://augent.app">Augent</a></p>
 
-An MCP-powered plugin that gives Claude Code the ability to transcribe, search, and analyze audio files locally. Perfect for agentic automation loops like [Ralph-Wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) and [Gas Town](https://github.com/steveyegge/gastown).
+An MCP-powered plugin that gives Claude Code the ability to transcribe, search, and analyze audio files locally.
 
 ---
 
@@ -47,6 +47,8 @@ curl -fsSL https://augent.app/install.sh | bash
 Works on macOS and Linux. Installs everything automatically.
 
 **Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
+
+**[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
 
 ---
 
@@ -97,6 +99,7 @@ Once configured, Claude has access to:
 | `search_proximity` | Find where keywords appear near each other |
 | `batch_search` | Search multiple files in parallel (for swarms) |
 | `list_audio_files` | Discover audio files in a directory |
+| `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |
 
@@ -105,8 +108,8 @@ Once configured, Claude has access to:
 Ask Claude: *"Download this YouTube tutorial and find where they talk about multiplayer"*
 
 Claude will:
-1. `download_audio` → Downloads audio from the URL
-2. `search_audio` → Finds "multiplayer" mentions with timestamps
+1. `download_audio` -> Downloads audio from the URL
+2. `search_audio` -> Finds "multiplayer" mentions with timestamps
 3. Returns results with exact timestamps and context
 
 ---
@@ -151,132 +154,10 @@ Open: **http://127.0.0.1:9797**
 | `python3 -m augent.web --port 3000` | Custom port |
 | `python3 -m augent.web --share` | Create public link |
 
+![Augent Web UI - Upload](./images/webui-1.png)
+![Augent Web UI - Results](./images/webui-2.png)
+
 ---
-
-## Why Augent?
-
-Claude Code agents can now:
-- **Learn from video tutorials** without watching - search for specific techniques instantly
-- **Find exact instructions** using proximity search (e.g., "install" near "dependencies")
-- **Batch process** entire tutorial libraries in parallel
-- **Extract audio clips** around key moments
-- **Cache everything** - no re-transcription needed
-
-Built on [faster-whisper](https://github.com/guillaumekln/faster-whisper) for 2-4x faster transcription than original Whisper.
-
-## Agentic Use Cases
-
-### Learn Any Skill from Tutorials
-
-Download tutorials, let Claude find what you need:
-
-```
-1. Download 10 Roblox game dev tutorials
-2. Ask Claude: "How do I add multiplayer?"
-3. Claude searches all 10, finds the exact timestamps
-4. Claude reads the instructions and executes them
-```
-
-### Batch Tutorial Processing
-
-Process entire course libraries at once:
-
-```bash
-# Download a playlist of tutorials
-audio-downloader "url1" "url2" "url3"
-
-# Search all for specific techniques
-augent search "tutorials/*.webm" "authentication,API,database" --workers 4
-```
-
-### Multi-Agent Learning Workflows
-
-Assign tutorial analysis to worker agents:
-- **Agent A**: Download and transcribe tutorial library
-- **Agent B**: Search for specific techniques, extract instructions
-- **Agent C**: Execute the found instructions in your codebase
-
-### Course Summarization
-
-Turn 10-hour courses into searchable knowledge:
-
-```bash
-# Transcribe entire course
-augent transcribe course.mp3 --format json --output course.json
-
-# Search for any topic instantly
-augent search course.mp3 "error handling,debugging,testing"
-```
-
-### Research & Documentation
-
-Extract structured information from video documentation, conference talks, or technical deep-dives for reference materials.
-
-### Clawdbot Integration
-
-[Clawdbot](https://github.com/clawdbot/clawdbot) is a personal AI assistant that runs locally and connects to WhatsApp, Telegram, X, Slack, Discord, iMessage, and more. With Augent, your Clawdbot gains ears.
-
-**Multi-Source Video Research**
-
-Text Clawdbot on any messaging platform:
-
-> "Here are 5 YC founder interviews. What patterns do they share about getting first customers?"
-> [URL1] [URL2] [URL3] [URL4] [URL5]
-
-Clawdbot will:
-1. Download all 5 with `audio-downloader`
-2. Batch search "first customers" "early users" "traction" across all videos
-3. Find relevant segments with timestamps
-4. Synthesize patterns and reply:
-
-**Pattern 1: Do things that don't scale**
-Mentioned in 4 of 5 interviews
-- *"We literally delivered the first orders ourselves..."* — Interview 1 at 12:34
-- *"I was manually onboarding every single user..."* — Interview 3 at 8:22
-
-**Pattern 2: Solve your own problem**
-Mentioned in 3 of 5 interviews
-- *"I built it because I needed it for my own workflow..."* — Interview 2 at 5:11
-
-**Pattern 3: Launch before you're ready**
-Mentioned in 3 of 5 interviews
-- *"We shipped with bugs everywhere, didn't matter..."* — Interview 4 at 18:45
-
-**Why this matters:**
-- **Research from any channel** — Ask questions on WhatsApp, get video insights
-- **Multi-source search** — Query across 10 videos at once, not just one
-- **Patterns, not transcripts** — Get synthesized insights with timestamps
-- **All local** — Your queries and content never leave your machine
-
-## CLI Usage
-
-```bash
-# Basic search
-augent search tutorial.mp3 "install,setup,configure"
-
-# Better accuracy
-augent search tutorial.mp3 "keyword" --model small
-
-# Batch processing
-augent search "tutorials/*.mp3" "authentication,API" --workers 4
-
-# Export formats
-augent search audio.mp3 "keyword" --format csv --output results.csv
-augent search audio.mp3 "keyword" --format srt --output matches.srt
-
-# Extract clips around matches
-augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 5
-
-# Proximity search
-augent proximity audio.mp3 "startup" "funding" --distance 30
-
-# Full transcription
-augent transcribe audio.mp3 --format srt --output subtitles.srt
-
-# Cache management
-augent cache stats
-augent cache clear
-```
 
 ## audio-downloader
 
@@ -296,71 +177,7 @@ audio-downloader "https://youtube.com/watch?v=xxx"
 
 **Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
 
-```bash
-# Download to ~/Downloads (default)
-audio-downloader "https://youtube.com/watch?v=xxx"
-
-# Download to custom folder
-audio-downloader -o ~/Music "https://youtube.com/watch?v=xxx"
-
-# Multiple URLs at once
-audio-downloader url1 url2 url3
-
-# Show help
-audio-downloader --help
-```
-
-**Why audio-downloader?**
-- Built specifically for the Augent workflow: download → transcribe → search
-- Optimized for large files (5+ hour tutorials, full podcasts)
-- No unnecessary video data - just the audio you need
-
-## Python API
-
-```python
-from augent import search_audio, transcribe_audio, search_audio_proximity
-
-# Basic keyword search
-results = search_audio("tutorial.mp3", ["install", "setup"])
-# {"install": [{"timestamp": "2:34", "snippet": "...first install the dependencies..."}]}
-
-# Full transcription
-transcription = transcribe_audio("tutorial.mp3", model_size="small")
-
-# Proximity search
-matches = search_audio_proximity(
-    "tutorial.mp3",
-    keyword1="error",
-    keyword2="fix",
-    max_distance=30
-)
-
-# Export
-from augent import export_matches
-csv_output = export_matches(results, format="csv")
-```
-
-## Web UI
-
-![Augent Web UI - Upload](./images/webui-1.png)
-![Augent Web UI - Results](./images/webui-2.png)
-
-```bash
-# Start Web UI
-python3 -m augent.web
-
-# Open browser: http://127.0.0.1:9797
-
-# Custom port
-python3 -m augent.web --port 3000
-
-# Create public shareable link
-python3 -m augent.web --share
-```
-
-**Batch processing tip:** Open multiple browser tabs/windows to process files in parallel. Each tab operates independently.
-
-**Note:** The Web UI runs 100% locally - no cloud APIs, no Claude credits used. Transcriptions are cached, so repeat searches on the same file are instant.
+---
 
 ## Model Sizes
 
@@ -397,31 +214,6 @@ Cache key = file hash + model size, so:
 - Same file + different model = new transcription
 - Modified file = new transcription
 
-## Requirements
-
-- **Python 3.9+**
-- **FFmpeg** (for audio processing)
-- **CUDA** (optional, for GPU acceleration)
-
-## Installation Options
-
-```bash
-# Basic (CLI only)
-pip install -e .
-
-# With Web UI
-pip install -e .[web]
-
-# With clip extraction
-pip install -e .[clips]
-
-# Everything
-pip install -e .[all]
-
-# Development
-pip install -e .[dev]
-```
-
 ## Export Formats
 
 - **JSON** - Structured data, grouped by keyword
@@ -430,13 +222,31 @@ pip install -e .[dev]
 - **VTT** - WebVTT for web video
 - **Markdown** - Human-readable reports
 
+## Python API
+
+```python
+from augent import search_audio, transcribe_audio, search_audio_proximity
+
+# Basic keyword search
+results = search_audio("tutorial.mp3", ["install", "setup"])
+# {"install": [{"timestamp": "2:34", "snippet": "...first install the dependencies..."}]}
+
+# Full transcription
+transcription = transcribe_audio("tutorial.mp3", model_size="small")
+
+# Proximity search
+matches = search_audio_proximity(
+    "tutorial.mp3",
+    keyword1="error",
+    keyword2="fix",
+    max_distance=30
+)
+
+# Export
+from augent import export_matches
+csv_output = export_matches(results, format="csv")
+```
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
-## Links
-
-- [GitHub Repository](https://github.com/AugentDevs/Augent)
-- [Clawdbot](https://github.com/clawdbot/clawdbot)
-- [Ralph-Wiggum Plugin](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum)
-- [Gas Town](https://github.com/steveyegge/gastown)
