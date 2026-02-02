@@ -16,6 +16,20 @@ An MCP-powered plugin that gives Claude Code the ability to transcribe, search, 
 
 ---
 
+## Install
+
+```bash
+curl -fsSL https://augent.app/install.sh | bash
+```
+
+Works on macOS and Linux. Installs everything automatically.
+
+**Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
+
+**[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
+
+---
+
 ## Watch Nothing. Learn Everything.
 
 No commands to memorize. No syntax to learn. Just ask Claude.
@@ -35,20 +49,6 @@ No commands to memorize. No syntax to learn. Just ask Claude.
 **12 hours of content. Zero hours of listening. One prompt.**
 
 This works for any domain: coding tutorials, design workflows, business courses, technical documentation buried in video format.
-
----
-
-## Install
-
-```bash
-curl -fsSL https://augent.app/install.sh | bash
-```
-
-Works on macOS and Linux. Installs everything automatically.
-
-**Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
-
-**[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
 
 ---
 
