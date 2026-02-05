@@ -30,7 +30,7 @@ Works on macOS and Linux. Installs everything automatically.
 
 ---
 
-## Watch Nothing. Learn Everything.
+## Watch Nothing. Find Everything.
 
 No commands to memorize. No syntax to learn. Just ask Claude.
 
