@@ -185,15 +185,19 @@ Cache key = file hash + model size, so:
 - Same file + different model = new transcription
 - Modified file = new transcription
 
+---
+
 ## X/Twitter Spaces Setup (one-time)
 
-X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
+To use `augent_spaces`, X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
 
-1. Log into x.com in any browser
-2. Right-click → Inspect → **Application** → **Cookies** → `https://x.com`
+1. Log into [x.com](https://x.com) in any browser
+2. While on x.com, right-click anywhere on the page → Inspect → **Application** → **Cookies** → `https://x.com`
 3. Copy your `auth_token` and `ct0` values and paste them into Claude when prompted
 
 That's it. One-time setup.
+
+---
 
 ## Export Formats
 
@@ -202,6 +206,8 @@ That's it. One-time setup.
 - **SRT** - SubRip subtitles
 - **VTT** - WebVTT for web video
 - **Markdown** - Human-readable reports
+
+---
 
 ## Model Sizes
 
@@ -223,6 +229,8 @@ That's it. One-time setup.
 **Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
 
 `tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
+
+---
 
 ## Python API
 
@@ -248,6 +256,8 @@ matches = search_audio_proximity(
 from augent import export_matches
 csv_output = export_matches(results, format="csv")
 ```
+
+---
 
 ## License
 
