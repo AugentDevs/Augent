@@ -30,25 +30,9 @@ Works on macOS and Linux. Installs everything automatically.
 
 ---
 
-## Watch Nothing. Find Everything.
-
-No commands to memorize. No syntax to learn. Just ask Claude.
-
-**You type:**
-> "Here are some Huberman Lab episodes: [8 YouTube URLs]
->
-> Download them to a new folder on my desktop called 'Huberman Podcasts'. Find every supplement he mentions, especially when he says 'I take' or 'recommend'. Include dosages and benefits. Give me a spreadsheet for product research."
-
-**Claude does:**
-1. Creates `~/Desktop/Huberman Podcasts/`
-2. Downloads audio only (no video, small files)
-3. Transcribes them locally
-4. Searches for supplement names, "I take", "recommend", dosages, benefits
-5. Returns a structured table for new advertising angles
-
-**12 hours of content. Zero hours of listening. One prompt.**
-
-This works for any domain: coding tutorials, design workflows, business courses, technical documentation buried in video format.
+<p align="center">
+  <img src="./images/augent.gif" alt="Watch Nothing. Find Everything.">
+</p>
 
 ---
 
