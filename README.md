@@ -102,6 +102,19 @@ Once configured, Claude has access to:
 | `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |
+| `augent_spaces` | Download or live-record X/Twitter Spaces audio |
+| `augent_spaces_check` | Check download/recording status |
+| `augent_spaces_stop` | Stop a live recording |
+
+### X/Twitter Spaces Setup (one-time)
+
+X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
+
+1. Log into x.com in any browser
+2. Right-click → Inspect → **Application** → **Cookies** → `https://x.com`
+3. Copy your `auth_token` and `ct0` values and paste them into Claude when prompted
+
+That's it. One-time setup.
 
 ### Example Workflow
 

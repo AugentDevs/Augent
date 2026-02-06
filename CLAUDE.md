@@ -96,6 +96,37 @@ Clear transcription cache - no parameters needed.
 List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
 No parameters needed.
 
+### augent_spaces
+Download a Twitter/X Space. Starts in background, returns instantly.
+```
+url: "https://x.com/i/spaces/1yNxaNvaMYQKj"
+output_dir: "~/Downloads" (optional, default)
+```
+Returns a `recording_id` — use `augent_spaces_check` to check progress.
+
+### augent_spaces_check
+Check download progress.
+```
+recording_id: "abc12345"
+```
+Returns status: `downloading`, `complete`, or `error` with file details.
+
+### augent_spaces_stop
+Stop/cancel a download or live recording.
+```
+recording_id: "abc12345"
+```
+
+## X/Twitter Spaces Setup (one-time)
+
+X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
+
+1. Log into x.com in any browser
+2. Right-click → Inspect → **Application** → **Cookies** → `https://x.com`
+3. Copy your `auth_token` and `ct0` values and paste them into Claude when prompted
+
+That's it. One-time setup.
+
 ## Model Sizes
 
 **`tiny` is the default** - it's the fastest and already incredibly accurate. Use it for nearly everything.
