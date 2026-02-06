@@ -40,7 +40,7 @@ Works on macOS and Linux. Installs everything automatically.
 
 | Mode | Best For |
 |------|----------|
-| **Claude Code (MCP)** | Agentic workflows with all 12 tools — one prompt does everything |
+| **Claude Code (MCP)** | Agentic workflows with all 9 tools — one prompt does everything |
 | **CLI** | Terminal-based searches and batch processing |
 | **Web UI** | Visual interface for manual uploads and searches — runs 100% locally |
 
