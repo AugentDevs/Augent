@@ -232,33 +232,6 @@ That's it. One-time setup.
 
 ---
 
-## Python API
-
-```python
-from augent import search_audio, transcribe_audio, search_audio_proximity
-
-# Basic keyword search
-results = search_audio("tutorial.mp3", ["install", "setup"])
-# {"install": [{"timestamp": "2:34", "snippet": "...first install the dependencies..."}]}
-
-# Full transcription
-transcription = transcribe_audio("tutorial.mp3", model_size="small")
-
-# Proximity search
-matches = search_audio_proximity(
-    "tutorial.mp3",
-    keyword1="error",
-    keyword2="fix",
-    max_distance=30
-)
-
-# Export
-from augent import export_matches
-csv_output = export_matches(results, format="csv")
-```
-
----
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
