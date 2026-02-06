@@ -54,13 +54,11 @@ This works for any domain: coding tutorials, design workflows, business courses,
 
 ## Usage
 
-Augent can be used in three ways:
-
 | Mode | Best For |
 |------|----------|
-| **Claude Code (MCP)** | Automated agentic workflows - Claude transcribes and searches for you |
-| **CLI** | Quick terminal-based searches and batch processing |
-| **Web UI** | Visual interface for manual uploads and searches |
+| **Claude Code (MCP)** | Agentic workflows with all 12 tools — one prompt does everything |
+| **CLI** | Terminal-based searches and batch processing |
+| **Web UI** | Visual interface for manual uploads and searches — runs 100% locally |
 
 ---
 
@@ -102,28 +100,29 @@ Once configured, Claude has access to:
 | `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |
-| `augent_spaces` | Download or live-record X/Twitter Spaces audio |
+| `augent_spaces` | Download or live-record X/Twitter Spaces audio (auto-detects live vs ended) |
 | `augent_spaces_check` | Check download/recording status |
 | `augent_spaces_stop` | Stop a live recording |
 
-### X/Twitter Spaces Setup (one-time)
+---
 
-X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
+## audio-downloader
 
-1. Log into x.com in any browser
-2. Right-click → Inspect → **Application** → **Cookies** → `https://x.com`
-3. Copy your `auth_token` and `ct0` values and paste them into Claude when prompted
+A speed-optimized audio downloader built by Augent. Downloads audio ONLY from any video URL at lightning speed.
 
-That's it. One-time setup.
+```bash
+audio-downloader "https://youtube.com/watch?v=xxx"
+```
 
-### Example Workflow
+**Default:** Saves to `~/Downloads`. Use `-o` to change output folder.
 
-Ask Claude: *"Download this YouTube tutorial and find where they talk about multiplayer"*
+**Speed Optimizations:**
+- aria2c multi-connection downloads (16 parallel connections)
+- Concurrent fragment downloading (4 fragments)
+- No video download - audio extraction only
+- No format conversion - native audio format for maximum speed
 
-Claude will:
-1. `download_audio` -> Downloads audio from the URL
-2. `search_audio` -> Finds "multiplayer" mentions with timestamps
-3. Returns results with exact timestamps and context
+**Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
 
 ---
 
@@ -172,25 +171,37 @@ Open: **http://127.0.0.1:9797**
 
 ---
 
-## audio-downloader
+## Caching
 
-A speed-optimized audio downloader built by Augent. Downloads audio ONLY from any video URL at lightning speed.
+Transcriptions are cached to avoid re-processing:
 
 ```bash
-audio-downloader "https://youtube.com/watch?v=xxx"
+augent cache stats
+# {"entries": 42, "total_audio_duration_hours": 15.5, "cache_size_mb": 12.3}
 ```
 
-**Default:** Saves to `~/Downloads`. Use `-o` to change output folder.
+Cache key = file hash + model size, so:
+- Same file + same model = instant cache hit
+- Same file + different model = new transcription
+- Modified file = new transcription
 
-**Speed Optimizations:**
-- aria2c multi-connection downloads (16 parallel connections)
-- Concurrent fragment downloading (4 fragments)
-- No video download - audio extraction only
-- No format conversion - native audio format for maximum speed
+## X/Twitter Spaces Setup (one-time)
 
-**Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
+X/Twitter requires authentication to access Space audio. You'll need `auth_token` and `ct0` cookies from any X/Twitter account — a burner account works perfectly. The account is only used as a listener to access and record Spaces.
 
----
+1. Log into x.com in any browser
+2. Right-click → Inspect → **Application** → **Cookies** → `https://x.com`
+3. Copy your `auth_token` and `ct0` values and paste them into Claude when prompted
+
+That's it. One-time setup.
+
+## Export Formats
+
+- **JSON** - Structured data, grouped by keyword
+- **CSV** - Spreadsheet-ready
+- **SRT** - SubRip subtitles
+- **VTT** - WebVTT for web video
+- **Markdown** - Human-readable reports
 
 ## Model Sizes
 
@@ -212,28 +223,6 @@ audio-downloader "https://youtube.com/watch?v=xxx"
 **Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
 
 `tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
-
-## Caching
-
-Transcriptions are cached to avoid re-processing:
-
-```bash
-augent cache stats
-# {"entries": 42, "total_audio_duration_hours": 15.5, "cache_size_mb": 12.3}
-```
-
-Cache key = file hash + model size, so:
-- Same file + same model = instant cache hit
-- Same file + different model = new transcription
-- Modified file = new transcription
-
-## Export Formats
-
-- **JSON** - Structured data, grouped by keyword
-- **CSV** - Spreadsheet-ready
-- **SRT** - SubRip subtitles
-- **VTT** - WebVTT for web video
-- **Markdown** - Human-readable reports
 
 ## Python API
 
