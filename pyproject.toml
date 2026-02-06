@@ -51,14 +51,10 @@ web = [
 clips = [
     "pydub>=0.25.0",
 ]
-twitter = [
-    "twspace-dl>=2024.7.0",
-]
 all = [
     "gradio>=4.0.0,<5.0.0",
     "huggingface-hub>=0.20.0,<0.24.0",
     "pydub>=0.25.0",
-    "twspace-dl>=2024.7.0",
 ]
 dev = [
     "pytest>=7.0.0",
