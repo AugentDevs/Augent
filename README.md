@@ -75,7 +75,7 @@ Once configured, Claude has access to:
 
 | Tool | Description |
 |------|-------------|
-| `take_notes` | **Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop** |
+| `take_notes` | Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop |
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `search_audio` | Find keywords with timestamps and context snippets |
 | `transcribe_audio` | Full transcription with metadata |
