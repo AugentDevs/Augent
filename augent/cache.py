@@ -88,6 +88,40 @@ class TranscriptionCache:
                 CREATE INDEX IF NOT EXISTS idx_title
                 ON transcriptions(title)
             """)
+
+            # Embeddings cache table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS embeddings (
+                    cache_key TEXT PRIMARY KEY,
+                    audio_hash TEXT NOT NULL,
+                    embedding_model TEXT NOT NULL,
+                    segment_count INTEGER,
+                    embedding_dim INTEGER,
+                    embeddings BLOB,
+                    created_at REAL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_embeddings_hash
+                ON embeddings(audio_hash)
+            """)
+
+            # Speaker diarization cache table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS diarization (
+                    cache_key TEXT PRIMARY KEY,
+                    audio_hash TEXT NOT NULL,
+                    num_speakers INTEGER,
+                    speakers TEXT,
+                    turns TEXT,
+                    created_at REAL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_diarization_hash
+                ON diarization(audio_hash)
+            """)
+
             conn.commit()
 
     @staticmethod
@@ -271,6 +305,8 @@ class TranscriptionCache:
                 md_paths = [row[0] for row in md_cursor.fetchall()]
 
                 conn.execute("DELETE FROM transcriptions")
+                conn.execute("DELETE FROM embeddings")
+                conn.execute("DELETE FROM diarization")
                 conn.commit()
 
             # Delete markdown files outside the DB transaction
@@ -314,8 +350,16 @@ class TranscriptionCache:
                 f.stat().st_size for f in self.md_dir.glob("*.md")
             ) if self.md_dir.exists() else 0
 
+            cursor = conn.execute("SELECT COUNT(*) FROM embeddings")
+            embedding_count = cursor.fetchone()[0]
+
+            cursor = conn.execute("SELECT COUNT(*) FROM diarization")
+            diarization_count = cursor.fetchone()[0]
+
             return {
                 "entries": count,
+                "embedding_entries": embedding_count,
+                "diarization_entries": diarization_count,
                 "total_audio_duration_hours": round(total_duration / 3600, 2),
                 "cache_size_mb": round((db_size + md_size) / (1024 * 1024), 2),
                 "cache_path": str(self.db_path),
@@ -395,6 +439,98 @@ class TranscriptionCache:
         except Exception:
             pass
         return entries
+
+    # --- Embeddings cache methods ---
+
+    @staticmethod
+    def _embeddings_cache_key(audio_hash: str, embedding_model: str) -> str:
+        return f"{audio_hash}:{embedding_model}"
+
+    def get_embeddings(self, audio_hash: str, embedding_model: str) -> Optional[Dict[str, Any]]:
+        """Retrieve cached embeddings. Returns dict with numpy array or None."""
+        import numpy as np
+        cache_key = self._embeddings_cache_key(audio_hash, embedding_model)
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.execute(
+                        "SELECT * FROM embeddings WHERE cache_key = ?", (cache_key,)
+                    )
+                    row = cursor.fetchone()
+                    if row is None:
+                        return None
+                    return {
+                        "embeddings": np.frombuffer(
+                            row['embeddings'], dtype=np.float32
+                        ).reshape(row['segment_count'], row['embedding_dim']),
+                        "segment_count": row['segment_count'],
+                        "embedding_dim": row['embedding_dim'],
+                    }
+        except Exception:
+            return None
+
+    def set_embeddings(self, audio_hash: str, embedding_model: str,
+                       embeddings, segment_count: int, embedding_dim: int) -> None:
+        """Store embeddings in cache. embeddings should be a numpy ndarray."""
+        cache_key = self._embeddings_cache_key(audio_hash, embedding_model)
+        blob = embeddings.astype('float32').tobytes()
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO embeddings
+                        (cache_key, audio_hash, embedding_model, segment_count,
+                         embedding_dim, embeddings, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (cache_key, audio_hash, embedding_model,
+                          segment_count, embedding_dim, blob, time.time()))
+                    conn.commit()
+        except Exception:
+            pass
+
+    # --- Diarization cache methods ---
+
+    @staticmethod
+    def _diarization_cache_key(audio_hash: str, num_speakers) -> str:
+        return f"{audio_hash}:spk:{num_speakers}"
+
+    def get_diarization(self, audio_hash: str, num_speakers=None) -> Optional[Dict[str, Any]]:
+        """Retrieve cached diarization result."""
+        cache_key = self._diarization_cache_key(audio_hash, num_speakers)
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.execute(
+                        "SELECT * FROM diarization WHERE cache_key = ?", (cache_key,)
+                    )
+                    row = cursor.fetchone()
+                    if row is None:
+                        return None
+                    return {
+                        "speakers": json.loads(row['speakers']),
+                        "turns": json.loads(row['turns']),
+                    }
+        except Exception:
+            return None
+
+    def set_diarization(self, audio_hash: str, speakers: list, turns: list,
+                        num_speakers=None) -> None:
+        """Store diarization result in cache."""
+        cache_key = self._diarization_cache_key(audio_hash, num_speakers)
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO diarization
+                        (cache_key, audio_hash, num_speakers, speakers, turns, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (cache_key, audio_hash, num_speakers,
+                          json.dumps(speakers), json.dumps(turns), time.time()))
+                    conn.commit()
+        except Exception:
+            pass
 
 
 class ModelCache:

@@ -8,9 +8,12 @@ Tools exposed:
 - take_notes: All-in-one note-taking: download + transcribe + save .txt to Desktop
 - download_audio: Download audio from video URLs (YouTube, etc.) at maximum speed
 - search_audio: Search for keywords in audio files
+- deep_search: Semantic search by meaning, not just keywords
 - transcribe_audio: Full transcription without keyword search
 - search_proximity: Find keywords appearing near each other
 - batch_search: Search multiple audio files in parallel
+- identify_speakers: Speaker diarization (who said what)
+- chapters: Auto-detect topic chapters in audio
 - list_files: List media files in a directory
 - cache_stats: View cache statistics
 - clear_cache: Clear transcription cache
@@ -87,6 +90,43 @@ else:
         clear_cache,
         list_cached
     )
+
+# Optional: sentence-transformers for deep_search and chapters
+_MISSING_SEMANTIC_DEPS = []
+try:
+    import sentence_transformers
+except ImportError:
+    _MISSING_SEMANTIC_DEPS.append("sentence-transformers")
+
+if _MISSING_SEMANTIC_DEPS or _MISSING_DEPS:
+    def deep_search(*args, **kwargs):
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+    def detect_chapters(*args, **kwargs):
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+else:
+    from .embeddings import deep_search, detect_chapters
+
+# Optional: simple_diarizer for identify_speakers
+_MISSING_SPEAKER_DEPS = []
+try:
+    import simple_diarizer
+except ImportError:
+    _MISSING_SPEAKER_DEPS.append("simple-diarizer")
+
+if _MISSING_SPEAKER_DEPS or _MISSING_DEPS:
+    def identify_speakers(*args, **kwargs):
+        raise RuntimeError(
+            "Missing dependencies: simple-diarizer. "
+            "Install with: pip install simple-diarizer"
+        )
+else:
+    from .speakers import identify_speakers
 
 
 def send_response(response: dict) -> None:
@@ -324,6 +364,79 @@ def handle_tools_list(id: Any) -> None:
                         "required": ["url"]
                     }
                 },
+                {
+                    "name": "identify_speakers",
+                    "description": "Identify who speaks when in audio.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "num_speakers": {
+                                "type": "integer",
+                                "description": "Number of speakers if known. Auto-detects if not set."
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. Default: tiny."
+                            }
+                        },
+                        "required": ["audio_path"]
+                    }
+                },
+                {
+                    "name": "deep_search",
+                    "description": "Search audio by meaning, not just keywords.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "query": {
+                                "type": "string",
+                                "description": "Natural language search query (e.g. 'discussion about funding challenges')"
+                            },
+                            "top_k": {
+                                "type": "integer",
+                                "description": "Number of results to return. Default: 5"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. Default: tiny."
+                            }
+                        },
+                        "required": ["audio_path", "query"]
+                    }
+                },
+                {
+                    "name": "chapters",
+                    "description": "Auto-detect topic chapters in audio.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "sensitivity": {
+                                "type": "number",
+                                "description": "0.0 = many chapters, 1.0 = few chapters. Default: 0.4"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. Default: tiny."
+                            }
+                        },
+                        "required": ["audio_path"]
+                    }
+                },
             ]
         }
     })
@@ -355,6 +468,12 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_list_cached(arguments)
         elif tool_name == "take_notes":
             result = handle_take_notes(arguments)
+        elif tool_name == "identify_speakers":
+            result = handle_identify_speakers(arguments)
+        elif tool_name == "deep_search":
+            result = handle_deep_search(arguments)
+        elif tool_name == "chapters":
+            result = handle_chapters(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -736,6 +855,69 @@ def handle_take_notes(arguments: dict) -> dict:
             "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
         )
     }
+
+
+def handle_identify_speakers(arguments: dict) -> dict:
+    """Handle identify_speakers tool call."""
+    audio_path = arguments.get("audio_path")
+    model_size = arguments.get("model_size", "tiny")
+    num_speakers = arguments.get("num_speakers")
+
+    if not audio_path:
+        raise ValueError("Missing required parameter: audio_path")
+
+    result = identify_speakers(
+        audio_path,
+        model_size=model_size,
+        num_speakers=num_speakers,
+    )
+
+    return {
+        "speakers": result["speakers"],
+        "segment_count": len(result["segments"]),
+        "segments": result["segments"],
+        "duration": result["duration"],
+        "duration_formatted": result["duration_formatted"],
+        "language": result["language"],
+        "cached": result.get("cached", False),
+        "model_used": model_size,
+    }
+
+
+def handle_deep_search(arguments: dict) -> dict:
+    """Handle deep_search tool call."""
+    audio_path = arguments.get("audio_path")
+    query = arguments.get("query")
+    model_size = arguments.get("model_size", "tiny")
+    top_k = arguments.get("top_k", 5)
+
+    if not audio_path:
+        raise ValueError("Missing required parameter: audio_path")
+    if not query:
+        raise ValueError("Missing required parameter: query")
+
+    return deep_search(
+        audio_path,
+        query,
+        model_size=model_size,
+        top_k=top_k,
+    )
+
+
+def handle_chapters(arguments: dict) -> dict:
+    """Handle chapters tool call."""
+    audio_path = arguments.get("audio_path")
+    model_size = arguments.get("model_size", "tiny")
+    sensitivity = arguments.get("sensitivity", 0.4)
+
+    if not audio_path:
+        raise ValueError("Missing required parameter: audio_path")
+
+    return detect_chapters(
+        audio_path,
+        model_size=model_size,
+        sensitivity=sensitivity,
+    )
 
 
 def handle_request(request: dict) -> None:

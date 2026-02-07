@@ -80,6 +80,34 @@ audio_path: "/path/to/audio.mp3"
 model_size: "tiny" (optional)
 ```
 
+### identify_speakers
+Identify who speaks when in audio using speaker diarization. No auth tokens required.
+```
+audio_path: "/path/to/audio.mp3"
+model_size: "tiny" (optional, default)
+num_speakers: null (optional, auto-detect if omitted)
+```
+Returns `{speakers: [...], segments: [{speaker, start, end, text, timestamp}], duration, language}`
+
+### deep_search
+Search audio by meaning, not just keywords. Uses sentence-transformers embeddings.
+```
+audio_path: "/path/to/audio.mp3"
+query: "discussion about funding challenges"
+model_size: "tiny" (optional, default)
+top_k: 5 (optional, number of results)
+```
+Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
+
+### chapters
+Auto-detect topic chapters in audio with timestamps.
+```
+audio_path: "/path/to/audio.mp3"
+model_size: "tiny" (optional, default)
+sensitivity: 0.4 (optional, 0.0=many chapters, 1.0=few chapters)
+```
+Returns `{chapters: [{chapter_number, start, end, start_timestamp, end_timestamp, text, segment_count}], total_chapters}`
+
 ### search_proximity
 Find where two keywords appear near each other.
 ```

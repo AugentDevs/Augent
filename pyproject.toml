@@ -24,7 +24,10 @@ keywords = [
     "mcp",
     "speech-to-text",
     "podcast",
-    "interview"
+    "interview",
+    "speaker-diarization",
+    "semantic-search",
+    "chapters"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -51,10 +54,18 @@ web = [
 clips = [
     "pydub>=0.25.0",
 ]
+speakers = [
+    "simple-diarizer",
+]
+semantic = [
+    "sentence-transformers>=2.2.0",
+]
 all = [
     "gradio>=4.0.0,<5.0.0",
     "huggingface-hub>=0.20.0,<0.24.0",
     "pydub>=0.25.0",
+    "simple-diarizer",
+    "sentence-transformers>=2.2.0",
 ]
 dev = [
     "pytest>=7.0.0",

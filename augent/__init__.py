@@ -68,6 +68,19 @@ from .cache import (
 
 from .cli import main
 
+# Optional: Speaker diarization (requires simple-diarizer)
+try:
+    from .speakers import identify_speakers
+except ImportError:
+    identify_speakers = None
+
+# Optional: Semantic search + chapters (requires sentence-transformers)
+try:
+    from .embeddings import deep_search, detect_chapters
+except ImportError:
+    deep_search = None
+    detect_chapters = None
+
 __version__ = "1.0.0"
 __all__ = [
     # Core functions
@@ -99,6 +112,11 @@ __all__ = [
     "TranscriptionProgress",
     "TranscriptionCache",
     "ModelCache",
+    # Optional: Speakers
+    "identify_speakers",
+    # Optional: Semantic search + chapters
+    "deep_search",
+    "detect_chapters",
     # CLI
     "main",
     # Version
