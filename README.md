@@ -40,7 +40,7 @@ Works on macOS and Linux. Installs everything automatically.
 
 | Mode | Best For |
 |------|----------|
-| **Claude Code (MCP)** | Agentic workflows with all 9 tools — one prompt does everything |
+| **Claude Code (MCP)** | Agentic workflows with all 10 tools — one prompt does everything |
 | **CLI** | Terminal-based searches and batch processing |
 | **Web UI** | Visual interface for manual uploads and searches — runs 100% locally |
 
@@ -75,6 +75,7 @@ Once configured, Claude has access to:
 
 | Tool | Description |
 |------|-------------|
+| `take_notes` | **Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop** |
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `search_audio` | Find keywords with timestamps and context snippets |
 | `transcribe_audio` | Full transcription with metadata |
