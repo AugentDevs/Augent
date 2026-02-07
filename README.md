@@ -81,7 +81,7 @@ Once configured, Claude has access to:
 | `take_notes` | Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop |
 | `search_proximity` | Find where keywords appear near each other |
 | `batch_search` | Search multiple files in parallel (for swarms) |
-| `list_audio_files` | Discover audio files in a directory |
+| `list_files` | List media files in a directory |
 | `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |

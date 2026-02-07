@@ -11,7 +11,7 @@ Tools exposed:
 - transcribe_audio: Full transcription without keyword search
 - search_proximity: Find keywords appearing near each other
 - batch_search: Search multiple audio files in parallel
-- list_audio_files: List audio files in a directory
+- list_files: List media files in a directory
 - cache_stats: View cache statistics
 - clear_cache: Clear transcription cache
 
@@ -256,8 +256,8 @@ def handle_tools_list(id: Any) -> None:
                     }
                 },
                 {
-                    "name": "list_audio_files",
-                    "description": "List audio files in a directory matching a pattern. Useful for discovering files before batch processing.",
+                    "name": "list_files",
+                    "description": "List media files in a directory.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -267,7 +267,7 @@ def handle_tools_list(id: Any) -> None:
                             },
                             "pattern": {
                                 "type": "string",
-                                "description": "Glob pattern for matching files. Default: *.mp3"
+                                "description": "Glob pattern for matching files. Default: all common media formats"
                             },
                             "recursive": {
                                 "type": "boolean",
@@ -345,8 +345,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_search_proximity(arguments)
         elif tool_name == "batch_search":
             result = handle_batch_search(arguments)
-        elif tool_name == "list_audio_files":
-            result = handle_list_audio_files(arguments)
+        elif tool_name == "list_files":
+            result = handle_list_files(arguments)
         elif tool_name == "cache_stats":
             result = handle_cache_stats(arguments)
         elif tool_name == "clear_cache":
@@ -580,13 +580,15 @@ def handle_batch_search(arguments: dict) -> dict:
     }
 
 
-def handle_list_audio_files(arguments: dict) -> dict:
-    """Handle list_audio_files tool call."""
+def handle_list_files(arguments: dict) -> dict:
+    """Handle list_files tool call."""
     import os
     import glob as glob_module
 
+    DEFAULT_PATTERNS = ["*.mp3", "*.m4a", "*.wav", "*.webm", "*.mp4", "*.mkv", "*.ogg", "*.flac"]
+
     directory = arguments.get("directory")
-    pattern = arguments.get("pattern", "*.mp3")
+    pattern = arguments.get("pattern")
     recursive = arguments.get("recursive", False)
 
     if not directory:
@@ -595,13 +597,23 @@ def handle_list_audio_files(arguments: dict) -> dict:
     if not os.path.isdir(directory):
         raise ValueError(f"Directory not found: {directory}")
 
-    # Build search pattern
-    if recursive:
-        search_pattern = os.path.join(directory, "**", pattern)
-        files = glob_module.glob(search_pattern, recursive=True)
+    # Build search pattern(s)
+    files = []
+    if pattern:
+        patterns = [pattern]
     else:
-        search_pattern = os.path.join(directory, pattern)
-        files = glob_module.glob(search_pattern)
+        patterns = DEFAULT_PATTERNS
+
+    for p in patterns:
+        if recursive:
+            search_pattern = os.path.join(directory, "**", p)
+            files.extend(glob_module.glob(search_pattern, recursive=True))
+        else:
+            search_pattern = os.path.join(directory, p)
+            files.extend(glob_module.glob(search_pattern))
+
+    # Deduplicate and sort
+    files = sorted(set(files))
 
     # Get file info
     audio_files = []

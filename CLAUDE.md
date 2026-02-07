@@ -98,11 +98,11 @@ model_size: "tiny" (optional)
 workers: 2 (optional, parallel workers)
 ```
 
-### list_audio_files
-Discover audio files in a directory before batch processing.
+### list_files
+List media files in a directory.
 ```
-directory: "/path/to/audio/folder"
-pattern: "*.mp3" (optional, glob pattern)
+directory: "/path/to/folder"
+pattern: (optional, defaults to all common media formats)
 recursive: false (optional, search subdirectories)
 ```
 
