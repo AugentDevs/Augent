@@ -5,6 +5,7 @@ Model Context Protocol server for Claude Desktop and Claude Code integration.
 Exposes Augent as a native tool that Claude can call directly.
 
 Tools exposed:
+- take_notes: All-in-one note-taking: download + transcribe + save .txt to Desktop
 - download_audio: Download audio from video URLs (YouTube, etc.) at maximum speed
 - search_audio: Search for keywords in audio files
 - transcribe_audio: Full transcription without keyword search
@@ -300,6 +301,29 @@ def handle_tools_list(id: Any) -> None:
                         "properties": {}
                     }
                 },
+                {
+                    "name": "take_notes",
+                    "description": "Take notes from a URL. Saves .txt to Desktop.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "Video/audio URL to take notes from (YouTube, Vimeo, TikTok, Twitter, SoundCloud, etc.)"
+                            },
+                            "output_dir": {
+                                "type": "string",
+                                "description": "Directory to save the .txt notes file. Default: ~/Desktop"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size for transcription. Default: tiny (fast and accurate)."
+                            }
+                        },
+                        "required": ["url"]
+                    }
+                },
             ]
         }
     })
@@ -329,6 +353,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_clear_cache(arguments)
         elif tool_name == "list_cached":
             result = handle_list_cached(arguments)
+        elif tool_name == "take_notes":
+            result = handle_take_notes(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -620,6 +646,83 @@ def handle_list_cached(arguments: dict) -> dict:
         "count": len(entries),
         "transcriptions": entries,
         "message": f"Found {len(entries)} cached transcription(s)"
+    }
+
+
+def handle_take_notes(arguments: dict) -> dict:
+    """Handle take_notes tool call - download, transcribe, save .txt to Desktop."""
+    import os
+    import re
+
+    url = arguments.get("url")
+    output_dir = arguments.get("output_dir", os.path.expanduser("~/Desktop"))
+    model_size = arguments.get("model_size", "tiny")
+
+    if not url:
+        raise ValueError("Missing required parameter: url")
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Step 1: Download audio to ~/Downloads
+    download_result = handle_download_audio({"url": url})
+
+    if not download_result.get("success"):
+        raise RuntimeError("Download failed: " + download_result.get("message", "unknown error"))
+
+    audio_path = download_result["file"]["path"]
+    title = os.path.splitext(download_result["file"]["filename"])[0]
+
+    # Step 2: Transcribe
+    result = transcribe_audio(audio_path, model_size)
+    text = result["text"]
+    duration = result["duration"]
+
+    # Step 3: Save raw transcription as .txt on Desktop
+    # Clean title for filename (remove special chars)
+    safe_title = re.sub(r'[^\w\s\-]', '', title).strip()
+    if not safe_title:
+        safe_title = "notes"
+    txt_filename = f"{safe_title}.txt"
+    txt_path = os.path.join(output_dir, txt_filename)
+
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(f"Source: {url}\n")
+        f.write(f"Duration: {int(duration // 60)}:{int(duration % 60):02d}\n")
+        f.write(f"Title: {title}\n")
+        f.write("=" * 60 + "\n\n")
+        f.write(text)
+
+    return {
+        "success": True,
+        "txt_path": txt_path,
+        "audio_path": audio_path,
+        "title": title,
+        "duration": duration,
+        "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
+        "language": result["language"],
+        "cached": result.get("cached", False),
+        "model_used": model_size,
+        "transcription": text,
+        "instruction": (
+            "IMPORTANT: You MUST now rewrite the file at txt_path using the Write tool. "
+            "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
+            "Transform the transcription into beautiful, clean notes styled for Obsidian. "
+            "Follow the user's request (TLDR, detailed notes, key insights, etc.) but ALWAYS format with this structure:\n"
+            "\n"
+            "1. Start with the title as a top header line (just the title text, plain)\n"
+            "2. A metadata block: Source URL, Duration, Date\n"
+            "3. A horizontal separator (---)\n"
+            "4. The notes content the user asked for, formatted with:\n"
+            "   - Clear section headers\n"
+            "   - Bullet points for key ideas\n"
+            "   - Short paragraphs, never walls of text\n"
+            "   - Pull out key quotes with > blockquote style\n"
+            "   - Bold key terms and names\n"
+            "5. Keep it scannable — someone should grasp the content in 30 seconds\n"
+            "\n"
+            "Write the final notes to txt_path using the Write tool. "
+            "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+        )
     }
 
 

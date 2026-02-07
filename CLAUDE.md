@@ -32,6 +32,26 @@ augent transcribe ~/Downloads/tutorial.webm
 augent search ~/Downloads/tutorial.webm "keyword1,keyword2"
 ```
 
+## Note-Taking (Primary Workflow)
+
+When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool call does everything:
+
+1. **User says:** "Take notes from https://youtube.com/watch?v=xxx"
+2. **You call:** `take_notes` with the URL
+3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop
+4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — rewrite the .txt file with beautiful, Obsidian-styled notes using the Write tool
+
+**IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
+
+### take_notes
+Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
+```
+url: "https://youtube.com/watch?v=xxx"
+output_dir: "~/Desktop" (optional, default)
+model_size: "tiny" (optional, default)
+```
+Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
+
 ## Quick Start (For Claude)
 
 You have access to these tools via the MCP server:
