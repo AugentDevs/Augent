@@ -75,10 +75,10 @@ Once configured, Claude has access to:
 
 | Tool | Description |
 |------|-------------|
-| `take_notes` | Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop |
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
-| `search_audio` | Find keywords with timestamps and context snippets |
 | `transcribe_audio` | Full transcription with metadata |
+| `search_audio` | Find keywords with timestamps and context snippets |
+| `take_notes` | Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop |
 | `search_proximity` | Find where keywords appear near each other |
 | `batch_search` | Search multiple files in parallel (for swarms) |
 | `list_audio_files` | Discover audio files in a directory |
