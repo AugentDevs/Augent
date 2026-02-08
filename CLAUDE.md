@@ -1,6 +1,6 @@
 # Augent - Claude Code Plugin
 
-Augent is an MCP-powered audio intelligence plugin for Claude Code. It enables AI agents to transcribe, search, and analyze audio files locally using faster-whisper.
+Augent is an MCP plugin that searches any content the way you search text — by speaker, keyword, or topic. Hours of content, seconds to find it. Fully local, fully private.
 
 ## audio-downloader (Built by Augent)
 
