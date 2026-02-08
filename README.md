@@ -101,6 +101,8 @@ Once configured, Claude has access to:
 | `eye-candy` | Maximum Obsidian formatting — callouts, tables, checklists, the works |
 | `quiz` | Multiple-choice questions with answer key |
 
+**Obsidian users:** Notes are styled for Obsidian but .txt files open in TextEdit by default. [Set up Obsidian as your .txt viewer](https://docs.augent.app/guides/obsidian-txt-setup) for the full experience.
+
 ---
 
 ## audio-downloader
