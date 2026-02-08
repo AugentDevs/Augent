@@ -50,6 +50,7 @@ url: "https://youtube.com/watch?v=xxx"
 style: "notes" (optional, default)
 output_dir: "~/Desktop" (optional, default)
 model_size: "tiny" (optional, default)
+read_aloud: false (optional, generates spoken summary WAV and embeds in notes for Obsidian playback)
 ```
 **Styles** (pick based on what the user asks for):
 - `tldr` — Shortest summary, bold key terms, flat bullets, one screen

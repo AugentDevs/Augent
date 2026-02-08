@@ -381,6 +381,10 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
                                 "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "read_aloud": {
+                                "type": "boolean",
+                                "description": "Generate a spoken audio summary and embed it in the notes for Obsidian playback. Default: false"
                             }
                         },
                         "required": ["url"]
@@ -834,7 +838,7 @@ def handle_list_cached(arguments: dict) -> dict:
     }
 
 
-def _get_style_instruction(style: str) -> str:
+def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str = "~/Desktop", safe_title: str = "") -> str:
     """Return formatting instructions for a given note style."""
 
     base_prefix = (
@@ -845,6 +849,18 @@ def _get_style_instruction(style: str) -> str:
         "\n\nWrite the final notes to txt_path using the Write tool. "
         "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
     )
+
+    if read_aloud:
+        wav_filename = f"{safe_title}.wav" if safe_title else "notes_audio.wav"
+        base_suffix = (
+            "\n\nWrite the final notes to txt_path using the Write tool. "
+            "THEN: Write a 2-3 sentence spoken summary of the content (natural, conversational tone — "
+            "as if telling a friend what this was about). Run the text_to_speech tool with that summary, "
+            f'output_dir="{output_dir}", output_filename="{wav_filename}". '
+            f"After TTS completes, re-open txt_path and add ![[{wav_filename}]] on the very first line "
+            "(before the title). Save again. "
+            "After everything, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+        )
 
     styles = {
         "tldr": (
@@ -950,6 +966,7 @@ def handle_take_notes(arguments: dict) -> dict:
     output_dir = arguments.get("output_dir", os.path.expanduser("~/Desktop"))
     model_size = arguments.get("model_size", "tiny")
     style = arguments.get("style", "notes")
+    read_aloud = arguments.get("read_aloud", False)
 
     if not url:
         raise ValueError("Missing required parameter: url")
@@ -986,7 +1003,7 @@ def handle_take_notes(arguments: dict) -> dict:
         f.write(text)
 
     # Style-specific formatting instructions
-    instruction = _get_style_instruction(style)
+    instruction = _get_style_instruction(style, read_aloud=read_aloud, output_dir=output_dir, safe_title=safe_title)
 
     return {
         "success": True,
