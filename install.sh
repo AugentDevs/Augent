@@ -380,11 +380,14 @@ install_augent() {
         env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
     else
         # Uninstall old version and clear pip cache
-        $PYTHON_CMD -m pip uninstall augent -y --quiet 2>/dev/null || true
+        $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags 2>/dev/null || true
         $PYTHON_CMD -m pip cache purge 2>/dev/null || true
-        # Install from GitHub (always latest)
-        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir $pip_flags 2>/dev/null || \
-        env $pip_env $PYTHON_CMD -m pip install "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet --no-cache-dir 2>/dev/null || true
+        # Install from GitHub (always latest, force-reinstall to ensure code updates even if version unchanged)
+        env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet 2>/dev/null || true
+        # Install dependencies separately (without force-reinstall so existing deps are kept)
+        env $pip_env $PYTHON_CMD -m pip install --no-cache-dir "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || \
+        env $pip_env $PYTHON_CMD -m pip install --no-cache-dir "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || true
     fi
 
     log_success "Augent"
