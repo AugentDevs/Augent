@@ -101,7 +101,7 @@ Once configured, Claude has access to:
 | `eye-candy` | Maximum Obsidian formatting — callouts, tables, checklists, the works |
 | `quiz` | Multiple-choice questions with answer key |
 
-**Obsidian users:** [Obsidian](https://obsidian.md) is widely considered one of the best apps for personal knowledge management, research, and building a second brain — but macOS has no way to set Obsidian as the default `.txt` file opener. We fixed that. [One-time setup](https://docs.augent.app/guides/obsidian-txt-setup) makes every `.txt` file on your Mac open directly in Obsidian with full markdown rendering.
+**Obsidian users:** [Obsidian](https://obsidian.md) is widely considered one of the best apps for personal knowledge management, research, and building a second brain — but macOS has no way to set Obsidian as the default `.txt` file opener. We fixed that. [One-time setup](https://docs.augent.app/guides/obsidian-txt-setup) makes every `.txt` file on your Mac open directly in Obsidian — external edits from Claude, terminal, or any app sync in real-time.
 
 ---
 
