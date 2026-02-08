@@ -47,9 +47,17 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
 ```
 url: "https://youtube.com/watch?v=xxx"
+style: "notes" (optional, default)
 output_dir: "~/Desktop" (optional, default)
 model_size: "tiny" (optional, default)
 ```
+**Styles** (pick based on what the user asks for):
+- `tldr` — Shortest summary, bold key terms, flat bullets, one screen
+- `notes` — Clean sections + nested bullets (default)
+- `highlight` — Notes with callout blocks for key insights, blockquotes with timestamps
+- `eye-candy` — Maximum visual formatting: callouts, tables, checklists, blockquotes, the full Obsidian treatment
+- `quiz` — Multiple-choice questions with answer key
+
 Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
 
 ## Quick Start (For Claude)

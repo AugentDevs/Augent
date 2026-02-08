@@ -355,6 +355,11 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "description": "Directory to save the .txt notes file. Default: ~/Desktop"
                             },
+                            "style": {
+                                "type": "string",
+                                "enum": ["tldr", "notes", "highlight", "eye-candy", "quiz"],
+                                "description": "Note style. tldr > notes > highlight > eye-candy increases formatting richness. quiz generates questions. Default: notes. Pick based on what the user asks for."
+                            },
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
@@ -780,6 +785,113 @@ def handle_list_cached(arguments: dict) -> dict:
     }
 
 
+def _get_style_instruction(style: str) -> str:
+    """Return formatting instructions for a given note style."""
+
+    base_prefix = (
+        "IMPORTANT: You MUST now rewrite the file at txt_path using the Write tool. "
+        "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
+    )
+    base_suffix = (
+        "\n\nWrite the final notes to txt_path using the Write tool. "
+        "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+    )
+
+    styles = {
+        "tldr": (
+            "Create the shortest possible summary. Must fit on one screen.\n"
+            "\n"
+            "FORMAT:\n"
+            "- Title as a top header\n"
+            "- Source URL | Duration | Date on one line\n"
+            "- ---\n"
+            "- One 2-3 sentence overview paragraph\n"
+            "- 5-8 bullet points max, each one line\n"
+            "- **Bold** the single most important term or name in each bullet\n"
+            "- No sections, no headers, no callouts, no quotes — just clean bullets\n"
+            "- End with one bold takeaway line\n"
+        ),
+        "notes": (
+            "Create clean, structured notes with clear hierarchy.\n"
+            "\n"
+            "FORMAT:\n"
+            "- Title as a top header\n"
+            "- Metadata block: Source URL, Duration, Date\n"
+            "- ---\n"
+            "- 3-6 section headers based on the main topics\n"
+            "- Nested bullet points under each section (2 levels max)\n"
+            "- **Bold** key terms and names throughout\n"
+            "- Short paragraphs only — never more than 3 lines\n"
+            "- One > blockquote if there's a standout quote worth preserving\n"
+            "- Keep it scannable — someone should grasp the content in 60 seconds\n"
+        ),
+        "highlight": (
+            "Create formatted notes with visual emphasis on key insights.\n"
+            "\n"
+            "FORMAT:\n"
+            "- Title as a top header\n"
+            "- Metadata block: Source URL, Duration, Date\n"
+            "- ---\n"
+            "- Section headers for each major topic\n"
+            "- Nested bullet points with **bold key terms**\n"
+            "- Use > [!tip] callout blocks for the 2-4 most important insights\n"
+            "- Use > [!info] callout blocks for definitions or context\n"
+            "- Use > blockquotes with timestamps for 2-3 key direct quotes\n"
+            "- Use **bold** and *italic* generously for emphasis\n"
+            "- Add a --- separator between major sections\n"
+            "- End with a Key Takeaways section using a > [!summary] callout\n"
+        ),
+        "eye-candy": (
+            "Create the most visually rich, beautifully formatted notes possible. "
+            "Every section should be a visual experience — the reader should absorb "
+            "the content by scanning, not reading.\n"
+            "\n"
+            "FORMAT:\n"
+            "- Title as a top header\n"
+            "- Metadata block: Source URL, Duration, Date\n"
+            "- ---\n"
+            "- Section headers for every topic shift\n"
+            "- Nested bullet points (up to 3 levels) with **bold** and *italic*\n"
+            "- > [!tip] callout blocks for key insights (use liberally, 4-6 throughout)\n"
+            "- > [!info] callout blocks for context, background, definitions\n"
+            "- > [!warning] callout blocks for common mistakes or misconceptions\n"
+            "- > [!example] callout blocks for concrete examples mentioned\n"
+            "- > blockquotes with timestamps for 3-5 standout direct quotes\n"
+            "- Tables anywhere a comparison or list of items is discussed\n"
+            "- --- separators between major sections\n"
+            "- Checklists (- [ ]) for any action items or recommendations\n"
+            "- End with:\n"
+            "  1. A > [!summary] Key Takeaways callout with numbered list\n"
+            "  2. A table of Related Topics / Further Reading if applicable\n"
+            "\n"
+            "The goal: someone opens this file in Obsidian and says 'wow'.\n"
+        ),
+        "quiz": (
+            "Generate a multiple-choice quiz from the content. Do NOT write notes.\n"
+            "\n"
+            "FORMAT:\n"
+            "- Title as a top header with 'Quiz' appended\n"
+            "- Metadata block: Source URL, Duration, Date\n"
+            "- ---\n"
+            "- 10-15 multiple-choice questions\n"
+            "- Each question:\n"
+            "  - Numbered (1, 2, 3...)\n"
+            "  - The question in **bold**\n"
+            "  - Four options labeled A) B) C) D)\n"
+            "  - One blank line between questions\n"
+            "- ---\n"
+            "- Answer Key section at the bottom\n"
+            "  - Format: 1. B | 2. A | 3. D (compact, one line per 5 answers)\n"
+            "  - Brief explanation for each answer on the next line\n"
+            "\n"
+            "Questions should test real understanding, not trivial details.\n"
+        ),
+    }
+
+    body = styles.get(style, styles["notes"])
+    return base_prefix + body + base_suffix
+
+
 def handle_take_notes(arguments: dict) -> dict:
     """Handle take_notes tool call - download, transcribe, save .txt to Desktop."""
     import os
@@ -788,6 +900,7 @@ def handle_take_notes(arguments: dict) -> dict:
     url = arguments.get("url")
     output_dir = arguments.get("output_dir", os.path.expanduser("~/Desktop"))
     model_size = arguments.get("model_size", "tiny")
+    style = arguments.get("style", "notes")
 
     if not url:
         raise ValueError("Missing required parameter: url")
@@ -823,6 +936,9 @@ def handle_take_notes(arguments: dict) -> dict:
         f.write("=" * 60 + "\n\n")
         f.write(text)
 
+    # Style-specific formatting instructions
+    instruction = _get_style_instruction(style)
+
     return {
         "success": True,
         "txt_path": txt_path,
@@ -833,27 +949,9 @@ def handle_take_notes(arguments: dict) -> dict:
         "language": result["language"],
         "cached": result.get("cached", False),
         "model_used": model_size,
+        "style": style,
         "transcription": text,
-        "instruction": (
-            "IMPORTANT: You MUST now rewrite the file at txt_path using the Write tool. "
-            "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
-            "Transform the transcription into beautiful, clean notes styled for Obsidian. "
-            "Follow the user's request (TLDR, detailed notes, key insights, etc.) but ALWAYS format with this structure:\n"
-            "\n"
-            "1. Start with the title as a top header line (just the title text, plain)\n"
-            "2. A metadata block: Source URL, Duration, Date\n"
-            "3. A horizontal separator (---)\n"
-            "4. The notes content the user asked for, formatted with:\n"
-            "   - Clear section headers\n"
-            "   - Bullet points for key ideas\n"
-            "   - Short paragraphs, never walls of text\n"
-            "   - Pull out key quotes with > blockquote style\n"
-            "   - Bold key terms and names\n"
-            "5. Keep it scannable — someone should grasp the content in 30 seconds\n"
-            "\n"
-            "Write the final notes to txt_path using the Write tool. "
-            "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
-        )
+        "instruction": instruction,
     }
 
 
