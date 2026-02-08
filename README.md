@@ -78,7 +78,7 @@ Once configured, Claude has access to:
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `transcribe_audio` | Full transcription with metadata |
 | `search_audio` | Find keywords with timestamps and context snippets |
-| `take_notes` | Take notes from any URL — downloads, transcribes, and saves a .txt to Desktop |
+| `take_notes` | Take notes from any URL — 5 style presets from quick TLDR to full Obsidian-styled notes |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `deep_search` | Search audio by meaning, not just keywords (semantic search) |
 | `chapters` | Auto-detect topic chapters in audio with timestamps |
