@@ -499,6 +499,21 @@ configure_mcp() {
         python_abs="$(readlink -f "$python_abs" 2>/dev/null || readlink "$python_abs" 2>/dev/null || echo "$python_abs")"
     fi
 
+    # Remove stale ~/.mcp.json augent entry (uses bare "augent-mcp" which can resolve to wrong Python)
+    if [[ -f "$HOME/.mcp.json" ]] && grep -q '"augent"' "$HOME/.mcp.json" 2>/dev/null; then
+        if command_exists jq; then
+            local tmp_mcp="$HOME/.mcp.json.tmp"
+            jq 'del(.mcpServers.augent)' "$HOME/.mcp.json" > "$tmp_mcp" 2>/dev/null && mv "$tmp_mcp" "$HOME/.mcp.json"
+            # Remove file entirely if no servers left
+            if jq -e '.mcpServers | length == 0' "$HOME/.mcp.json" >/dev/null 2>&1; then
+                rm -f "$HOME/.mcp.json"
+            fi
+        else
+            rm -f "$HOME/.mcp.json"
+        fi
+        log_info "Cleaned up stale ~/.mcp.json"
+    fi
+
     # Claude Code MCP (uses claude mcp add for correct config location)
     if command_exists claude; then
         claude mcp remove augent -s user >/dev/null 2>&1 || true
