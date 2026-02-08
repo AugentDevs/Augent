@@ -465,13 +465,17 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "text_to_speech",
-                    "description": "Convert text to natural speech audio using Kokoro TTS. Saves a WAV file.",
+                    "description": "Convert text to natural speech audio using Kokoro TTS. Saves an MP3 file. Pass text for raw TTS, or file_path to read a notes file (strips markdown, skips metadata, embeds audio player).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "text": {
                                 "type": "string",
-                                "description": "Text to convert to speech"
+                                "description": "Text to convert to speech. Either text or file_path is required."
+                            },
+                            "file_path": {
+                                "type": "string",
+                                "description": "Path to a notes file to read aloud. Strips markdown formatting, skips metadata, generates MP3, and embeds audio player in the file."
                             },
                             "voice": {
                                 "type": "string",
@@ -479,7 +483,7 @@ def handle_tools_list(id: Any) -> None:
                             },
                             "output_dir": {
                                 "type": "string",
-                                "description": "Directory to save the WAV file. Default: ~/Desktop"
+                                "description": "Directory to save the MP3 file. Default: ~/Desktop"
                             },
                             "output_filename": {
                                 "type": "string",
@@ -489,8 +493,7 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "number",
                                 "description": "Speech speed multiplier. Default: 1.0"
                             }
-                        },
-                        "required": ["text"]
+                        }
                     }
                 },
             ]
@@ -851,18 +854,30 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
     )
 
     if read_aloud:
-        wav_filename = f"{safe_title}.wav" if safe_title else "notes_audio.wav"
+        import os as _os, shutil as _shutil
+        _obsidian_installed = (
+            _os.path.exists("/Applications/Obsidian.app")
+            or bool(_shutil.which("obsidian"))
+        )
+        audio_filename = f"{safe_title}.mp3" if safe_title else "notes_audio.mp3"
+        if _obsidian_installed:
+            embed_instruction = (
+                f"After TTS completes, re-open txt_path and add ![[{audio_filename}]] on the very first line "
+                f"(before the title), then add `> Press Cmd+E before playing — prevents audio from pausing on scroll` "
+                "on the line after the embed. Save again. "
+            )
+        else:
+            embed_instruction = ""
         base_suffix = (
             "\n\nWrite the final notes to txt_path using the Write tool. "
-            "THEN: Take the full notes you just wrote (everything after the metadata block) and "
+            "THEN: Take the notes you just wrote — SKIP the title, source URL, duration, date, and any metadata lines at the top. Start from the first real content section heading. Take that content and "
             "strip the markdown formatting (remove #, **, -, >, ![], ---, callout syntax, links) "
             "so it reads as plain text. Keep every word and all the information exactly as written — "
             "do NOT rewrite or summarize, just clean the formatting so TTS can read it naturally. "
             "Section headers become spoken section titles. "
             "Run the text_to_speech tool with that spoken script, "
-            f'output_dir="{output_dir}", output_filename="{wav_filename}". '
-            f"After TTS completes, re-open txt_path and add ![[{wav_filename}]] on the very first line "
-            "(before the title). Save again. "
+            f'output_dir="{output_dir}", output_filename="{audio_filename}". '
+            + embed_instruction +
             "After everything, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
         )
 
@@ -1091,13 +1106,18 @@ def handle_chapters(arguments: dict) -> dict:
 def handle_text_to_speech(arguments: dict) -> dict:
     """Handle text_to_speech tool call."""
     text = arguments.get("text")
+    file_path = arguments.get("file_path")
     voice = arguments.get("voice", "af_heart")
     output_dir = arguments.get("output_dir", "~/Desktop")
     output_filename = arguments.get("output_filename")
     speed = arguments.get("speed", 1.0)
 
+    if file_path:
+        from .tts import read_aloud
+        return read_aloud(file_path, voice=voice, speed=speed)
+
     if not text:
-        raise ValueError("Missing required parameter: text")
+        raise ValueError("Either text or file_path is required")
 
     return text_to_speech(
         text,

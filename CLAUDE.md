@@ -50,7 +50,7 @@ url: "https://youtube.com/watch?v=xxx"
 style: "notes" (optional, default)
 output_dir: "~/Desktop" (optional, default)
 model_size: "tiny" (optional, default)
-read_aloud: false (optional, generates spoken summary WAV and embeds in notes for Obsidian playback)
+read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obsidian for playback)
 ```
 **Styles** (pick based on what the user asks for):
 - `tldr` — Shortest summary, bold key terms, flat bullets, one screen
@@ -118,12 +118,12 @@ sensitivity: 0.4 (optional, 0.0=many chapters, 1.0=few chapters)
 Returns `{chapters: [{chapter_number, start, end, start_timestamp, end_timestamp, text, segment_count}], total_chapters}`
 
 ### text_to_speech
-Convert text to natural speech audio using Kokoro TTS. Saves a WAV file.
+Convert text to natural speech audio using Kokoro TTS. Saves an MP3 file.
 ```
 text: "Hello, this is a test."
 voice: "af_heart" (optional, default — American English female)
 output_dir: "~/Desktop" (optional, default)
-output_filename: "custom_name.wav" (optional, auto-generated if not set)
+output_filename: "custom_name.mp3" (optional, auto-generated if not set)
 speed: 1.0 (optional, speech speed multiplier)
 ```
 **Voices:** af_heart (default), af_bella, af_nicole, af_nova, af_sky, am_adam, am_eric, am_michael (American English). bf_emma, bf_lily, bm_daniel, bm_george (British English). Also supports Spanish, French, Hindi, Italian, Japanese, Brazilian Portuguese, Mandarin Chinese.
