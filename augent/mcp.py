@@ -358,7 +358,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size for transcription. Default: tiny (fast and accurate)."
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["url"]
@@ -381,7 +381,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny."
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["audio_path"]
@@ -408,7 +408,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny."
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["audio_path", "query"]
@@ -431,7 +431,7 @@ def handle_tools_list(id: Any) -> None:
                             "model_size": {
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. Default: tiny."
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
                         "required": ["audio_path"]
