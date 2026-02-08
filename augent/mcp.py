@@ -14,6 +14,7 @@ Tools exposed:
 - batch_search: Search multiple audio files in parallel
 - identify_speakers: Speaker diarization (who said what)
 - chapters: Auto-detect topic chapters in audio
+- text_to_speech: Convert text to natural speech audio using Kokoro TTS
 - list_files: List media files in a directory
 - cache_stats: View cache statistics
 - clear_cache: Clear transcription cache
@@ -127,6 +128,22 @@ if _MISSING_SPEAKER_DEPS or _MISSING_DEPS:
         )
 else:
     from .speakers import identify_speakers
+
+# Optional: kokoro for text_to_speech
+_MISSING_TTS_DEPS = []
+try:
+    import kokoro
+except ImportError:
+    _MISSING_TTS_DEPS.append("kokoro")
+
+if _MISSING_TTS_DEPS:
+    def text_to_speech(*args, **kwargs):
+        raise RuntimeError(
+            "Missing dependencies: kokoro. "
+            "Install with: pip install kokoro soundfile"
+        )
+else:
+    from .tts import text_to_speech
 
 
 def send_response(response: dict) -> None:
@@ -442,6 +459,36 @@ def handle_tools_list(id: Any) -> None:
                         "required": ["audio_path"]
                     }
                 },
+                {
+                    "name": "text_to_speech",
+                    "description": "Convert text to natural speech audio using Kokoro TTS. Saves a WAV file.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "text": {
+                                "type": "string",
+                                "description": "Text to convert to speech"
+                            },
+                            "voice": {
+                                "type": "string",
+                                "description": "Voice ID. American English: af_heart (female, default), af_bella, af_nicole, af_nova, af_sky, am_adam (male), am_eric, am_michael. British English: bf_emma, bf_lily, bm_daniel, bm_george. Also supports Spanish, French, Japanese, Chinese voices."
+                            },
+                            "output_dir": {
+                                "type": "string",
+                                "description": "Directory to save the WAV file. Default: ~/Desktop"
+                            },
+                            "output_filename": {
+                                "type": "string",
+                                "description": "Custom filename. Auto-generated if not set."
+                            },
+                            "speed": {
+                                "type": "number",
+                                "description": "Speech speed multiplier. Default: 1.0"
+                            }
+                        },
+                        "required": ["text"]
+                    }
+                },
             ]
         }
     })
@@ -479,6 +526,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_deep_search(arguments)
         elif tool_name == "chapters":
             result = handle_chapters(arguments)
+        elif tool_name == "text_to_speech":
+            result = handle_text_to_speech(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1015,6 +1064,26 @@ def handle_chapters(arguments: dict) -> dict:
         audio_path,
         model_size=model_size,
         sensitivity=sensitivity,
+    )
+
+
+def handle_text_to_speech(arguments: dict) -> dict:
+    """Handle text_to_speech tool call."""
+    text = arguments.get("text")
+    voice = arguments.get("voice", "af_heart")
+    output_dir = arguments.get("output_dir", "~/Desktop")
+    output_filename = arguments.get("output_filename")
+    speed = arguments.get("speed", 1.0)
+
+    if not text:
+        raise ValueError("Missing required parameter: text")
+
+    return text_to_speech(
+        text,
+        voice=voice,
+        output_dir=output_dir,
+        output_filename=output_filename,
+        speed=speed,
     )
 
 

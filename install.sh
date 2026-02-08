@@ -422,6 +422,7 @@ install_audio_downloader() {
                 brew install yt-dlp >/dev/null 2>&1 || true
             fi
             command_exists aria2c || brew install aria2 >/dev/null 2>&1
+            command_exists espeak-ng || brew install espeak-ng >/dev/null 2>&1
             ;;
         apt)
             if ! command_exists yt-dlp; then
@@ -429,6 +430,7 @@ install_audio_downloader() {
                 (sudo apt-get update -qq && sudo apt-get install -y yt-dlp) >/dev/null 2>&1 || true
             fi
             command_exists aria2c || sudo apt-get install -y aria2 >/dev/null 2>&1
+            command_exists espeak-ng || sudo apt-get install -y espeak-ng >/dev/null 2>&1
             ;;
         *)
             if ! command_exists yt-dlp; then

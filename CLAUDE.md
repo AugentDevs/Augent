@@ -116,6 +116,19 @@ sensitivity: 0.4 (optional, 0.0=many chapters, 1.0=few chapters)
 ```
 Returns `{chapters: [{chapter_number, start, end, start_timestamp, end_timestamp, text, segment_count}], total_chapters}`
 
+### text_to_speech
+Convert text to natural speech audio using Kokoro TTS. Saves a WAV file.
+```
+text: "Hello, this is a test."
+voice: "af_heart" (optional, default — American English female)
+output_dir: "~/Desktop" (optional, default)
+output_filename: "custom_name.wav" (optional, auto-generated if not set)
+speed: 1.0 (optional, speech speed multiplier)
+```
+**Voices:** af_heart (default), af_bella, af_nicole, af_nova, af_sky, am_adam, am_eric, am_michael (American English). bf_emma, bf_lily, bm_daniel, bm_george (British English). Also supports Spanish, French, Hindi, Italian, Japanese, Brazilian Portuguese, Mandarin Chinese.
+
+Returns `{file_path, voice, language, duration, duration_formatted, sample_rate, text_length}`
+
 ### search_proximity
 Find where two keywords appear near each other.
 ```

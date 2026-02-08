@@ -27,7 +27,8 @@ keywords = [
     "interview",
     "speaker-diarization",
     "semantic-search",
-    "chapters"
+    "chapters",
+    "text-to-speech"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -60,12 +61,18 @@ speakers = [
 semantic = [
     "sentence-transformers>=2.2.0",
 ]
+tts = [
+    "kokoro>=0.9.4",
+    "soundfile",
+]
 all = [
     "gradio>=4.0.0,<5.0.0",
     "huggingface-hub>=0.20.0,<0.24.0",
     "pydub>=0.25.0",
     "simple-diarizer",
     "sentence-transformers>=2.2.0",
+    "kokoro>=0.9.4",
+    "soundfile",
 ]
 dev = [
     "pytest>=7.0.0",

@@ -40,7 +40,7 @@ Works on macOS and Linux. Installs everything automatically.
 
 | Mode | Best For |
 |------|----------|
-| **Claude Code (MCP)** | Agentic workflows with all 13 tools — one prompt does everything |
+| **Claude Code (MCP)** | Agentic workflows with all 14 tools — one prompt does everything |
 | **CLI** | Terminal-based searches and batch processing |
 | **Web UI** | Visual interface for manual uploads and searches — runs 100% locally |
 
@@ -82,6 +82,7 @@ Once configured, Claude has access to:
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `deep_search` | Search audio by meaning, not just keywords (semantic search) |
 | `chapters` | Auto-detect topic chapters in audio with timestamps |
+| `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `batch_search` | Search multiple files in parallel (for swarms) |
 | `list_files` | List media files in a directory |

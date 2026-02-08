@@ -81,6 +81,12 @@ except ImportError:
     deep_search = None
     detect_chapters = None
 
+# Optional: Text-to-speech (requires kokoro)
+try:
+    from .tts import text_to_speech
+except ImportError:
+    text_to_speech = None
+
 __version__ = "1.0.0"
 __all__ = [
     # Core functions
@@ -117,6 +123,8 @@ __all__ = [
     # Optional: Semantic search + chapters
     "deep_search",
     "detect_chapters",
+    # Optional: Text-to-speech
+    "text_to_speech",
     # CLI
     "main",
     # Version
