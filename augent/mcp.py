@@ -854,8 +854,11 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
         wav_filename = f"{safe_title}.wav" if safe_title else "notes_audio.wav"
         base_suffix = (
             "\n\nWrite the final notes to txt_path using the Write tool. "
-            "THEN: Write a 2-3 sentence spoken summary of the content (natural, conversational tone — "
-            "as if telling a friend what this was about). Run the text_to_speech tool with that summary, "
+            "THEN: Take the full notes you just wrote and convert them to a spoken script — "
+            "strip all markdown formatting (headers, bold, bullets, callouts, links) and rewrite "
+            "as clean, natural spoken prose that flows well when read aloud. Keep ALL the content "
+            "and information, just make it sound like a person narrating. "
+            "Run the text_to_speech tool with that spoken script, "
             f'output_dir="{output_dir}", output_filename="{wav_filename}". '
             f"After TTS completes, re-open txt_path and add ![[{wav_filename}]] on the very first line "
             "(before the title). Save again. "
