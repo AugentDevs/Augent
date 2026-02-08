@@ -78,7 +78,7 @@ Once configured, Claude has access to:
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `transcribe_audio` | Full transcription with metadata |
 | `search_audio` | Find keywords with timestamps and context snippets |
-| `take_notes` | Take notes from any URL — 5 style presets from quick TLDR to full Obsidian-styled notes |
+| `take_notes` | Take notes from any URL with style presets |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `deep_search` | Search audio by meaning, not just keywords (semantic search) |
 | `chapters` | Auto-detect topic chapters in audio with timestamps |
@@ -88,6 +88,18 @@ Once configured, Claude has access to:
 | `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |
 | `clear_cache` | Clear cached transcriptions |
+
+### Note Styles
+
+`take_notes` formats notes based on a style preset:
+
+| Style | Output |
+|-------|--------|
+| `tldr` | Shortest summary — bold key terms, flat bullets, one screen |
+| `notes` | Clean sections + nested bullets (default) |
+| `highlight` | Callout blocks for key insights, blockquotes with timestamps |
+| `eye-candy` | Maximum Obsidian formatting — callouts, tables, checklists, the works |
+| `quiz` | Multiple-choice questions with answer key |
 
 ---
 
