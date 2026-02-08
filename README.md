@@ -80,13 +80,13 @@ Once configured, Claude has access to:
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `transcribe_audio` | Full transcription with metadata |
 | `search_audio` | Find keywords with timestamps and context snippets |
-| `take_notes` | Take notes from any URL with style presets |
-| `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `deep_search` | Search audio by meaning, not just keywords (semantic search) |
+| `take_notes` | Take notes from any URL with style presets |
 | `chapters` | Auto-detect topic chapters in audio with timestamps |
+| `batch_search` | Search multiple files in parallel (for swarms) |
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
-| `batch_search` | Search multiple files in parallel (for swarms) |
+| `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `list_files` | List media files in a directory |
 | `list_cached` | List cached transcriptions by title |
 | `cache_stats` | View transcription cache statistics |

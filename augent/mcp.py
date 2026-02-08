@@ -5,17 +5,18 @@ Model Context Protocol server for Claude Desktop and Claude Code integration.
 Exposes Augent as a native tool that Claude can call directly.
 
 Tools exposed:
-- take_notes: All-in-one note-taking: download + transcribe + save .txt to Desktop
 - download_audio: Download audio from video URLs (YouTube, etc.) at maximum speed
+- transcribe_audio: Full transcription without keyword search
 - search_audio: Search for keywords in audio files
 - deep_search: Semantic search by meaning, not just keywords
-- transcribe_audio: Full transcription without keyword search
-- search_proximity: Find keywords appearing near each other
-- batch_search: Search multiple audio files in parallel
-- identify_speakers: Speaker diarization (who said what)
+- take_notes: All-in-one note-taking: download + transcribe + save .txt to Desktop
 - chapters: Auto-detect topic chapters in audio
+- batch_search: Search multiple audio files in parallel
 - text_to_speech: Convert text to natural speech audio using Kokoro TTS
+- search_proximity: Find keywords appearing near each other
+- identify_speakers: Speaker diarization (who said what)
 - list_files: List media files in a directory
+- list_cached: List all cached transcriptions
 - cache_stats: View cache statistics
 - clear_cache: Clear transcription cache
 
@@ -206,6 +207,25 @@ def handle_tools_list(id: Any) -> None:
                     }
                 },
                 {
+                    "name": "transcribe_audio",
+                    "description": "Transcribe an audio file and return the full text with timestamps. Useful when you need the complete transcription rather than searching for specific keywords.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            }
+                        },
+                        "required": ["audio_path"]
+                    }
+                },
+                {
                     "name": "search_audio",
                     "description": "Search audio files for keywords and return timestamped matches with context snippets. Useful for finding specific moments in podcasts, interviews, lectures, or any audio content.",
                     "inputSchema": {
@@ -234,8 +254,8 @@ def handle_tools_list(id: Any) -> None:
                     }
                 },
                 {
-                    "name": "transcribe_audio",
-                    "description": "Transcribe an audio file and return the full text with timestamps. Useful when you need the complete transcription rather than searching for specific keywords.",
+                    "name": "deep_search",
+                    "description": "Search audio by meaning, not just keywords.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -243,36 +263,13 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "description": "Path to the audio file"
                             },
-                            "model_size": {
+                            "query": {
                                 "type": "string",
-                                "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
-                            }
-                        },
-                        "required": ["audio_path"]
-                    }
-                },
-                {
-                    "name": "search_proximity",
-                    "description": "Find where one keyword appears near another keyword in audio. Useful for finding contextual discussions, e.g., 'startup' near 'funding'.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "audio_path": {
-                                "type": "string",
-                                "description": "Path to the audio file"
+                                "description": "Natural language search query (e.g. 'discussion about funding challenges')"
                             },
-                            "keyword1": {
-                                "type": "string",
-                                "description": "Primary keyword to find"
-                            },
-                            "keyword2": {
-                                "type": "string",
-                                "description": "Secondary keyword that must appear nearby"
-                            },
-                            "max_distance": {
+                            "top_k": {
                                 "type": "integer",
-                                "description": "Maximum number of words between keywords. Default: 30"
+                                "description": "Number of results to return. Default: 5"
                             },
                             "model_size": {
                                 "type": "string",
@@ -280,82 +277,7 @@ def handle_tools_list(id: Any) -> None:
                                 "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
                             }
                         },
-                        "required": ["audio_path", "keyword1", "keyword2"]
-                    }
-                },
-                {
-                    "name": "batch_search",
-                    "description": "Search multiple audio files for keywords in parallel. Ideal for processing podcast libraries, interview collections, or any batch of audio files. Returns aggregated results with file paths.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "audio_paths": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "List of paths to audio files"
-                            },
-                            "keywords": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "List of keywords or phrases to search for"
-                            },
-                            "model_size": {
-                                "type": "string",
-                                "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
-                            },
-                            "workers": {
-                                "type": "integer",
-                                "description": "Number of parallel workers. Default: 2"
-                            }
-                        },
-                        "required": ["audio_paths", "keywords"]
-                    }
-                },
-                {
-                    "name": "list_files",
-                    "description": "List media files in a directory.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "directory": {
-                                "type": "string",
-                                "description": "Directory path to search"
-                            },
-                            "pattern": {
-                                "type": "string",
-                                "description": "Glob pattern for matching files. Default: all common media formats"
-                            },
-                            "recursive": {
-                                "type": "boolean",
-                                "description": "Search subdirectories. Default: false"
-                            }
-                        },
-                        "required": ["directory"]
-                    }
-                },
-                {
-                    "name": "cache_stats",
-                    "description": "View transcription cache statistics including number of cached files and total duration.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "clear_cache",
-                    "description": "Clear the transcription cache to free disk space.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
-                    }
-                },
-                {
-                    "name": "list_cached",
-                    "description": "List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {}
+                        "required": ["audio_path", "query"]
                     }
                 },
                 {
@@ -391,56 +313,6 @@ def handle_tools_list(id: Any) -> None:
                     }
                 },
                 {
-                    "name": "identify_speakers",
-                    "description": "Identify who speaks when in audio.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "audio_path": {
-                                "type": "string",
-                                "description": "Path to the audio file"
-                            },
-                            "num_speakers": {
-                                "type": "integer",
-                                "description": "Number of speakers if known. Auto-detects if not set."
-                            },
-                            "model_size": {
-                                "type": "string",
-                                "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
-                            }
-                        },
-                        "required": ["audio_path"]
-                    }
-                },
-                {
-                    "name": "deep_search",
-                    "description": "Search audio by meaning, not just keywords.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "audio_path": {
-                                "type": "string",
-                                "description": "Path to the audio file"
-                            },
-                            "query": {
-                                "type": "string",
-                                "description": "Natural language search query (e.g. 'discussion about funding challenges')"
-                            },
-                            "top_k": {
-                                "type": "integer",
-                                "description": "Number of results to return. Default: 5"
-                            },
-                            "model_size": {
-                                "type": "string",
-                                "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
-                            }
-                        },
-                        "required": ["audio_path", "query"]
-                    }
-                },
-                {
                     "name": "chapters",
                     "description": "Auto-detect topic chapters in audio.",
                     "inputSchema": {
@@ -461,6 +333,35 @@ def handle_tools_list(id: Any) -> None:
                             }
                         },
                         "required": ["audio_path"]
+                    }
+                },
+                {
+                    "name": "batch_search",
+                    "description": "Search multiple audio files for keywords in parallel. Ideal for processing podcast libraries, interview collections, or any batch of audio files. Returns aggregated results with file paths.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_paths": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "List of paths to audio files"
+                            },
+                            "keywords": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "List of keywords or phrases to search for"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "workers": {
+                                "type": "integer",
+                                "description": "Number of parallel workers. Default: 2"
+                            }
+                        },
+                        "required": ["audio_paths", "keywords"]
                     }
                 },
                 {
@@ -496,6 +397,106 @@ def handle_tools_list(id: Any) -> None:
                         }
                     }
                 },
+                {
+                    "name": "search_proximity",
+                    "description": "Find where one keyword appears near another keyword in audio. Useful for finding contextual discussions, e.g., 'startup' near 'funding'.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "keyword1": {
+                                "type": "string",
+                                "description": "Primary keyword to find"
+                            },
+                            "keyword2": {
+                                "type": "string",
+                                "description": "Secondary keyword that must appear nearby"
+                            },
+                            "max_distance": {
+                                "type": "integer",
+                                "description": "Maximum number of words between keywords. Default: 30"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            }
+                        },
+                        "required": ["audio_path", "keyword1", "keyword2"]
+                    }
+                },
+                {
+                    "name": "identify_speakers",
+                    "description": "Identify who speaks when in audio.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Path to the audio file"
+                            },
+                            "num_speakers": {
+                                "type": "integer",
+                                "description": "Number of speakers if known. Auto-detects if not set."
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            }
+                        },
+                        "required": ["audio_path"]
+                    }
+                },
+                {
+                    "name": "list_files",
+                    "description": "List media files in a directory.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "directory": {
+                                "type": "string",
+                                "description": "Directory path to search"
+                            },
+                            "pattern": {
+                                "type": "string",
+                                "description": "Glob pattern for matching files. Default: all common media formats"
+                            },
+                            "recursive": {
+                                "type": "boolean",
+                                "description": "Search subdirectories. Default: false"
+                            }
+                        },
+                        "required": ["directory"]
+                    }
+                },
+                {
+                    "name": "list_cached",
+                    "description": "List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "cache_stats",
+                    "description": "View transcription cache statistics including number of cached files and total duration.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
+                {
+                    "name": "clear_cache",
+                    "description": "Clear the transcription cache to free disk space.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                },
             ]
         }
     })
@@ -509,32 +510,32 @@ def handle_tools_call(id: Any, params: dict) -> None:
     try:
         if tool_name == "download_audio":
             result = handle_download_audio(arguments)
-        elif tool_name == "search_audio":
-            result = handle_search_audio(arguments)
         elif tool_name == "transcribe_audio":
             result = handle_transcribe_audio(arguments)
-        elif tool_name == "search_proximity":
-            result = handle_search_proximity(arguments)
+        elif tool_name == "search_audio":
+            result = handle_search_audio(arguments)
+        elif tool_name == "deep_search":
+            result = handle_deep_search(arguments)
+        elif tool_name == "take_notes":
+            result = handle_take_notes(arguments)
+        elif tool_name == "chapters":
+            result = handle_chapters(arguments)
         elif tool_name == "batch_search":
             result = handle_batch_search(arguments)
+        elif tool_name == "text_to_speech":
+            result = handle_text_to_speech(arguments)
+        elif tool_name == "search_proximity":
+            result = handle_search_proximity(arguments)
+        elif tool_name == "identify_speakers":
+            result = handle_identify_speakers(arguments)
         elif tool_name == "list_files":
             result = handle_list_files(arguments)
+        elif tool_name == "list_cached":
+            result = handle_list_cached(arguments)
         elif tool_name == "cache_stats":
             result = handle_cache_stats(arguments)
         elif tool_name == "clear_cache":
             result = handle_clear_cache(arguments)
-        elif tool_name == "list_cached":
-            result = handle_list_cached(arguments)
-        elif tool_name == "take_notes":
-            result = handle_take_notes(arguments)
-        elif tool_name == "identify_speakers":
-            result = handle_identify_speakers(arguments)
-        elif tool_name == "deep_search":
-            result = handle_deep_search(arguments)
-        elif tool_name == "chapters":
-            result = handle_chapters(arguments)
-        elif tool_name == "text_to_speech":
-            result = handle_text_to_speech(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
