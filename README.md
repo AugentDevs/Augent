@@ -102,6 +102,10 @@ Restart Claude Code. Run `/mcp` to verify connection.
 **Ad angle research:**
 > *"Download these 5 podcasts and find every moment a host covers a product in a positive or unique way. Not just brand mentions, only real endorsements or life-changing recommendations. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
 
+<p align="center">
+  <img src="./images/pipeline.png" alt="Augent Pipeline — From URLs to insights in one prompt" width="100%">
+</p>
+
 ---
 
 ## CLI
