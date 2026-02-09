@@ -81,7 +81,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 > *"Take notes from this lecture and read them back to me as audio: https://youtube.com/watch?v=..."*
 
 **Ad angle research:**
-> *"Download these 5 podcast episodes and find every moment a host genuinely recommends a product. Not just brand mentions, only positive endorsements. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
+> *"Download these 5 podcasts and find every moment a host covers a product in a positive or unique way. Not just brand mentions, only real endorsements or life-changing recommendations. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
 
 ---
 
