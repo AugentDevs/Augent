@@ -28,6 +28,8 @@ Works on macOS and Linux. Installs everything automatically.
 
 **Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
+**Requires:** Python 3.9+, [FFmpeg](https://ffmpeg.org/), [aria2](https://aria2.github.io/) (the install script handles all of this)
+
 **[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
 
 ---
@@ -72,6 +74,14 @@ Restart Claude Code. Run `/mcp` to verify connection.
 **Note:** If `python3` isn't found, use full path (e.g., `/usr/bin/python3` or `/opt/homebrew/bin/python3`).
 
 **[See all tools →](https://docs.augent.app/tools/download-audio)**
+
+### Examples
+
+> *"Take notes from this lecture and read them back to me as audio: https://youtube.com/watch?v=..."*
+
+> *"Download these 5 podcast episodes and find every moment a host genuinely recommends a product — not just brand mentions, only positive endorsements. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
+
+One prompt. Claude downloads the audio, transcribes everything locally, searches by meaning across all 5 files, and returns timestamped clips of every organic product endorsement — ready for ad angle research.
 
 ---
 
@@ -186,6 +196,12 @@ Cache key = file hash + model size, so:
 **Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
 
 `tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
+
+---
+
+## Contributing
+
+PRs welcome. Open an [issue](https://github.com/AugentDevs/Augent/issues) for bugs or feature requests.
 
 ---
 
