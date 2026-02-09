@@ -77,11 +77,11 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 ### Examples
 
+**Notes + voice:**
 > *"Take notes from this lecture and read them back to me as audio: https://youtube.com/watch?v=..."*
 
-> *"Download these 5 podcast episodes and find every moment a host genuinely recommends a product — not just brand mentions, only positive endorsements. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
-
-One prompt. Claude downloads the audio, transcribes everything locally, searches by meaning across all 5 files, and returns timestamped clips of every organic product endorsement — ready for ad angle research.
+**Ad angle research:**
+> *"Download these 5 podcast episodes and find every moment a host genuinely recommends a product. Not just brand mentions, only positive endorsements. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5"*
 
 ---
 
