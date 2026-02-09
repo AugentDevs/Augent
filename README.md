@@ -14,7 +14,7 @@
 
 <p align="center"><strong>Audio intelligence for Claude Code agents and agentic swarms</strong><br>Built by <a href="https://augent.app">Augent</a></p>
 
-An MCP plugin that searches any content the way you search text — by speaker, keyword, or topic. Hours of content, seconds to find it. Fully local, fully private.
+<p align="center">An MCP plugin that searches any content the way you search text<br>by speaker, keyword, or topic. Hours of content, seconds to find it.<br>Fully local, fully private.</p>
 
 ---
 
