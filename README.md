@@ -104,26 +104,6 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 ---
 
-## audio-downloader
-
-A speed-optimized audio downloader built by Augent. Downloads audio ONLY from any video URL at lightning speed.
-
-```bash
-audio-downloader "https://youtube.com/watch?v=xxx"
-```
-
-**Default:** Saves to `~/Downloads`. Use `-o` to change output folder.
-
-**Speed Optimizations:**
-- aria2c multi-connection downloads (16 parallel connections)
-- Concurrent fragment downloading (4 fragments)
-- No video download - audio extraction only
-- No format conversion - native audio format for maximum speed
-
-**Supports:** YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
-
----
-
 ## CLI
 
 For terminal-based usage. Works standalone or inside Claude Code.
@@ -134,11 +114,13 @@ For terminal-based usage. Works standalone or inside Claude Code.
 
 | Command | Description |
 |---------|-------------|
-| `audio-downloader URL` | Download audio from video URL to ~/Downloads |
+| `audio-downloader "URL"` | Download audio from video URL (speed-optimized) |
 | `augent search audio.mp3 "keyword"` | Search for keywords |
 | `augent transcribe audio.mp3` | Full transcription |
 | `augent proximity audio.mp3 "A" "B"` | Find keyword A near keyword B |
-| `augent cache stats` | View cache info |
+| `augent cache stats` | View cache statistics |
+| `augent cache list` | List cached transcriptions |
+| `augent cache clear` | Clear cache |
 | `augent help` | Show full help |
 
 ---
@@ -171,50 +153,27 @@ Open: **http://127.0.0.1:9797**
 
 ## Caching
 
-Transcriptions are cached to avoid re-processing:
-
-```bash
-augent cache stats
-# {"entries": 42, "total_audio_duration_hours": 15.5, "cache_size_mb": 12.3}
-```
-
-Cache key = file hash + model size, so:
-- Same file + same model = instant cache hit
-- Same file + different model = new transcription
-- Modified file = new transcription
+Transcriptions are cached by file hash + model size. Same file = instant re-search. Cache persists across sessions.
 
 ---
 
 ## Export Formats
 
-- **JSON** - Structured data, grouped by keyword
-- **CSV** - Spreadsheet-ready
-- **SRT** - SubRip subtitles
-- **VTT** - WebVTT for web video
-- **Markdown** - Human-readable reports
+JSON, CSV, SRT, VTT, Markdown. Use `--format` with any CLI command.
 
 ---
 
 ## Model Sizes
 
-**`tiny` is the default** - it's the fastest and already incredibly accurate for nearly every use case. You'll use it 99% of the time.
+**`tiny` is the default** and handles nearly everything. Use `small` or above only for heavy accents, poor audio, or lyrics.
 
-| Model | Speed | Accuracy | VRAM |
-|-------|-------|----------|------|
-| **tiny** | Fastest | Excellent (default) | ~1GB |
-| base | Fast | Excellent | ~1GB |
-| small | Medium | Superior | ~2GB |
-| medium | Slow | Outstanding | ~5GB |
-| large | Slowest | Maximum | ~10GB |
-
-**When to use larger models:**
-- Finding lyrics in a song you don't know the name of
-- Very heavy accents or extremely poor audio quality
-- Medical/legal transcriptions requiring maximum accuracy
-
-**Warning:** `medium` and `large` models are very CPU/memory intensive. They can freeze or overheat lower-spec machines (like MacBook Air). Stick to `tiny` or `base` unless you have a powerful machine with good cooling.
-
-`tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
+| Model | Speed | Accuracy |
+|-------|-------|----------|
+| **tiny** | Fastest | Excellent (default) |
+| base | Fast | Excellent |
+| small | Medium | Superior |
+| medium | Slow | Outstanding |
+| large | Slowest | Maximum |
 
 ---
 
