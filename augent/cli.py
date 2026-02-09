@@ -360,110 +360,87 @@ def cmd_cache(args: argparse.Namespace):
 
 def cmd_help(args: argparse.Namespace):
     """Show detailed help and quick start guide."""
-    help_text = """
+    try:
+        import importlib.metadata
+        version = importlib.metadata.version('augent')
+    except Exception:
+        version = "1.0.0"
+
+    help_text = f"""
 ================================================================================
-                         AUGENT - Audio Intelligence Tool
+  AUGENT v{version} — Audio Intelligence Tool
 ================================================================================
 
 QUICK START
 -----------
-1. Clone & Install:
-   git clone https://github.com/AugentDevs/Augent.git
-   cd Augent
-   pip install -e .[web]
-
-2. Run Web UI:
-   python3 -m augent.web
-
-3. Open browser:
-   http://127.0.0.1:9797
+  1. Install:    curl -fsSL https://augent.app/install.sh | bash
+  2. Run Web UI: python3 -m augent.web
+  3. Open:       http://127.0.0.1:9797
 
 COMMANDS
 --------
-  audio-downloader "URL"                Download audio from video (speed-optimized)
-  augent search <audio> "<keywords>"    Search audio for keywords
-  augent transcribe <audio>             Full transcription
-  augent proximity <audio> "A" "B"      Find keyword A near keyword B
+  augent search <file> "keywords"       Search audio for keywords
+  augent transcribe <file>              Full transcription
+  augent proximity <file> "A" "B"       Find keyword A near keyword B
   augent cache stats                    View cache statistics
   augent cache list                     List cached transcriptions by title
   augent cache clear                    Clear transcription cache
-  augent help                           Show this help
+  augent cache clear-models             Clear downloaded Whisper models
 
-AUDIO DOWNLOADER (Built by Augent)
-----------------------------------
+OPTIONS
+-------
+  --model, -m <size>                    Whisper model (tiny | base | small | medium | large)
+  --format <fmt>                        Output format (json | csv | srt | vtt | markdown)
+  --output, -o <file>                   Write results to file
+  --workers, -w <n>                     Parallel workers for batch processing
+  --export-clips <dir>                  Extract audio clips around matches
+  --clip-padding <sec>                  Seconds before/after each clip (default: 5)
+  --no-cache                            Skip transcription cache
+  --stream                              Stream progress to stderr
+
+OTHER TOOLS
+-----------
   audio-downloader "URL"                Download audio from any video URL
-  audio-downloader -o ~/Music "URL"     Download to custom folder
   audio-downloader url1 url2 url3       Download multiple URLs
-  audio-downloader --help               Show audio-downloader help
-
-  Speed optimizations:
-  - aria2c multi-connection downloads (16 parallel connections)
-  - Concurrent fragment downloading (4 fragments)
-  - No video download - audio extraction only
-  - No format conversion - native audio format
-
-  Supports: YouTube, Vimeo, SoundCloud, Twitter, TikTok, and 1000+ sites
-
-WEB UI
-------
-  python3 -m augent.web                 Start web interface on port 9797
-  python3 -m augent.web --port 9000     Use custom port
-  python3 -m augent.web --share         Create public Gradio link
-
-MCP SERVER (for Claude Code)
-----------------------------
-  python3 -m augent.mcp                 Start MCP server for Claude integration
+  augent-web                            Launch Web UI (http://127.0.0.1:9797)
+  python3 -m augent.mcp                 Start MCP server for Claude Code
 
 EXAMPLES
 --------
-  # Download audio from YouTube and transcribe
+  # Download and transcribe
   audio-downloader "https://youtube.com/watch?v=xxx"
-  augent transcribe ~/Downloads/video-title.webm
+  augent transcribe ~/Downloads/JRE-2420.webm
 
-  # Search for keywords in audio
+  # Search for keywords
   augent search podcast.mp3 "lucrative,funding,healthiest"
 
-  # Use better model for accuracy
-  augent search audio.mp3 "keyword" --model small
-
-  # Batch process multiple files
+  # Batch process with parallel workers
   augent search "*.mp3" "keyword" --workers 4
 
-  # Export results to CSV/SRT
-  augent search audio.mp3 "keyword" --format csv --output results.csv
-  augent search audio.mp3 "keyword" --format srt --output matches.srt
+  # Export to CSV or SRT
+  augent search audio.mp3 "keyword" --format csv -o results.csv
+  augent transcribe audio.mp3 --format srt -o subtitles.srt
 
-  # Extract audio clips around keyword matches
+  # Extract audio clips around matches
   augent search audio.mp3 "important" --export-clips ./clips
-  augent search audio.mp3 "keyword" --export-clips ./clips --clip-padding 10
 
-  # Find two keywords within 30 words of each other
+  # Proximity search
   augent proximity audio.mp3 "problem" "solution" --distance 30
-  # Example: finds "we had a problem... here's the solution" if within 30 words
-
-  # Full transcription with subtitles
-  augent transcribe audio.mp3 --format srt --output subtitles.srt
 
 MODEL SIZES
 -----------
-  tiny   - Fastest, great accuracy (DEFAULT - use for most tasks)
-  base   - Fast, excellent accuracy
-  small  - Medium speed, superior accuracy
-  medium - Slow, outstanding accuracy
-  large  - Slowest, maximum accuracy (lyrics, accents, poor audio)
+  tiny     Fastest, great accuracy (default)
+  base     Fast, excellent accuracy
+  small    Medium speed, superior accuracy
+  medium   Slow, outstanding accuracy
+  large    Slowest, maximum accuracy
 
 REQUIREMENTS
 ------------
-  - Python 3.9+
-  - FFmpeg (for audio processing)
-  - yt-dlp + aria2 (for audio-downloader)
-  - pip install -e .[web] for Web UI
-  - pip install -e .[all] for all features
+  Python 3.9+ | FFmpeg | yt-dlp + aria2
 
-MORE INFO
----------
-  GitHub: https://github.com/AugentDevs/Augent
-
+Docs:   https://docs.augent.app
+GitHub: https://github.com/AugentDevs/Augent
 ================================================================================
 """
     print(help_text)
@@ -471,7 +448,13 @@ MORE INFO
 
 def print_simple_help():
     """Print clean, simple help."""
-    help_text = """
+    try:
+        import importlib.metadata
+        version = importlib.metadata.version('augent')
+    except Exception:
+        version = "1.0.0"
+
+    help_text = f"""
     _                          _
    / \\  _   _  __ _  ___ _ __ | |_
   / _ \\| | | |/ _` |/ _ \\ '_ \\| __|
@@ -479,27 +462,36 @@ def print_simple_help():
 /_/   \\_\\__,_|\\__, |\\___|_| |_|\\__|
               |___/
 
+augent v{version}
+
 Audio intelligence for Claude Code agents
 
+Usage: augent <command> [options]
+
 COMMANDS
-  augent search <file> "keywords"    Search audio for keywords
-  augent transcribe <file>           Full transcription
-  augent proximity <file> "A" "B"    Find keyword A near keyword B
-  augent cache stats                 View cache statistics
-  augent cache list                  List cached transcriptions
-  augent cache clear                 Clear cache
-  augent help                        Show detailed help
+  search <file> "keywords"         Search audio for keywords
+  transcribe <file>                Full transcription
+  proximity <file> "A" "B"         Find keyword A near keyword B
+  cache <action>                   Manage cache (stats | list | clear)
 
 OTHER TOOLS
-  augent-web                         Launch Web UI (http://127.0.0.1:9797)
-  audio-downloader "URL"             Download audio from video URLs
+  augent-web                       Launch Web UI (http://127.0.0.1:9797)
+  audio-downloader "URL"           Download audio from video URLs
+
+OPTIONS
+  --model, -m <size>               Whisper model (tiny | base | small | medium | large)
+  --format <fmt>                   Output format (json | csv | srt | vtt | markdown)
+  --output, -o <file>              Write results to file
+  --workers, -w <n>                Parallel workers for batch processing
 
 EXAMPLES
   audio-downloader "https://youtube.com/watch?v=xxx"
   augent search tutorial.mp3 "install,setup,configure"
-  augent transcribe tutorial.mp3 --format srt
+  augent search "*.mp3" "keyword" --workers 4 --format csv
+  augent transcribe lecture.mp3 --format srt -o subtitles.srt
 
 Run 'augent help' for full documentation.
+Docs: https://docs.augent.app
 """
     print(help_text)
 
