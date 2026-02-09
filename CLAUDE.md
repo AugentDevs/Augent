@@ -73,6 +73,13 @@ output_dir: "~/Downloads" (optional, default)
 ```
 Returns the downloaded file path, ready for transcription.
 
+### transcribe_audio
+Get full transcription of an audio file.
+```
+audio_path: "/path/to/audio.mp3"
+model_size: "tiny" (optional)
+```
+
 ### search_audio
 Search for keywords in audio files with timestamped results.
 ```
@@ -81,22 +88,6 @@ keywords: ["lucrative", "funding", "healthiest"]
 model_size: "tiny" (optional, default)
 include_full_text: false (optional)
 ```
-
-### transcribe_audio
-Get full transcription of an audio file.
-```
-audio_path: "/path/to/audio.mp3"
-model_size: "tiny" (optional)
-```
-
-### identify_speakers
-Identify who speaks when in audio using speaker diarization. No auth tokens required.
-```
-audio_path: "/path/to/audio.mp3"
-model_size: "tiny" (optional, default)
-num_speakers: null (optional, auto-detect if omitted)
-```
-Returns `{speakers: [...], segments: [{speaker, start, end, text, timestamp}], duration, language}`
 
 ### deep_search
 Search audio by meaning, not just keywords. Uses sentence-transformers embeddings.
@@ -108,6 +99,17 @@ top_k: 5 (optional, number of results)
 ```
 Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
 
+### take_notes
+Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
+```
+url: "https://youtube.com/watch?v=xxx"
+style: "notes" (optional, default)
+output_dir: "~/Desktop" (optional, default)
+model_size: "tiny" (optional, default)
+read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obsidian for playback)
+```
+Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
+
 ### chapters
 Auto-detect topic chapters in audio with timestamps.
 ```
@@ -116,6 +118,15 @@ model_size: "tiny" (optional, default)
 sensitivity: 0.4 (optional, 0.0=many chapters, 1.0=few chapters)
 ```
 Returns `{chapters: [{chapter_number, start, end, start_timestamp, end_timestamp, text, segment_count}], total_chapters}`
+
+### batch_search
+Search multiple audio files in parallel - ideal for swarms.
+```
+audio_paths: ["/path/to/file1.mp3", "/path/to/file2.mp3"]
+keywords: ["keyword1", "keyword2"]
+model_size: "tiny" (optional)
+workers: 2 (optional, parallel workers)
+```
 
 ### text_to_speech
 Convert text to natural speech audio using Kokoro TTS. Saves an MP3 file.
@@ -139,14 +150,14 @@ keyword2: "funding"
 max_distance: 30 (optional, words between)
 ```
 
-### batch_search
-Search multiple audio files in parallel - ideal for swarms.
+### identify_speakers
+Identify who speaks when in audio using speaker diarization. No auth tokens required.
 ```
-audio_paths: ["/path/to/file1.mp3", "/path/to/file2.mp3"]
-keywords: ["keyword1", "keyword2"]
-model_size: "tiny" (optional)
-workers: 2 (optional, parallel workers)
+audio_path: "/path/to/audio.mp3"
+model_size: "tiny" (optional, default)
+num_speakers: null (optional, auto-detect if omitted)
 ```
+Returns `{speakers: [...], segments: [{speaker, start, end, text, timestamp}], duration, language}`
 
 ### list_files
 List media files in a directory.
@@ -156,15 +167,15 @@ pattern: (optional, defaults to all common media formats)
 recursive: false (optional, search subdirectories)
 ```
 
+### list_cached
+List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
+No parameters needed.
+
 ### cache_stats
 View cache statistics - no parameters needed.
 
 ### clear_cache
 Clear transcription cache - no parameters needed.
-
-### list_cached
-List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
-No parameters needed.
 
 ## Model Sizes
 
