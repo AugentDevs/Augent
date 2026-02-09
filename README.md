@@ -28,7 +28,7 @@ Works on macOS and Linux. Installs everything automatically.
 
 **Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
-**Requires:** Python 3.9+, [FFmpeg](https://ffmpeg.org/), [aria2](https://aria2.github.io/) (the install script handles all of this)
+**Requires:** [Python 3.9+](https://www.python.org/downloads/), [FFmpeg](https://ffmpeg.org/), [aria2](https://aria2.github.io/) (the install script handles all of this)
 
 **[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
 
