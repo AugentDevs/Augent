@@ -125,7 +125,7 @@ For terminal-based usage. Works standalone or inside Claude Code.
 
 ## Web UI
 
-Visual interface for manual use. Runs 100% locally - no cloud APIs, no Claude credits.
+Visual interface for manual use. Runs 100% locally — no internet required.
 
 ```bash
 python3 -m augent.web
