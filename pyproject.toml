@@ -62,7 +62,7 @@ semantic = [
     "sentence-transformers>=2.2.0",
 ]
 tts = [
-    "kokoro>=0.9.4",
+    "kokoro>=0.7.0",
     "soundfile",
 ]
 all = [
@@ -71,7 +71,7 @@ all = [
     "pydub>=0.25.0",
     "simple-diarizer",
     "sentence-transformers>=2.2.0",
-    "kokoro>=0.9.4",
+    "kokoro>=0.7.0",
     "soundfile",
 ]
 dev = [
