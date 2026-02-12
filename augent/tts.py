@@ -142,13 +142,26 @@ def text_to_speech(
             "text_length": len(text),
         }
 
-    subprocess.run(
+    ffmpeg_result = subprocess.run(
         ["ffmpeg", "-y", "-i", wav_path, "-b:a", "192k", "-q:a", "2", mp3_path],
         capture_output=True,
     )
-    os.remove(wav_path)
 
     duration = len(full_audio) / SAMPLE_RATE
+
+    if ffmpeg_result.returncode != 0:
+        # Conversion failed — keep the WAV so audio is not lost
+        return {
+            "file_path": wav_path,
+            "voice": voice,
+            "language": language,
+            "duration": round(duration, 2),
+            "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
+            "sample_rate": SAMPLE_RATE,
+            "text_length": len(text),
+        }
+
+    os.remove(wav_path)
 
     return {
         "file_path": mp3_path,
