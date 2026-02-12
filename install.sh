@@ -217,9 +217,18 @@ check_homebrew_permissions() {
 
 install_python() {
     # Prefer brew Python over system Python on macOS (system Python can't pip install reliably)
+    # Python 3.12 is preferred: best ML ecosystem support (kokoro, blis, thinc require <3.13)
     if [[ "$PKG_MGR" == "brew" ]]; then
         local bp
         bp="$(brew --prefix 2>/dev/null)" || bp="/opt/homebrew"
+
+        # Check if 3.12 is available; if not but 3.13 is, install 3.12
+        # (ML packages like kokoro require Python <3.13)
+        if [[ ! -x "$bp/bin/python3.12" ]] && [[ -x "$bp/bin/python3.13" ]]; then
+            log_info "Installing Python 3.12 (required by ML packages)..."
+            brew install python@3.12 >/dev/null 2>&1 || true
+        fi
+
         for cmd in "$bp/bin/python3.12" "$bp/bin/python3.13" "$bp/bin/python3.11" "$bp/bin/python3"; do
             if [[ -x "$cmd" ]]; then
                 local ver
