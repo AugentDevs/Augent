@@ -800,6 +800,7 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
     base_prefix = (
         "IMPORTANT: You MUST now rewrite the file at txt_path using the Write tool. "
         "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
+        "For any follow-up tool calls (chapters, search, deep_search, etc.), use the audio_path field from this response — do NOT guess the filename. "
     )
     base_suffix = (
         "\n\nWrite the final notes to txt_path using the Write tool. "
