@@ -391,9 +391,8 @@ install_augent() {
         install_src="$script_dir"
     else
         install_src="git+https://github.com/$AUGENT_REPO.git@main"
-        # Clean slate for remote installs
+        # Remove old augent code (but keep dependencies intact)
         $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags >/dev/null 2>&1 || true
-        $PYTHON_CMD -m pip cache purge >/dev/null 2>&1 || true
     fi
 
     # --- Try [all] first (best case: everything installs in one shot) ---
@@ -403,7 +402,9 @@ install_augent() {
             all_ok=true
         fi
     else
-        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir "augent[all] @ $install_src" --quiet $pip_flags 2>/dev/null; then
+        # Force-reinstall augent code only, then install deps normally (pip skips already-installed)
+        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ $install_src" --quiet $pip_flags 2>/dev/null && \
+           env $pip_env $PYTHON_CMD -m pip install "augent[all] @ $install_src" --quiet $pip_flags 2>/dev/null; then
             all_ok=true
         fi
     fi
@@ -425,7 +426,8 @@ install_augent() {
             core_ok=true
         fi
     else
-        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir "augent @ $install_src" --quiet $pip_flags 2>/dev/null; then
+        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ $install_src" --quiet $pip_flags 2>/dev/null && \
+           env $pip_env $PYTHON_CMD -m pip install "augent @ $install_src" --quiet $pip_flags 2>/dev/null; then
             core_ok=true
         fi
     fi
