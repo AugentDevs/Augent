@@ -985,8 +985,9 @@ def handle_take_notes(arguments: dict) -> dict:
 
     return {
         "success": True,
-        "txt_path": txt_path,
+        "write_to": txt_path,
         "audio_path": audio_path,
+        "instruction": instruction,
         "title": title,
         "duration": duration,
         "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
@@ -995,7 +996,6 @@ def handle_take_notes(arguments: dict) -> dict:
         "model_used": model_size,
         "style": style,
         "transcription": text,
-        "instruction": instruction,
     }
 
 
