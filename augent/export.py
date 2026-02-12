@@ -12,6 +12,7 @@ Supports:
 import csv
 import json
 import io
+import re
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
@@ -70,7 +71,6 @@ class Exporter:
             if highlight_keywords:
                 for kw in highlight_keywords:
                     # Case-insensitive replacement with bold tags
-                    import re
                     pattern = re.compile(re.escape(kw), re.IGNORECASE)
                     text = pattern.sub(f"<b>{kw}</b>", text)
 
@@ -106,7 +106,6 @@ class Exporter:
             # Highlight keywords if specified
             if highlight_keywords:
                 for kw in highlight_keywords:
-                    import re
                     pattern = re.compile(re.escape(kw), re.IGNORECASE)
                     text = pattern.sub(f"<b>{kw}</b>", text)
 
