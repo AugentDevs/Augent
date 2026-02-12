@@ -93,58 +93,9 @@ else:
         list_cached
     )
 
-# Optional: sentence-transformers for deep_search and chapters
-_MISSING_SEMANTIC_DEPS = []
-try:
-    import sentence_transformers
-except ImportError:
-    _MISSING_SEMANTIC_DEPS.append("sentence-transformers")
-
-if _MISSING_SEMANTIC_DEPS or _MISSING_DEPS:
-    def deep_search(*args, **kwargs):
-        raise RuntimeError(
-            "Missing dependencies: sentence-transformers. "
-            "Install with: pip install sentence-transformers"
-        )
-    def detect_chapters(*args, **kwargs):
-        raise RuntimeError(
-            "Missing dependencies: sentence-transformers. "
-            "Install with: pip install sentence-transformers"
-        )
-else:
-    from .embeddings import deep_search, detect_chapters
-
-# Optional: simple_diarizer for identify_speakers
-_MISSING_SPEAKER_DEPS = []
-try:
-    import simple_diarizer
-except ImportError:
-    _MISSING_SPEAKER_DEPS.append("simple-diarizer")
-
-if _MISSING_SPEAKER_DEPS or _MISSING_DEPS:
-    def identify_speakers(*args, **kwargs):
-        raise RuntimeError(
-            "Missing dependencies: simple-diarizer. "
-            "Install with: pip install simple-diarizer"
-        )
-else:
-    from .speakers import identify_speakers
-
-# Optional: kokoro for text_to_speech
-_MISSING_TTS_DEPS = []
-try:
-    import kokoro
-except ImportError:
-    _MISSING_TTS_DEPS.append("kokoro")
-
-if _MISSING_TTS_DEPS:
-    def text_to_speech(*args, **kwargs):
-        raise RuntimeError(
-            "Missing dependencies: kokoro. "
-            "Install with: pip install kokoro soundfile"
-        )
-else:
-    from .tts import text_to_speech
+# Optional dependencies (sentence-transformers, simple-diarizer, kokoro)
+# are imported lazily inside handler functions so that installing them
+# mid-session works without restarting the MCP server.
 
 
 def send_response(response: dict) -> None:
@@ -1047,6 +998,14 @@ def handle_take_notes(arguments: dict) -> dict:
 
 def handle_identify_speakers(arguments: dict) -> dict:
     """Handle identify_speakers tool call."""
+    try:
+        from .speakers import identify_speakers
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: simple-diarizer. "
+            "Install with: pip install simple-diarizer"
+        )
+
     audio_path = arguments.get("audio_path")
     model_size = arguments.get("model_size", "tiny")
     num_speakers = arguments.get("num_speakers")
@@ -1074,6 +1033,14 @@ def handle_identify_speakers(arguments: dict) -> dict:
 
 def handle_deep_search(arguments: dict) -> dict:
     """Handle deep_search tool call."""
+    try:
+        from .embeddings import deep_search
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+
     audio_path = arguments.get("audio_path")
     query = arguments.get("query")
     model_size = arguments.get("model_size", "tiny")
@@ -1094,6 +1061,14 @@ def handle_deep_search(arguments: dict) -> dict:
 
 def handle_chapters(arguments: dict) -> dict:
     """Handle chapters tool call."""
+    try:
+        from .embeddings import detect_chapters
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+
     audio_path = arguments.get("audio_path")
     model_size = arguments.get("model_size", "tiny")
     sensitivity = arguments.get("sensitivity", 0.4)
@@ -1110,6 +1085,14 @@ def handle_chapters(arguments: dict) -> dict:
 
 def handle_text_to_speech(arguments: dict) -> dict:
     """Handle text_to_speech tool call."""
+    try:
+        from .tts import text_to_speech, read_aloud
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: kokoro. "
+            "Install with: pip install kokoro soundfile"
+        )
+
     text = arguments.get("text")
     file_path = arguments.get("file_path")
     voice = arguments.get("voice", "af_heart")
@@ -1118,7 +1101,6 @@ def handle_text_to_speech(arguments: dict) -> dict:
     speed = arguments.get("speed", 1.0)
 
     if file_path:
-        from .tts import read_aloud
         return read_aloud(file_path, voice=voice, speed=speed)
 
     if not text:
