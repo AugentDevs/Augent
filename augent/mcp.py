@@ -1000,8 +1000,11 @@ def handle_take_notes(arguments: dict) -> dict:
     if not download_result.get("success"):
         raise RuntimeError("Download failed: " + download_result.get("message", "unknown error"))
 
-    audio_path = download_result["file"]["path"]
-    title = os.path.splitext(download_result["file"]["filename"])[0]
+    file_info = download_result.get("file", {})
+    if not file_info.get("path"):
+        raise RuntimeError("Download succeeded but output file not found")
+    audio_path = file_info["path"]
+    title = os.path.splitext(file_info["filename"])[0]
 
     # Step 2: Transcribe
     result = transcribe_audio(audio_path, model_size)
