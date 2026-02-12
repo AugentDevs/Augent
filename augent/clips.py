@@ -12,7 +12,7 @@ import os
 import subprocess
 import shutil
 from pathlib import Path
-from typing import List, Dict, Optional, Generator
+from typing import Callable, List, Dict, Optional, Generator
 from dataclasses import dataclass
 
 
@@ -227,7 +227,7 @@ class ClipExtractor:
         audio_path: str,
         matches: List[Dict],
         output_dir: str,
-        on_progress: Optional[callable] = None
+        on_progress: Optional[Callable] = None
     ) -> Generator[ClipInfo, None, None]:
         """
         Extract clips for all keyword matches.
@@ -286,7 +286,7 @@ class ClipExtractor:
         audio_path: str,
         matches: List[Dict],
         output_dir: str,
-        on_progress: Optional[callable] = None
+        on_progress: Optional[Callable] = None
     ) -> List[ClipInfo]:
         """
         Extract all clips and return as a list.
@@ -311,7 +311,7 @@ def export_clips(
     output_dir: str,
     padding: float = 5.0,
     format: str = "mp3",
-    on_progress: Optional[callable] = None
+    on_progress: Optional[Callable] = None
 ) -> List[Dict]:
     """
     Convenience function to export clips for all matches.
