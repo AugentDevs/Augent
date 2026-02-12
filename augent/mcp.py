@@ -564,6 +564,7 @@ def handle_tools_call(id: Any, params: dict) -> None:
 def handle_download_audio(arguments: dict) -> dict:
     """Handle download_audio tool call."""
     import subprocess
+    import shutil
     import os
     import re
 
@@ -577,11 +578,11 @@ def handle_download_audio(arguments: dict) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     # Check for yt-dlp
-    if not subprocess.run(["which", "yt-dlp"], capture_output=True).returncode == 0:
+    if not shutil.which("yt-dlp"):
         raise RuntimeError("yt-dlp not found. Install with: brew install yt-dlp")
 
     # Check for aria2c (optional but recommended)
-    has_aria2c = subprocess.run(["which", "aria2c"], capture_output=True).returncode == 0
+    has_aria2c = shutil.which("aria2c") is not None
 
     # Build command
     cmd = [
