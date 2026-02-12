@@ -799,7 +799,7 @@ def handle_list_files(arguments: dict) -> dict:
 
     # Get file info
     audio_files = []
-    for f in sorted(files):
+    for f in files:
         try:
             size = os.path.getsize(f)
             audio_files.append({
