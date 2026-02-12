@@ -374,23 +374,97 @@ install_augent() {
         fi
     fi
 
+    local is_local=false
+    local install_src=""
+
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
-        # Local install (development mode)
-        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet $pip_flags 2>/dev/null || \
-        env $pip_env $PYTHON_CMD -m pip install -e "$script_dir[all]" --quiet 2>/dev/null || true
+        is_local=true
+        install_src="$script_dir"
     else
-        # Uninstall old version and clear pip cache
+        install_src="git+https://github.com/$AUGENT_REPO.git@main"
+        # Clean slate for remote installs
         $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags 2>/dev/null || true
         $PYTHON_CMD -m pip cache purge 2>/dev/null || true
-        # Install from GitHub (always latest, force-reinstall to ensure code updates even if version unchanged)
-        env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || \
-        env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir --no-deps "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet 2>/dev/null || true
-        # Install dependencies separately (without force-reinstall so existing deps are kept)
-        env $pip_env $PYTHON_CMD -m pip install --no-cache-dir "augent[all] @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || \
-        env $pip_env $PYTHON_CMD -m pip install --no-cache-dir "augent @ git+https://github.com/$AUGENT_REPO.git@main" --quiet $pip_flags 2>/dev/null || true
     fi
 
-    log_success "Augent"
+    # --- Try [all] first (best case: everything installs in one shot) ---
+    local all_ok=false
+    if [[ "$is_local" == "true" ]]; then
+        if env $pip_env $PYTHON_CMD -m pip install -e "${install_src}[all]" --quiet $pip_flags 2>/dev/null; then
+            all_ok=true
+        fi
+    else
+        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir "augent[all] @ $install_src" --quiet $pip_flags 2>/dev/null; then
+            all_ok=true
+        fi
+    fi
+
+    if [[ "$all_ok" == "true" ]]; then
+        log_success "Augent (all features)"
+        return 0
+    fi
+
+    # --- [all] failed — install core, then extras individually ---
+    log_warn "Full install failed, installing core + extras individually..."
+
+    # Core install (MUST succeed)
+    local core_ok=false
+    if [[ "$is_local" == "true" ]]; then
+        if env $pip_env $PYTHON_CMD -m pip install -e "$install_src" --quiet $pip_flags 2>/dev/null; then
+            core_ok=true
+        fi
+    else
+        if env $pip_env $PYTHON_CMD -m pip install --force-reinstall --no-cache-dir "augent @ $install_src" --quiet $pip_flags 2>/dev/null; then
+            core_ok=true
+        fi
+    fi
+
+    if [[ "$core_ok" != "true" ]]; then
+        log_error "Core augent installation failed"
+        echo ""
+        echo -e "  ${BOLD}Try manually:${NC}"
+        echo -e "  $PYTHON_CMD -m pip install augent $pip_flags"
+        echo ""
+        exit 1
+    fi
+
+    log_success "Augent (core)"
+
+    # Try each optional extra individually and report results
+    local extras=("semantic" "speakers" "tts" "clips")
+    local extra_features=("Deep search & chapters" "Speaker identification" "Text-to-speech" "Audio clip extraction")
+    local failed_extras=()
+
+    for i in "${!extras[@]}"; do
+        local extra="${extras[$i]}"
+        local feature="${extra_features[$i]}"
+
+        if [[ "$is_local" == "true" ]]; then
+            if env $pip_env $PYTHON_CMD -m pip install -e "${install_src}[${extra}]" --quiet $pip_flags 2>/dev/null; then
+                log_success "  $feature ($extra)"
+            else
+                log_warn "  $feature ($extra) — skipped"
+                failed_extras+=("$extra")
+            fi
+        else
+            if env $pip_env $PYTHON_CMD -m pip install "augent[${extra}] @ $install_src" --quiet $pip_flags 2>/dev/null; then
+                log_success "  $feature ($extra)"
+            else
+                log_warn "  $feature ($extra) — skipped"
+                failed_extras+=("$extra")
+            fi
+        fi
+    done
+
+    if [[ ${#failed_extras[@]} -gt 0 ]]; then
+        echo ""
+        local joined
+        joined=$(IFS=,; echo "${failed_extras[*]}")
+        log_warn "Some optional features could not be installed: $joined"
+        echo -e "  ${DIM}Install later with:${NC}"
+        echo -e "  $PYTHON_CMD -m pip install \"augent[$joined]\" $pip_flags"
+        echo ""
+    fi
 }
 
 install_audio_downloader() {
@@ -485,6 +559,66 @@ verify_installation() {
     log_success "CLI ready"
 }
 
+verify_packages() {
+    log_step "Verifying Python packages"
+
+    # --- Core packages (hard fail if missing) ---
+    local core_ok=true
+
+    if ! $PYTHON_CMD -c "import augent" 2>/dev/null; then
+        log_error "augent package cannot be imported"
+        core_ok=false
+    fi
+
+    if ! $PYTHON_CMD -c "import faster_whisper" 2>/dev/null; then
+        log_error "faster-whisper package cannot be imported"
+        core_ok=false
+    fi
+
+    if [[ "$core_ok" != "true" ]]; then
+        echo ""
+        log_error "Core packages failed to import."
+        echo -e "  ${DIM}This usually means pip installed to a different Python than expected.${NC}"
+        echo ""
+        echo -e "  ${BOLD}Python used:${NC} $PYTHON_CMD"
+        echo -e "  ${BOLD}Fix with:${NC}"
+        echo -e "  $PYTHON_CMD -m pip install augent $( [[ "$PKG_MGR" == "brew" ]] && echo "--break-system-packages" || echo "--user" )"
+        echo ""
+        exit 1
+    fi
+
+    log_success "Core packages (augent, faster-whisper)"
+
+    # --- Optional packages (warn if missing) ---
+    local missing_extras=()
+
+    if ! $PYTHON_CMD -c "import sentence_transformers" 2>/dev/null; then
+        log_warn "sentence-transformers not available (deep search, chapters)"
+        missing_extras+=("semantic")
+    fi
+
+    if ! $PYTHON_CMD -c "import simple_diarizer" 2>/dev/null; then
+        log_warn "simple-diarizer not available (speaker identification)"
+        missing_extras+=("speakers")
+    fi
+
+    if ! $PYTHON_CMD -c "import kokoro" 2>/dev/null; then
+        log_warn "kokoro not available (text-to-speech)"
+        missing_extras+=("tts")
+    fi
+
+    if [[ ${#missing_extras[@]} -eq 0 ]]; then
+        log_success "All optional packages verified"
+    else
+        local joined
+        joined=$(IFS=,; echo "${missing_extras[*]}")
+        local pip_flag
+        pip_flag="$( [[ "$PKG_MGR" == "brew" ]] && echo "--break-system-packages" || echo "--user" )"
+        echo -e "  ${DIM}Install missing extras:${NC}"
+        echo -e "  $PYTHON_CMD -m pip install \"augent[$joined]\" $pip_flag"
+    fi
+}
+
 # ============================================================================
 # Configuration
 # ============================================================================
@@ -496,6 +630,21 @@ configure_mcp() {
     # Resolve symlinks to get true path
     if [[ -L "$python_abs" ]]; then
         python_abs="$(readlink -f "$python_abs" 2>/dev/null || readlink "$python_abs" 2>/dev/null || echo "$python_abs")"
+    fi
+
+    # Verify the resolved Python can actually import augent
+    # (catches symlink-resolves-to-wrong-Python issues)
+    if ! "$python_abs" -c "import augent" 2>/dev/null; then
+        log_warn "Resolved Python ($python_abs) cannot import augent"
+        # Fall back to the PYTHON_CMD that we know works (verified by verify_packages)
+        local fallback
+        fallback="$(command -v $PYTHON_CMD 2>/dev/null)" || fallback="$PYTHON_CMD"
+        if "$fallback" -c "import augent" 2>/dev/null; then
+            log_info "Using $fallback for MCP instead"
+            python_abs="$fallback"
+        else
+            log_error "No Python found that can import augent — MCP config may not work"
+        fi
     fi
 
     # Remove stale ~/.mcp.json augent entry (uses bare "augent-mcp" which can resolve to wrong Python)
@@ -590,6 +739,7 @@ EOF
     install_augent
     install_audio_downloader
     verify_installation
+    verify_packages
 
     # Configure MCP (auto when piped)
     if [[ -t 0 ]]; then
@@ -616,6 +766,11 @@ EOF
     echo ""
     echo -e "  ${BOLD}Claude Integration${NC}"
     echo -e "  MCP configured globally - works in any project directory"
+    echo ""
+    local python_display
+    python_display="$(command -v $PYTHON_CMD 2>/dev/null)" || python_display="$PYTHON_CMD"
+    echo -e "  ${BOLD}Python${NC}  $python_display"
+    echo -e "  ${DIM}Use this Python for future pip installs${NC}"
     echo ""
     if [[ "$PATH_MODIFIED" == "true" ]]; then
         echo -e "${YELLOW}Next steps:${NC}"
