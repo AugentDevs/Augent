@@ -794,16 +794,17 @@ def handle_list_cached(arguments: dict) -> dict:
     }
 
 
-def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str = "~/Desktop", safe_title: str = "") -> str:
+def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str = "~/Desktop", safe_title: str = "", txt_path: str = "") -> str:
     """Return formatting instructions for a given note style."""
 
     base_prefix = (
-        "IMPORTANT: You MUST now rewrite the file at txt_path using the Write tool. "
+        f"IMPORTANT: You MUST now rewrite the file at {txt_path} using the Write tool. "
+        "Use that EXACT absolute path — do NOT shorten or reconstruct it. "
         "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
         "For any follow-up tool calls (chapters, search, deep_search, etc.), use the audio_path field from this response — do NOT guess the filename. "
     )
     base_suffix = (
-        "\n\nWrite the final notes to txt_path using the Write tool. "
+        f"\n\nWrite the final notes to {txt_path} using the Write tool. "
         "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
     )
 
@@ -816,14 +817,14 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
         audio_filename = f"{safe_title}.mp3" if safe_title else "notes_audio.mp3"
         if _obsidian_installed:
             embed_instruction = (
-                f"After TTS completes, re-open txt_path and add ![[{audio_filename}]] on the very first line "
+                f"After TTS completes, re-open {txt_path} and add ![[{audio_filename}]] on the very first line "
                 f"(before the title), then add `> Press Cmd+E before playing — prevents audio from pausing on scroll` "
                 "on the line after the embed. Save again. "
             )
         else:
             embed_instruction = ""
         base_suffix = (
-            "\n\nWrite the final notes to txt_path using the Write tool. "
+            f"\n\nWrite the final notes to {txt_path} using the Write tool. "
             "THEN: Take the notes you just wrote — SKIP the title, source URL, duration, date, and any metadata lines at the top. Start from the first real content section heading. Take that content and "
             "strip the markdown formatting (remove #, **, -, >, ![], ---, callout syntax, links) "
             "so it reads as plain text. Keep every word and all the information exactly as written — "
@@ -980,7 +981,7 @@ def handle_take_notes(arguments: dict) -> dict:
         f.write(text)
 
     # Style-specific formatting instructions
-    instruction = _get_style_instruction(style, read_aloud=read_aloud, output_dir=output_dir, safe_title=safe_title)
+    instruction = _get_style_instruction(style, read_aloud=read_aloud, output_dir=output_dir, safe_title=safe_title, txt_path=txt_path)
 
     return {
         "success": True,
