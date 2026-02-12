@@ -964,7 +964,8 @@ def handle_take_notes(arguments: dict) -> dict:
 
     # Step 3: Save raw transcription as .txt on Desktop
     # Clean title for filename (remove special chars)
-    safe_title = re.sub(r'[^\w\s\-]', '', title).strip()
+    safe_title = re.sub(r'[^\w\s\-]', '', title)
+    safe_title = re.sub(r'\s+', ' ', safe_title).strip()
     if not safe_title:
         safe_title = "notes"
     txt_filename = f"{safe_title}.txt"
