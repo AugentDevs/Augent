@@ -392,8 +392,8 @@ install_augent() {
     else
         install_src="git+https://github.com/$AUGENT_REPO.git@main"
         # Clean slate for remote installs
-        $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags 2>/dev/null || true
-        $PYTHON_CMD -m pip cache purge 2>/dev/null || true
+        $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags >/dev/null 2>&1 || true
+        $PYTHON_CMD -m pip cache purge >/dev/null 2>&1 || true
     fi
 
     # --- Try [all] first (best case: everything installs in one shot) ---
@@ -409,7 +409,9 @@ install_augent() {
     fi
 
     if [[ "$all_ok" == "true" ]]; then
-        log_success "Augent (all features)"
+        local augent_ver
+        augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver=""
+        log_success "Augent ${augent_ver:+$augent_ver }(all features)"
         return 0
     fi
 
@@ -437,7 +439,9 @@ install_augent() {
         exit 1
     fi
 
-    log_success "Augent (core)"
+    local augent_ver
+    augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver=""
+    log_success "Augent ${augent_ver:+$augent_ver }(core)"
 
     # Try each optional extra individually and report results
     local extras=("semantic" "speakers" "tts" "clips")
