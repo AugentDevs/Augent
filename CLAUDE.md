@@ -41,6 +41,8 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop
 4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — rewrite the .txt file with beautiful, Obsidian-styled notes using the Write tool
 
+**CRITICAL — absolute paths:** The response returns `write_to` (absolute path for writing notes) and `audio_path` (absolute path for follow-up tools like chapters/search). You MUST use these exact paths. NEVER construct or shorten paths yourself — use the values from the response verbatim. The Write tool requires absolute paths (starting with /).
+
 **IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
 
 ### take_notes
