@@ -802,7 +802,8 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
 
     base_prefix = (
         "IMPORTANT: You MUST now format the notes and save them by calling take_notes again with save_content. "
-        "Do NOT use the Write tool. Do NOT leave the raw transcription as-is. Do NOT create .md files. "
+        "Do NOT use the Write or Edit tools on notes files — ALWAYS use take_notes(save_content=...) for both initial save and any subsequent edits. "
+        "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
         "For any follow-up tool calls (chapters, search, deep_search, etc.), use the audio_path field from this response — do NOT guess the filename. "
     )
     base_suffix = (

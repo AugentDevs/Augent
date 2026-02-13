@@ -41,7 +41,7 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop
 4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — format the notes and save them by calling `take_notes(save_content="<your formatted notes>")`. Do NOT use the Write tool for saving notes.
 
-**CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames. Save notes by calling `take_notes(save_content=...)` — do NOT use the Write tool.
+**CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames. Save or update notes by calling `take_notes(save_content=...)` — NEVER use the Write or Edit tools on notes files. This includes the initial save AND any subsequent edits (adding timestamps, fixing formatting, etc.). Always rewrite the full file in one `take_notes(save_content=...)` call.
 
 **IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
 
