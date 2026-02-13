@@ -39,9 +39,9 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 1. **User says:** "Take notes from https://youtube.com/watch?v=xxx"
 2. **You call:** `take_notes` with the URL
 3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop
-4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — rewrite the .txt file with beautiful, Obsidian-styled notes using the Write tool
+4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — format the notes and save them by calling `take_notes(save_content="<your formatted notes>")`. Do NOT use the Write tool for saving notes.
 
-**CRITICAL — absolute paths:** The response returns `write_to` (absolute path for writing notes) and `audio_path` (absolute path for follow-up tools like chapters/search). You MUST use these exact paths. NEVER construct or shorten paths yourself — use the values from the response verbatim. The Write tool requires absolute paths (starting with /).
+**CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames. Save notes by calling `take_notes(save_content=...)` — do NOT use the Write tool.
 
 **IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
 

@@ -233,13 +233,17 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "take_notes",
-                    "description": "Take notes from a URL. Saves .txt to Desktop.",
+                    "description": "Take notes from a URL. Saves .txt to Desktop. Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "url": {
                                 "type": "string",
                                 "description": "Video/audio URL to take notes from (YouTube, Vimeo, TikTok, Twitter, SoundCloud, etc.)"
+                            },
+                            "save_content": {
+                                "type": "string",
+                                "description": "Formatted notes content to save. When provided, writes this content to the file from the previous take_notes call. No url needed."
                             },
                             "output_dir": {
                                 "type": "string",
@@ -259,8 +263,7 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "boolean",
                                 "description": "Generate a spoken audio summary and embed it in the notes for Obsidian playback. Default: false"
                             }
-                        },
-                        "required": ["url"]
+                        }
                     }
                 },
                 {
@@ -798,14 +801,14 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
     """Return formatting instructions for a given note style."""
 
     base_prefix = (
-        f"IMPORTANT: You MUST now rewrite the file at {txt_path} using the Write tool. "
-        "Use that EXACT absolute path — do NOT shorten or reconstruct it. "
-        "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
+        "IMPORTANT: You MUST now format the notes and save them by calling take_notes again with save_content. "
+        "Do NOT use the Write tool. Do NOT leave the raw transcription as-is. Do NOT create .md files. "
         "For any follow-up tool calls (chapters, search, deep_search, etc.), use the audio_path field from this response — do NOT guess the filename. "
     )
     base_suffix = (
-        f"\n\nWrite the final notes to {txt_path} using the Write tool. "
-        "After writing, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+        "\n\nSave the final notes by calling: take_notes(save_content=\"<your formatted notes>\"). "
+        "Do NOT use the Write tool. "
+        "After saving, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
     )
 
     if read_aloud:
@@ -824,7 +827,8 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
         else:
             embed_instruction = ""
         base_suffix = (
-            f"\n\nWrite the final notes to {txt_path} using the Write tool. "
+            "\n\nSave the final notes by calling: take_notes(save_content=\"<your formatted notes>\"). "
+            "Do NOT use the Write tool. "
             "THEN: Take the notes you just wrote — SKIP the title, source URL, duration, date, and any metadata lines at the top. Start from the first real content section heading. Take that content and "
             "strip the markdown formatting (remove #, **, -, >, ![], ---, callout syntax, links) "
             "so it reads as plain text. Keep every word and all the information exactly as written — "
@@ -931,10 +935,26 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
     return base_prefix + body + base_suffix
 
 
+_last_notes_path = None
+
 def handle_take_notes(arguments: dict) -> dict:
     """Handle take_notes tool call - download, transcribe, save .txt to Desktop."""
     import os
     import re
+    global _last_notes_path
+
+    # --- Save mode: write formatted notes to the file from the previous call ---
+    save_content = arguments.get("save_content")
+    if save_content is not None:
+        if not _last_notes_path:
+            raise ValueError("No previous take_notes path. Call take_notes with a url first.")
+        with open(_last_notes_path, "w", encoding="utf-8") as f:
+            f.write(save_content)
+        return {
+            "success": True,
+            "saved_to": _last_notes_path,
+            "size": len(save_content),
+        }
 
     url = arguments.get("url")
     output_dir = arguments.get("output_dir", os.path.expanduser("~/Desktop"))
@@ -979,6 +999,8 @@ def handle_take_notes(arguments: dict) -> dict:
         f.write(f"Title: {title}\n")
         f.write("=" * 60 + "\n\n")
         f.write(text)
+
+    _last_notes_path = txt_path
 
     # Style-specific formatting instructions
     instruction = _get_style_instruction(style, read_aloud=read_aloud, output_dir=output_dir, safe_title=safe_title, txt_path=txt_path)
