@@ -38,8 +38,9 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 
 1. **User says:** "Take notes from https://youtube.com/watch?v=xxx"
 2. **You call:** `take_notes` with the URL
-3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop
+3. **Tool does:** Downloads audio → Transcribes → Saves .txt to Desktop → Returns `audio_path` and `write_to`
 4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — format the notes and save them by calling `take_notes(save_content="<your formatted notes>")`. Do NOT use the Write tool for saving notes.
+5. **For chapters/search:** Use `audio_path` from step 3. Do NOT call `download_audio` — the audio is already downloaded.
 
 **CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames. Save or update notes by calling `take_notes(save_content=...)` — NEVER use the Write or Edit tools on notes files. This includes the initial save AND any subsequent edits (adding timestamps, fixing formatting, etc.). Always rewrite the full file in one `take_notes(save_content=...)` call.
 

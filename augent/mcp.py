@@ -233,7 +233,7 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "take_notes",
-                    "description": "Take notes from a URL. Saves .txt to Desktop. Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
+                    "description": "Take notes from a URL. Downloads audio, transcribes, and saves .txt to Desktop. Returns audio_path for follow-up tools (chapters, search) — do NOT call download_audio separately. Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -821,9 +821,9 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
         audio_filename = f"{safe_title}.mp3" if safe_title else "notes_audio.mp3"
         if _obsidian_installed:
             embed_instruction = (
-                f"After TTS completes, re-open {txt_path} and add ![[{audio_filename}]] on the very first line "
-                f"(before the title), then add `> Press Cmd+E before playing — prevents audio from pausing on scroll` "
-                "on the line after the embed. Save again. "
+                f"After TTS completes, prepend ![[{audio_filename}]] on the very first line "
+                f"(before the title) and `> Press Cmd+E before playing — prevents audio from pausing on scroll` "
+                "on the line after the embed, then save by calling take_notes(save_content=...) with the full updated content. "
             )
         else:
             embed_instruction = ""
@@ -1102,11 +1102,20 @@ def handle_chapters(arguments: dict) -> dict:
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
 
-    return detect_chapters(
+    result = detect_chapters(
         audio_path,
         model_size=model_size,
         sensitivity=sensitivity,
     )
+
+    # Trim chapter text to a short preview to avoid massive responses (~17k tokens)
+    for chapter in result.get("chapters", []):
+        text = chapter.get("text", "")
+        words = text.split()
+        if len(words) > 30:
+            chapter["text"] = " ".join(words[:30]) + "..."
+
+    return result
 
 
 def handle_text_to_speech(arguments: dict) -> dict:
