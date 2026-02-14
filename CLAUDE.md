@@ -42,7 +42,9 @@ When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool
 4. **You MUST then:** Read the `instruction` field from the response and follow it exactly — format the notes and save them by calling `take_notes(save_content="<your formatted notes>")`. Do NOT use the Write tool for saving notes.
 5. **For chapters/search:** Use `audio_path` from step 3. Do NOT call `download_audio` — the audio is already downloaded.
 
-**CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames. Save or update notes by calling `take_notes(save_content=...)` — NEVER use the Write or Edit tools on notes files. This includes the initial save AND any subsequent edits (adding timestamps, fixing formatting, etc.). Always rewrite the full file in one `take_notes(save_content=...)` call.
+**CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames.
+
+**MANDATORY — SAVE METHOD:** You MUST call `take_notes(save_content="...")` to save notes. NEVER use the Write tool or Edit tool on notes files. The take_notes tool applies essential post-processing (checkbox formatting for quizzes) that the Write tool bypasses. If you use Write instead of take_notes(save_content=...), the output will be broken. This includes the initial save AND any subsequent edits. Always rewrite the full file in one `take_notes(save_content=...)` call.
 
 **IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
 
@@ -60,7 +62,11 @@ read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obs
 - `notes` — Clean sections + nested bullets (default)
 - `highlight` — Notes with callout blocks for key insights, blockquotes with timestamps
 - `eye-candy` — Maximum visual formatting: callouts, tables, checklists, blockquotes, the full Obsidian treatment
-- `quiz` — Multiple-choice questions using `- [ ]` checkbox syntax for each A/B/C/D option, with answer key at the bottom
+- `quiz` — Multiple-choice questions with answer key. Answer key format: each answer on its own line as `**1. B** — Explanation.`
+
+**Combining styles:** If the user asks for "eye-candy quiz" or similar combos, use `style: "quiz"` but apply eye-candy formatting (callouts, emojis, section dividers, tables) to the quiz structure. The style parameter only accepts one value, so use quiz and enhance visually.
+
+**Grading quizzes:** When the user asks to be graded on a quiz, do NOT ask them for their answers. Read the quiz file — the user checks their answers in Obsidian using `- [x]` checkboxes. To find the file: use the path from the current conversation if available, otherwise search `~/Desktop/*.txt` for the most recent file containing "Answer Key". Look for `- [x]` (checked) options, compare against the answer key at the bottom, and grade them. If no checkboxes are checked, then ask for their answers.
 
 Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
 

@@ -806,10 +806,11 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
         "Do NOT leave the raw transcription as-is. Do NOT create .md files. "
         "For any follow-up tool calls (chapters, search, deep_search, etc.), use the audio_path field from this response — do NOT guess the filename. "
     )
+    label = "Quiz" if style == "quiz" else "Notes"
     base_suffix = (
         "\n\nSave the final notes by calling: take_notes(save_content=\"<your formatted notes>\"). "
         "Do NOT use the Write tool. "
-        "After saving, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+        f"After saving, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
     )
 
     if read_aloud:
@@ -838,7 +839,7 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
             "Run the text_to_speech tool with that spoken script, "
             f'output_dir="{output_dir}", output_filename="{audio_filename}". '
             + embed_instruction +
-            "After everything, respond ONLY with: Done. Notes saved to ~/Desktop/<filename>"
+            f"After everything, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
         )
 
     styles = {
@@ -922,17 +923,21 @@ def _get_style_instruction(style: str, read_aloud: bool = False, output_dir: str
             "\n"
             "### 1. **Question text here?**\n"
             "\n"
-            "- [ ] A) First option\n"
-            "- [ ] B) Second option\n"
-            "- [ ] C) Third option\n"
-            "- [ ] D) Fourth option\n"
-            "\n"
-            "CRITICAL: Every answer option MUST use checkbox syntax `- [ ]`. Do NOT use plain `A)` `B)` `C)` `D)` without checkboxes. This is mandatory.\n"
+            "A) First option\n"
+            "B) Second option\n"
+            "C) Third option\n"
+            "D) Fourth option\n"
             "\n"
             "- ---\n"
-            "- Answer Key section at the bottom\n"
-            "  - Format: 1. B | 2. A | 3. D (compact, one line per 5 answers)\n"
-            "  - Brief explanation for each answer on the next line\n"
+            "- Answer Key section at the bottom with this EXACT format:\n"
+            "\n"
+            "## Answer Key\n"
+            "\n"
+            "**1. B** — Explanation of why B is correct.\n"
+            "**2. A** — Explanation of why A is correct.\n"
+            "**3. D** — Explanation of why D is correct.\n"
+            "\n"
+            "Each answer on its own line. Bold number and letter, em dash, then explanation. No grouping, no compact rows, no bullet lists.\n"
             "\n"
             "Questions should test real understanding, not trivial details.\n"
         ),
@@ -955,12 +960,21 @@ def handle_take_notes(arguments: dict) -> dict:
     if save_content is not None:
         if not _last_notes_path:
             raise ValueError("No previous take_notes path. Call take_notes with a url first.")
+        # Post-process: convert plain A)/B)/C)/D) answer lines to checkbox syntax
+        had_bare = bool(re.search(r'^\s*[A-D]\)', save_content, flags=re.MULTILINE))
+        save_content = re.sub(r'^(\s*)([A-D]\))', r'- [ ] \2', save_content, flags=re.MULTILINE)
+        has_checkboxes = '- [ ]' in save_content
         with open(_last_notes_path, "w", encoding="utf-8") as f:
             f.write(save_content)
+        # Debug log
+        import datetime
+        with open(os.path.expanduser("~/.augent/checkbox_debug.log"), "a") as dbg:
+            dbg.write(f"{datetime.datetime.now()} | path={_last_notes_path} | had_bare={had_bare} | has_checkboxes={has_checkboxes} | size={len(save_content)}\n")
         return {
             "success": True,
             "saved_to": _last_notes_path,
             "size": len(save_content),
+            "debug_checkbox": {"had_bare_options": had_bare, "has_checkboxes_after": has_checkboxes},
         }
 
     url = arguments.get("url")
