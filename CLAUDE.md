@@ -64,7 +64,16 @@ read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obs
 - `eye-candy` — Maximum visual formatting: callouts, tables, checklists, blockquotes, the full Obsidian treatment
 - `quiz` — Multiple-choice questions with answer key. Answer key format: each answer on its own line as `**1. B** — Explanation.`
 
-**Combining styles:** If the user asks for "eye-candy quiz" or similar combos, use `style: "quiz"` but apply eye-candy formatting (callouts, emojis, section dividers, tables) to the quiz structure. The style parameter only accepts one value, so use quiz and enhance visually.
+**Combining styles:** If the user asks for "eye-candy quiz" or similar combos, use `style: "quiz"` and add eye-candy formatting ONLY to surrounding elements (title, metadata, section headers, dividers between questions). The question and answer structure MUST stay exactly the same as a normal quiz:
+```
+### 1. **Question?**
+
+A) Option
+B) Option
+C) Option
+D) Option
+```
+NEVER change the A/B/C/D answer format — no tables, no inline answers, no custom formatting on the options. The hook post-processes them into checkboxes. If you change the format, checkboxes break.
 
 **Grading quizzes:** When the user asks to be graded on a quiz, do NOT ask them for their answers. Read the quiz file — the user checks their answers in Obsidian using `- [x]` checkboxes. To find the file: use the path from the current conversation if available, otherwise search `~/Desktop/*.txt` for the most recent file containing "Answer Key". Look for `- [x]` (checked) options, compare against the answer key at the bottom, and grade them. If no checkboxes are checked, then ask for their answers.
 
