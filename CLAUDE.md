@@ -60,7 +60,7 @@ read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obs
 - `notes` — Clean sections + nested bullets (default)
 - `highlight` — Notes with callout blocks for key insights, blockquotes with timestamps
 - `eye-candy` — Maximum visual formatting: callouts, tables, checklists, blockquotes, the full Obsidian treatment
-- `quiz` — Multiple-choice questions with answer key
+- `quiz` — Multiple-choice questions using `- [ ]` checkbox syntax for each A/B/C/D option, with answer key at the bottom
 
 Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
 
