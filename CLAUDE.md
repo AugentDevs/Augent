@@ -34,7 +34,9 @@ augent search ~/Downloads/tutorial.webm "keyword1,keyword2"
 
 ## Note-Taking (Primary Workflow)
 
-When a user asks to "take notes" from a URL, use the `take_notes` tool. One tool call does everything:
+**IMPORTANT:** When a user gives you a video/audio URL and asks to create notes, a quiz, take notes, transcribe, or anything involving audio content — ALWAYS use the `take_notes` MCP tool. Do NOT fetch the URL directly. Do NOT use WebFetch. The `take_notes` tool downloads the audio, transcribes it locally, and returns the content for formatting.
+
+When a user asks to "take notes" or "create a quiz" from a URL, use the `take_notes` tool. One tool call does everything:
 
 1. **User says:** "Take notes from https://youtube.com/watch?v=xxx"
 2. **You call:** `take_notes` with the URL
