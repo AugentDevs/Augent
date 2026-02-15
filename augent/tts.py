@@ -61,47 +61,34 @@ def text_to_speech(
             "or apt-get install espeak-ng (Linux)"
         )
 
-    # Suppress all noisy warnings from torch/HF/kokoro before any imports
+    # Suppress all noisy warnings from torch/HF/kokoro
     import logging
+    import io
+    import contextlib
     for logger_name in ("kokoro", "huggingface_hub", "torch", "transformers"):
         logging.getLogger(logger_name).setLevel(logging.ERROR)
     os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
     os.environ["HF_HUB_DISABLE_WARNINGS"] = "1"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    _old_stderr = os.dup(2)
-    _devnull = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(_devnull, 2)
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            from kokoro import KPipeline
-            import soundfile as sf
-            import numpy as np
-    finally:
-        os.dup2(_old_stderr, 2)
-        os.close(_devnull)
-        os.close(_old_stderr)
+
+    with warnings.catch_warnings(), contextlib.redirect_stderr(io.StringIO()):
+        warnings.simplefilter("ignore")
+        from kokoro import KPipeline
+        import soundfile as sf
+        import numpy as np
 
     # Detect language from voice prefix
     lang_code = voice[0] if voice else "a"
     language = LANG_MAP.get(lang_code, "American English")
 
-    # Create pipeline and generate audio — suppress torch/kokoro warnings
-    _old_stderr2 = os.dup(2)
-    _devnull2 = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(_devnull2, 2)
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            pipeline = KPipeline(lang_code=lang_code, repo_id="hexgrad/Kokoro-82M")
-            chunks = []
-            for _, _, audio in pipeline(text, voice=voice, speed=speed):
-                if audio is not None:
-                    chunks.append(audio)
-    finally:
-        os.dup2(_old_stderr2, 2)
-        os.close(_devnull2)
-        os.close(_old_stderr2)
+    # Create pipeline and generate audio
+    with warnings.catch_warnings(), contextlib.redirect_stderr(io.StringIO()):
+        warnings.simplefilter("ignore")
+        pipeline = KPipeline(lang_code=lang_code, repo_id="hexgrad/Kokoro-82M")
+        chunks = []
+        for _, _, audio in pipeline(text, voice=voice, speed=speed):
+            if audio is not None:
+                chunks.append(audio)
 
     if not chunks:
         raise RuntimeError("No audio generated. Check that the text and voice are valid.")

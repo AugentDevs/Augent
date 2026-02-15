@@ -1139,14 +1139,10 @@ def handle_chapters(arguments: dict) -> dict:
 
 
 def handle_text_to_speech(arguments: dict) -> dict:
-    """Handle text_to_speech tool call."""
-    try:
-        from .tts import text_to_speech, read_aloud
-    except ImportError:
-        raise RuntimeError(
-            "Missing dependencies: kokoro. "
-            "Install with: pip install kokoro soundfile"
-        )
+    """Handle text_to_speech tool call. Runs in subprocess to isolate stdout/stderr from MCP pipe."""
+    import subprocess
+    import tempfile
+    import os
 
     text = arguments.get("text")
     file_path = arguments.get("file_path")
@@ -1155,19 +1151,62 @@ def handle_text_to_speech(arguments: dict) -> dict:
     output_filename = arguments.get("output_filename")
     speed = arguments.get("speed", 1.0)
 
-    if file_path:
-        return read_aloud(file_path, voice=voice, speed=speed)
-
-    if not text:
+    if not text and not file_path:
         raise ValueError("Either text or file_path is required")
 
-    return text_to_speech(
-        text,
-        voice=voice,
-        output_dir=output_dir,
-        output_filename=output_filename,
-        speed=speed,
-    )
+    # Build a Python script to run TTS in a completely separate process
+    # stdout/stderr silenced for entire run, only restored for final print
+    script = f"""
+import json, sys, os
+_real_stdout = os.dup(1)
+sys.stdout = open('/dev/null', 'w')
+sys.stderr = open('/dev/null', 'w')
+os.dup2(os.open('/dev/null', os.O_WRONLY), 1)
+os.dup2(os.open('/dev/null', os.O_WRONLY), 2)
+from augent.tts import text_to_speech, read_aloud
+try:
+    if {repr(file_path)}:
+        result = read_aloud({repr(file_path)}, voice={repr(voice)}, speed={speed})
+    else:
+        result = text_to_speech(
+            text={repr(text)},
+            voice={repr(voice)},
+            output_dir={repr(output_dir)},
+            output_filename={repr(output_filename)},
+            speed={speed},
+        )
+    os.dup2(_real_stdout, 1)
+    sys.stdout = os.fdopen(_real_stdout, 'w')
+    print(json.dumps(result))
+except Exception as e:
+    os.dup2(_real_stdout, 1)
+    sys.stdout = os.fdopen(_real_stdout, 'w')
+    print(json.dumps({{"error": str(e)}}))
+"""
+
+    # Write script to temp file to avoid shell escaping issues
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        f.write(script)
+        script_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [sys.executable, script_path],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+
+        if proc.returncode != 0:
+            raise RuntimeError(f"TTS subprocess failed: {proc.stderr.strip()}")
+
+        result = json.loads(proc.stdout.strip())
+        if "error" in result:
+            raise RuntimeError(result["error"])
+
+        return result
+    finally:
+        os.unlink(script_path)
 
 
 def handle_request(request: dict) -> None:
