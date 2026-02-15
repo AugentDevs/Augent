@@ -1190,8 +1190,12 @@ except Exception as e:
         script_path = f.name
 
     try:
+        # Use 'python3' not sys.executable — the MCP server may be launched
+        # with a different Python (e.g. homebrew) that has env restrictions
+        import shutil
+        python_bin = shutil.which("python3") or sys.executable
         proc = subprocess.run(
-            [sys.executable, script_path],
+            [python_bin, script_path],
             stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
