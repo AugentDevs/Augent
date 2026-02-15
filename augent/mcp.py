@@ -1192,6 +1192,7 @@ except Exception as e:
     try:
         proc = subprocess.run(
             [sys.executable, script_path],
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=600,
