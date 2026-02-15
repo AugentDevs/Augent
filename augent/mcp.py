@@ -320,10 +320,14 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "text_to_speech",
-                    "description": "Convert text to natural speech audio using Kokoro TTS. Saves an MP3 file. Pass text for raw TTS, or file_path to read a notes file (strips markdown, skips metadata, embeds audio player).",
+                    "description": "Convert text to natural speech audio using Kokoro TTS. Saves an MP3 file. Runs in background — returns a job_id immediately. Call again with job_id to check status. Pass text for raw TTS, or file_path to read a notes file (strips markdown, skips metadata, embeds audio player).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
+                            "job_id": {
+                                "type": "string",
+                                "description": "Check status of a running TTS job. Pass the job_id returned from a previous call."
+                            },
                             "text": {
                                 "type": "string",
                                 "description": "Text to convert to speech. Either text or file_path is required."
@@ -1138,11 +1142,44 @@ def handle_chapters(arguments: dict) -> dict:
     return result
 
 
+_tts_jobs = {}
+
 def handle_text_to_speech(arguments: dict) -> dict:
-    """Handle text_to_speech tool call. Runs in subprocess to isolate stdout/stderr from MCP pipe."""
+    """Handle text_to_speech tool call. Runs in background subprocess, returns instantly."""
     import subprocess
     import tempfile
     import os
+    import shutil
+    import uuid
+
+    # Check status of a running job
+    job_id = arguments.get("job_id")
+    if job_id:
+        job = _tts_jobs.get(job_id)
+        if not job:
+            raise ValueError(f"Unknown job: {job_id}")
+        proc = job["proc"]
+        poll = proc.poll()
+        if poll is None:
+            return {"status": "generating", "job_id": job_id, "message": "TTS is still running. Check again in a few seconds."}
+        # Done — read result
+        stdout = proc.stdout.read()
+        proc.stdout.close()
+        try:
+            os.unlink(job["script"])
+        except OSError:
+            pass
+        if poll != 0:
+            del _tts_jobs[job_id]
+            raise RuntimeError("TTS generation failed")
+        result = json.loads(stdout.strip())
+        if "error" in result:
+            del _tts_jobs[job_id]
+            raise RuntimeError(result["error"])
+        del _tts_jobs[job_id]
+        result["status"] = "complete"
+        result["job_id"] = job_id
+        return result
 
     text = arguments.get("text")
     file_path = arguments.get("file_path")
@@ -1155,7 +1192,6 @@ def handle_text_to_speech(arguments: dict) -> dict:
         raise ValueError("Either text or file_path is required")
 
     # Build a Python script to run TTS in a completely separate process
-    # stdout/stderr silenced for entire run, only restored for final print
     script = f"""
 import json, sys, os
 _real_stdout = os.dup(1)
@@ -1184,34 +1220,27 @@ except Exception as e:
     print(json.dumps({{"error": str(e)}}))
 """
 
-    # Write script to temp file to avoid shell escaping issues
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write(script)
         script_path = f.name
 
-    try:
-        # Use 'python3' not sys.executable — the MCP server may be launched
-        # with a different Python (e.g. homebrew) that has env restrictions
-        import shutil
-        python_bin = shutil.which("python3") or sys.executable
-        proc = subprocess.run(
-            [python_bin, script_path],
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            text=True,
-            timeout=600,
-        )
+    python_bin = shutil.which("python3") or sys.executable
+    proc = subprocess.Popen(
+        [python_bin, script_path],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
 
-        if proc.returncode != 0:
-            raise RuntimeError(f"TTS subprocess failed: {proc.stderr.strip()}")
+    job_id = str(uuid.uuid4())[:8]
+    _tts_jobs[job_id] = {"proc": proc, "script": script_path}
 
-        result = json.loads(proc.stdout.strip())
-        if "error" in result:
-            raise RuntimeError(result["error"])
-
-        return result
-    finally:
-        os.unlink(script_path)
+    return {
+        "status": "started",
+        "job_id": job_id,
+        "message": f"TTS generation started in background. Call text_to_speech with job_id='{job_id}' to check status."
+    }
 
 
 def handle_request(request: dict) -> None:
