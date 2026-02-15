@@ -647,18 +647,36 @@ configure_mcp() {
         python_abs="$(readlink -f "$python_abs" 2>/dev/null || readlink "$python_abs" 2>/dev/null || echo "$python_abs")"
     fi
 
-    # Verify the resolved Python can actually import augent
-    # (catches symlink-resolves-to-wrong-Python issues)
+    # Verify the resolved Python can actually import augent AND run TTS
+    # Homebrew Python has PEP 668 restrictions that silently crash TTS subprocess
     if ! "$python_abs" -c "import augent" 2>/dev/null; then
         log_warn "Resolved Python ($python_abs) cannot import augent"
-        # Fall back to the PYTHON_CMD that we know works (verified by verify_packages)
-        local fallback
-        fallback="$(command -v $PYTHON_CMD 2>/dev/null)" || fallback="$PYTHON_CMD"
+        python_abs=""
+    elif "$python_abs" -c "import sysconfig; exit(0 if sysconfig.get_path('stdlib').startswith('/Library/Frameworks') else 1)" 2>/dev/null; then
+        : # Framework Python — good
+    elif "$python_abs" -c "import sys; sys.exit(0)" 2>&1 | grep -q "externally-managed" 2>/dev/null; then
+        log_warn "Resolved Python ($python_abs) has PEP 668 restrictions"
+        python_abs=""
+    fi
+
+    # If resolved Python is unsuitable, find a framework/non-restricted Python
+    if [[ -z "$python_abs" ]]; then
+        local fallback=""
+        # Try framework Python first (macOS)
+        for candidate in /Library/Frameworks/Python.framework/Versions/3.*/bin/python3; do
+            if [[ -x "$candidate" ]] && "$candidate" -c "import augent" 2>/dev/null; then
+                fallback="$candidate"
+            fi
+        done
+        # Fall back to PYTHON_CMD
+        if [[ -z "$fallback" ]]; then
+            fallback="$(command -v $PYTHON_CMD 2>/dev/null)" || fallback="$PYTHON_CMD"
+        fi
         if "$fallback" -c "import augent" 2>/dev/null; then
             log_info "Using $fallback for MCP instead"
             python_abs="$fallback"
         else
-            log_error "No Python found that can import augent — MCP config may not work"
+            log_error "No suitable Python found — MCP config may not work"
         fi
     fi
 
