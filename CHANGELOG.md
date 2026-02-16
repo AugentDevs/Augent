@@ -22,11 +22,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - Fixed Python badge (3.9 → 3.10 to match actual requirement)
 - Marked project as Production/Stable in classifiers
 
-### Removed
-
-- GitHub Sponsors config (doesn't fit project model)
-- Empty `examples/` directory
-
 ---
 
 ## [2026.2.15] - 2026-02-15
