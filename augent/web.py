@@ -481,8 +481,8 @@ def search_audio_streaming(
     log_lines.append("  [search] finding matches...")
     yield "\n".join(log_lines), "{}", "<p style='color:#00F060;'>Searching...</p>"
 
-    searcher = KeywordSearcher(context_words=11, enable_fuzzy=False)
-    matches = searcher.search(all_words, keywords, include_fuzzy=False)
+    searcher = KeywordSearcher(context_words=11)
+    matches = searcher.search(all_words, keywords)
 
     grouped = {}
     for m in matches:

@@ -53,16 +53,14 @@ class KeywordSearcher:
     Supports exact matching, phrase matching, and proximity-based search.
     """
 
-    def __init__(self, context_words: int = 11, enable_fuzzy: bool = False):
+    def __init__(self, context_words: int = 11):
         """
         Initialize the searcher.
 
         Args:
             context_words: Number of words to include for context snippets
-            enable_fuzzy: Deprecated, kept for compatibility
         """
         self.context_words = context_words
-        self.enable_fuzzy = False  # Always disabled
 
     def search_exact(self, words: List[Dict], keywords: List[str]) -> List[Match]:
         """
@@ -176,7 +174,6 @@ class KeywordSearcher:
         self,
         words: List[Dict],
         keywords: List[str],
-        include_fuzzy: bool = False,
         proximity_pairs: Optional[List[Tuple[str, str, int]]] = None
     ) -> List[Match]:
         """
@@ -185,7 +182,6 @@ class KeywordSearcher:
         Args:
             words: List of word dicts
             keywords: List of keywords to search for
-            include_fuzzy: Deprecated, ignored
             proximity_pairs: List of (keyword1, keyword2, max_distance) tuples
 
         Returns:
