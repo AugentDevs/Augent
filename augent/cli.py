@@ -530,7 +530,7 @@ def cmd_help(args: argparse.Namespace):
         import importlib.metadata
         version = importlib.metadata.version('augent')
     except Exception:
-        version = "1.0.0"
+        version = "2026.2.16"
 
     help_text = f"""
 ================================================================================
@@ -618,7 +618,7 @@ def print_simple_help():
         import importlib.metadata
         version = importlib.metadata.version('augent')
     except Exception:
-        version = "1.0.0"
+        version = "2026.2.16"
 
     help_text = f"""
     _                          _

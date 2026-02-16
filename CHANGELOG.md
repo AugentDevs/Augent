@@ -4,7 +4,7 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [1.0.0] - 2026-01-23
+## [2026.1.23] - 2026-01-23
 
 ### Added
 
@@ -25,7 +25,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **Cross-platform installer** — one-liner setup for macOS and Linux
 - **Export formats** — JSON, CSV, SRT, VTT, Markdown
 
-## [1.0.1] - 2026-02-15
+## [2026.2.15] - 2026-02-15
 
 ### Added
 

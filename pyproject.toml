@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "augent"
-version = "1.0.1"
+version = "2026.2.16"
 description = "Local audio keyword search using faster-whisper with caching, proximity search, and multiple export formats"
 readme = "README.md"
 license = {text = "MIT"}
