@@ -1,11 +1,23 @@
 ## What does this change?
 
-<!-- Brief description of what you changed and why -->
+<!-- 1-3 sentences: what and why -->
+
+## Type
+
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Other
 
 ## How was this tested?
 
-<!-- How did you verify this works? -->
+<!-- Describe what you tested and how -->
 
 - [ ] Tested locally
-- [ ] Existing tests pass (`python3 -m pytest tests/`)
+- [ ] Existing tests pass (`pytest tests/ -v`)
 - [ ] Added new tests (if applicable)
+
+## Anything reviewers should know?
+
+<!-- Breaking changes, migration steps, known limitations, etc. Leave blank if none. -->
