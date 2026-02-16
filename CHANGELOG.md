@@ -10,17 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - **OpenClaw integration** — skill package for ClawHub + `augent setup openclaw` one-liner
 - **Installer auto-detects OpenClaw** and configures MCP alongside Claude
-- **Dynamic version badge** — reads from pyproject.toml, auto-updates on push
 - **MCP protocol tests** — 33 tests covering routing, tool listing, and error handling
-- **CalVer versioning** — switched from semver to calendar versioning (YYYY.M.DD)
-
-### Fixed
-
-- Removed deprecated fuzzy matching code
-- Removed stale `setup.cfg` (was out of sync with pyproject.toml)
-- Fixed changelog dates (2025 → 2026)
-- Fixed Python badge (3.9 → 3.10 to match actual requirement)
-- Marked project as Production/Stable in classifiers
 
 ---
 
@@ -29,7 +19,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - **TTS no longer blocks MCP** — runs in background subprocess with job polling
-- TTS subprocess no longer inherits MCP stdin pipe
 - Installer correctly selects framework Python for MCP config on macOS
 
 ---
@@ -40,7 +29,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - **Quiz checkbox syntax** — answer options render as Obsidian checkboxes
 - Answer key formatting enforced (bold number + letter, em dash, explanation)
-- Eye-candy + quiz combo formatting locked to prevent breaking checkbox syntax
 - Claude always routes video URLs through `take_notes`, never WebFetch
 
 ---
@@ -55,9 +43,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - Installer eliminates silent failures and verifies all packages
-- Corrected Kokoro version constraint for PyPI
 - `take_notes` embeds absolute file paths in Claude instructions
-- Suppressed pip cache noise during install
 - Skip re-downloading dependencies on reinstall
 
 ---
@@ -67,10 +53,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Improved
 
 - **Lazy imports** for optional dependencies — installing mid-session works without restart
-- Guard against missing file path in `take_notes` handler
-- Collapse whitespace in sanitized note filenames
 - Preserve WAV file when ffmpeg conversion fails in TTS
-- Fixed type hint in clips module (`callable` → `Callable`)
 
 ---
 
@@ -80,7 +63,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - **Text-to-speech** — Kokoro TTS with 54 voices across 9 languages
 - **`read_aloud` option** for `take_notes` — generates spoken MP3 and embeds in Obsidian
-- Pipeline diagram added to README
 
 ---
 
@@ -123,13 +105,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - **Python 3.10+ required** (dropped 3.9 support)
-- Removed Python 3.9 from CI matrix
 
 ### Fixed
 
 - Homebrew Python compatibility (PATH, PEP 668, absolute paths)
 - Pinned yt-dlp to stable version for reliable downloads
-- MCP config uses `claude mcp add` instead of manual JSON editing
 - Installer handles Homebrew permission issues gracefully
 
 ---
@@ -157,7 +137,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **CI/CD** — GitHub Actions testing on Python 3.10, 3.11, 3.12
 - **Professional installer** — one-liner `curl | bash` setup
 - Logo and branding
-- `python3 -m augent` entrypoint
 
 ---
 
