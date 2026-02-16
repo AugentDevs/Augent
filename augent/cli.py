@@ -358,6 +358,172 @@ def cmd_cache(args: argparse.Namespace):
         print("Cleared model cache")
 
 
+def cmd_setup(args: argparse.Namespace):
+    """Handle setup command for platform integrations."""
+    target = args.setup_target
+
+    if target == "openclaw":
+        _setup_openclaw()
+    else:
+        print(f"Unknown setup target: {target}", file=sys.stderr)
+        print("Available targets: openclaw", file=sys.stderr)
+        sys.exit(1)
+
+
+def _setup_openclaw():
+    """Configure augent as an OpenClaw skill with MCP integration."""
+    import shutil
+
+    # Resolve the SKILL.md source (bundled with augent package)
+    skill_source = None
+    package_dir = Path(__file__).parent.parent
+    candidates = [
+        package_dir / "openclaw" / "SKILL.md",
+        Path(os.path.expanduser("~/.local/share/augent/openclaw/SKILL.md")),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            skill_source = candidate
+            break
+
+    # Detect OpenClaw installation
+    has_openclaw = (
+        Path(os.path.expanduser("~/.openclaw")).exists()
+        or shutil.which("openclaw") is not None
+    )
+
+    # Detect Python path for MCP command
+    python_abs = sys.executable
+    mcp_cmd = shutil.which("augent-mcp")
+
+    print()
+    print("  Augent — OpenClaw Setup")
+    print("  " + "=" * 40)
+    print()
+
+    # Step 1: Install SKILL.md
+    skill_dir = Path(os.path.expanduser("~/.openclaw/skills/augent"))
+    skill_dest = skill_dir / "SKILL.md"
+
+    if skill_source:
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(skill_source, skill_dest)
+        print(f"  \033[32m✓\033[0m Skill installed to {skill_dest}")
+    else:
+        # Generate SKILL.md inline if source not found
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        _write_skill_md(skill_dest, mcp_cmd, python_abs)
+        print(f"  \033[32m✓\033[0m Skill generated at {skill_dest}")
+
+    # Step 2: Configure MCP in OpenClaw config
+    openclaw_config = Path(os.path.expanduser("~/.openclaw/openclaw.json"))
+    _configure_openclaw_mcp(openclaw_config, mcp_cmd, python_abs)
+
+    # Step 3: Print summary
+    print()
+    if has_openclaw:
+        print("  \033[32m✓\033[0m OpenClaw detected")
+    else:
+        print("  \033[33m!\033[0m OpenClaw not detected — skill files installed for when you set it up")
+
+    print()
+    print("  \033[1mWhat was configured:\033[0m")
+    print(f"  Skill:  {skill_dest}")
+    print(f"  Config: {openclaw_config}")
+    print()
+    print("  \033[1mMCP server:\033[0m")
+    if mcp_cmd:
+        print(f"  Command: {mcp_cmd}")
+    else:
+        print(f"  Command: {python_abs} -m augent.mcp")
+    print()
+    print("  \033[33mNext step:\033[0m Restart OpenClaw to load the augent skill")
+    print()
+
+
+def _configure_openclaw_mcp(config_path: Path, mcp_cmd: Optional[str], python_abs: str):
+    """Add augent MCP server to OpenClaw's config."""
+    import json as json_mod
+
+    config = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                config = json_mod.load(f)
+        except (json_mod.JSONDecodeError, OSError):
+            config = {}
+
+    # Build MCP server entry
+    if mcp_cmd:
+        server_entry = {"command": mcp_cmd}
+    else:
+        server_entry = {"command": python_abs, "args": ["-m", "augent.mcp"]}
+
+    # Add to mcpServers
+    if "mcpServers" not in config:
+        config["mcpServers"] = {}
+    config["mcpServers"]["augent"] = server_entry
+
+    # Write config
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w") as f:
+        json_mod.dump(config, f, indent=2)
+        f.write("\n")
+
+    print(f"  \033[32m✓\033[0m MCP server added to {config_path}")
+
+
+def _write_skill_md(dest: Path, mcp_cmd: Optional[str], python_abs: str):
+    """Generate SKILL.md when the bundled file isn't available."""
+    if mcp_cmd:
+        config_json = '        "command": "augent-mcp"'
+    else:
+        config_json = f'        "command": "{python_abs}",\n        "args": ["-m", "augent.mcp"]'
+
+    content = f"""---
+name: augent
+description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. 14 MCP tools for audio.
+homepage: https://github.com/AugentDevs/Augent
+metadata: {{"openclaw":{{"emoji":"🎙","requires":{{"bins":["augent-mcp","ffmpeg"]}},"install":[{{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp"],"label":"Install augent (uv)"}}]}}}}
+---
+
+# Augent — Audio Intelligence for AI Agents
+
+14 MCP tools for audio: transcribe, search, take notes, identify speakers, detect chapters, and text-to-speech. Fully local, fully private.
+
+## Config
+
+```json
+{{
+  "mcp": {{
+    "servers": {{
+      "augent": {{
+{config_json}
+      }}
+    }}
+  }}
+}}
+```
+
+## Install
+
+```bash
+curl -fsSL https://augent.app/install.sh | bash
+```
+
+## Tools
+
+download_audio, transcribe_audio, search_audio, deep_search, take_notes, chapters, search_proximity, identify_speakers, batch_search, text_to_speech, list_files, list_cached, cache_stats, clear_cache
+
+## Links
+
+- [GitHub](https://github.com/AugentDevs/Augent)
+- [Documentation](https://docs.augent.app)
+"""
+    with open(dest, "w") as f:
+        f.write(content)
+
+
 def cmd_help(args: argparse.Namespace):
     """Show detailed help and quick start guide."""
     try:
@@ -473,6 +639,7 @@ COMMANDS
   transcribe <file>                Full transcription
   proximity <file> "A" "B"         Find keyword A near keyword B
   cache <action>                   Manage cache (stats | list | clear)
+  setup openclaw                   Configure augent for OpenClaw
 
 OTHER TOOLS
   augent-web                       Launch Web UI (http://127.0.0.1:9797)
@@ -656,6 +823,14 @@ def main():
         help="Cache action"
     )
 
+    # Setup command
+    setup_parser = subparsers.add_parser("setup", help="Configure augent for a platform")
+    setup_parser.add_argument(
+        "setup_target",
+        choices=["openclaw"],
+        help="Platform to configure (openclaw)"
+    )
+
     # Help command
     help_parser = subparsers.add_parser("help", help="Show detailed help and quick start guide")
 
@@ -676,6 +851,8 @@ def main():
             cmd_proximity(args)
         elif args.command == "cache":
             cmd_cache(args)
+        elif args.command == "setup":
+            cmd_setup(args)
         elif args.command == "help":
             cmd_help(args)
     except KeyboardInterrupt:

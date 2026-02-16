@@ -739,6 +739,70 @@ EOF
             log_success "Claude Desktop MCP"
         fi
     fi
+
+    # OpenClaw MCP + Skill
+    local openclaw_detected=false
+    if [[ -d "$HOME/.openclaw" ]] || command_exists openclaw; then
+        openclaw_detected=true
+    fi
+
+    if [[ "$openclaw_detected" == "true" ]]; then
+        # Install SKILL.md
+        local skill_dir="$HOME/.openclaw/skills/augent"
+        ensure_dir "$skill_dir"
+
+        local script_dir=""
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
+
+        if [[ -n "$script_dir" ]] && [[ -f "$script_dir/openclaw/SKILL.md" ]]; then
+            cp "$script_dir/openclaw/SKILL.md" "$skill_dir/SKILL.md"
+        else
+            # Download from GitHub
+            curl -fsSL "https://raw.githubusercontent.com/$AUGENT_REPO/main/openclaw/SKILL.md" -o "$skill_dir/SKILL.md" 2>/dev/null || true
+        fi
+
+        if [[ -f "$skill_dir/SKILL.md" ]]; then
+            log_success "OpenClaw skill installed"
+        fi
+
+        # Add MCP server to OpenClaw config
+        local oc_config="$HOME/.openclaw/openclaw.json"
+        if [[ -f "$oc_config" ]]; then
+            if grep -q '"augent"' "$oc_config" 2>/dev/null; then
+                log_success "OpenClaw MCP (already configured)"
+            elif command_exists jq; then
+                local oc_tmp="$oc_config.tmp"
+                jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$oc_config" > "$oc_tmp" 2>/dev/null && mv "$oc_tmp" "$oc_config"
+                log_success "OpenClaw MCP"
+            else
+                # No jq — create or append via Python
+                $PYTHON_CMD -c "
+import json, os
+p = os.path.expanduser('$oc_config')
+c = {}
+try:
+    with open(p) as f: c = json.load(f)
+except: pass
+c.setdefault('mcpServers', {})['augent'] = {'command': '$python_abs', 'args': ['-m', 'augent.mcp']}
+with open(p, 'w') as f: json.dump(c, f, indent=2); f.write('\n')
+" 2>/dev/null && log_success "OpenClaw MCP" || log_warn "Add augent to OpenClaw config manually"
+            fi
+        else
+            # Create fresh config
+            ensure_dir "$(dirname "$oc_config")"
+            cat > "$oc_config" << OCEOF
+{
+  "mcpServers": {
+    "augent": {
+      "command": "$python_abs",
+      "args": ["-m", "augent.mcp"]
+    }
+  }
+}
+OCEOF
+            log_success "OpenClaw MCP"
+        fi
+    fi
 }
 
 # ============================================================================
@@ -797,8 +861,13 @@ EOF
     echo -e "  ${DIM}augent transcribe f.mp3${NC}   Transcribe audio"
     echo -e "  ${DIM}audio-downloader \"URL\"${NC}    Download audio from video"
     echo ""
-    echo -e "  ${BOLD}Claude Integration${NC}"
-    echo -e "  MCP configured globally - works in any project directory"
+    echo -e "  ${BOLD}MCP Integration${NC}"
+    echo -e "  Claude Code + Claude Desktop configured globally"
+    if [[ -d "$HOME/.openclaw" ]] || command_exists openclaw; then
+        echo -e "  OpenClaw skill + MCP configured"
+    else
+        echo -e "  ${DIM}OpenClaw: run 'augent setup openclaw' after installing OpenClaw${NC}"
+    fi
     echo ""
     local python_display
     python_display="$(command -v $PYTHON_CMD 2>/dev/null)" || python_display="$PYTHON_CMD"
