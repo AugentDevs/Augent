@@ -29,7 +29,7 @@
 
 One prompt can process dozens of files in parallel: download, transcribe, search, and return exactly the moments that matter. Augent organizes your audio, saves you time, and finds what you don't want to look for yourself.
 
-[Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [GitHub](https://github.com/AugentDevs/Augent) · [Changelog](CHANGELOG.md)
+[Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
 Preferred setup: run the one-line installer in your terminal.
 The installer handles Python, FFmpeg, yt-dlp, aria2, and all dependencies automatically.

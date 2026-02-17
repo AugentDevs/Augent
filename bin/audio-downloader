@@ -6,7 +6,7 @@
 # Supports YouTube, Vimeo, TikTok, Twitter, and 1000+ sites
 #
 
-VERSION="1.0.0"
+VERSION="2026.2.16"
 
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'

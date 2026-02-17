@@ -1,6 +1,6 @@
-# Augent - Claude Code Plugin
+# Augent — Audio + Agents
 
-Augent is an MCP plugin that searches any content the way you search text — by speaker, keyword, or topic. Hours of content, seconds to find it. Fully local, fully private.
+Augent is an MCP server (Model Context Protocol) that gives agents the ability to hear. It downloads, transcribes, searches, and analyzes audio from any URL. Built for Claude Code. Compatible with any MCP client.
 
 ## audio-downloader (Built by Augent)
 

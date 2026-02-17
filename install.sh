@@ -817,7 +817,7 @@ main() {
     echo -e "\033[38;2;0;240;96m██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \033[0m"
     echo -e "\033[38;2;0;240;96m██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \033[0m"
     echo -e "\033[38;2;0;240;96m╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \033[0m"
-    echo -e "Audio intelligence for Claude agents"
+    echo -e "Audio intelligence for agents"
     echo ""
 
     # macOS: Ensure Homebrew first

@@ -628,7 +628,7 @@ def print_simple_help():
 
 augent v{version}
 
-Audio intelligence for Claude Code agents
+Audio intelligence for agents
 
 Usage: augent <command> [options]
 
@@ -668,7 +668,7 @@ def main():
         sys.exit(0)
 
     parser = argparse.ArgumentParser(
-        description="Augent - Audio intelligence for Claude Code agents",
+        description="Augent - Audio intelligence for agents",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         add_help=False  # We handle help ourselves
     )
