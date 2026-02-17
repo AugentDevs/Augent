@@ -455,23 +455,6 @@ def handle_tools_list(id: Any) -> None:
                         "properties": {}
                     }
                 },
-                {
-                    "name": "banner",
-                    "description": "Generate ASCII art banner text using the AUGENT style (ansi_shadow font). Returns styled text art for any input.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "text": {
-                                "type": "string",
-                                "description": "Text to render as ASCII art banner. Default: AUGENT"
-                            },
-                            "color": {
-                                "type": "string",
-                                "description": "Color name (green, purple, cyan, red, yellow, white, blue, orange, pink, teal) or hex code (#FF0000). Default: green"
-                            }
-                        }
-                    }
-                },
             ]
         }
     })
@@ -511,8 +494,6 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_cache_stats(arguments)
         elif tool_name == "clear_cache":
             result = handle_clear_cache(arguments)
-        elif tool_name == "banner":
-            result = handle_banner(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1262,25 +1243,6 @@ except Exception as e:
     }
 
 
-def handle_banner(arguments: dict) -> dict:
-    """Handle banner tool call."""
-    from .banner import render_banner
-
-    text = arguments.get("text", "AUGENT")
-    color = arguments.get("color", "green")
-
-    plain = render_banner(text, plain=True)
-    colored = render_banner(text, color=color)
-
-    return {
-        "plain": plain,
-        "colored": colored,
-        "text": text,
-        "font": "ansi_shadow",
-        "color": color,
-    }
-
-
 def handle_request(request: dict) -> None:
     """Route JSON-RPC request to appropriate handler."""
     method = request.get("method")
@@ -1302,10 +1264,6 @@ def handle_request(request: dict) -> None:
 
 def main() -> None:
     """Main MCP server loop."""
-    # Print banner to stderr on startup (stdout is reserved for JSON-RPC)
-    from .banner import print_banner
-    print_banner('AUGENT', file=sys.stderr)
-
     for line in sys.stdin:
         line = line.strip()
         if not line:
