@@ -11,11 +11,20 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-00F060.svg?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
-<p align="center"><strong>Audio intelligence for Claude Code agents and agentic swarms</strong><br>Built by <a href="https://augent.app">Augent</a></p>
+<p align="center">
+  <strong>Audio intelligence for Claude Code agents and agentic swarms.</strong><br>
+  Hours of content, seconds to find it. Fully local, fully private.
+</p>
 
-<p align="center">An MCP plugin that searches any content the way you search text<br>by speaker, keyword, or topic. Hours of content, seconds to find it.<br>Fully local, fully private.</p>
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#mcp-tools">MCP Tools</a> ·
+  <a href="#cli">CLI</a> ·
+  <a href="#web-ui">Web UI</a> ·
+  <a href="https://docs.augent.app">Docs</a>
+</p>
 
----
+<br />
 
 ## Install
 
@@ -27,31 +36,17 @@ Works on macOS and Linux. Installs everything automatically.
 
 **Windows:** `pip install "augent[all] @ git+https://github.com/AugentDevs/Augent.git"`
 
-**[Documentation](https://docs.augent.app)** — Full reference for all tools, CLI commands, and API
-
----
+<br />
 
 <p align="center">
   <img src="./images/augent.gif" alt="Watch Nothing. Find Everything.">
 </p>
 
----
+<br />
 
-## Usage
-
-| Mode | Best For |
-|------|----------|
-| **Claude Code (MCP)** | Agentic workflows with all 14 tools — one prompt does everything |
-| **CLI** | Terminal-based searches and batch processing |
-| **Web UI** | Visual interface for manual uploads and searches — runs 100% locally |
-
----
-
-## Claude Code (MCP)
+## MCP Tools
 
 The primary way to use Augent. Claude Code gets direct access to all 14 audio intelligence tools.
-
-### Setup
 
 Add to `~/.claude.json` (global) or `.mcp.json` (project):
 
@@ -68,12 +63,8 @@ Add to `~/.claude.json` (global) or `.mcp.json` (project):
 
 Restart Claude Code. Run `/mcp` to verify connection.
 
-**Note:** If `python3` isn't found, use full path (e.g., `/usr/bin/python3` or `/opt/homebrew/bin/python3`).
-
-### MCP Tools
-
 | Tool | Description |
-|------|-------------|
+|:-----|:------------|
 | `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
 | `transcribe_audio` | Full transcription with metadata |
 | `search_audio` | Find keywords with timestamps and context snippets |
@@ -91,7 +82,8 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
 
-### Example
+<details>
+<summary>Example prompt</summary>
 
 > *"Download these 10 podcasts and find every moment a host covers a product in a positive or unique way. Not just brand mentions, only real endorsements or life-changing recommendations. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5, url6, url7, url8, url9, url10"*
 
@@ -99,7 +91,9 @@ Restart Claude Code. Run `/mcp` to verify connection.
   <img src="./images/pipeline.png" alt="Augent Pipeline — From URLs to insights in one prompt" width="100%">
 </p>
 
----
+</details>
+
+<br />
 
 ## CLI
 
@@ -107,10 +101,8 @@ For terminal-based usage. Works standalone or inside Claude Code.
 
 ![Augent CLI](./images/cli-help.png)
 
-### Commands
-
 | Command | Description |
-|---------|-------------|
+|:--------|:------------|
 | `audio-downloader "URL"` | Download audio from video URL (speed-optimized) |
 | `augent search audio.mp3 "keyword"` | Search for keywords |
 | `augent transcribe audio.mp3` | Full transcription |
@@ -118,9 +110,8 @@ For terminal-based usage. Works standalone or inside Claude Code.
 | `augent cache stats` | View cache statistics |
 | `augent cache list` | List cached transcriptions |
 | `augent cache clear` | Clear cache |
-| `augent help` | Show full help |
 
----
+<br />
 
 ## Web UI
 
@@ -137,49 +128,42 @@ Open: **http://127.0.0.1:9797**
 3. **Click SEARCH**
 4. **View results** with timestamps and context
 
+<details>
+<summary>Web UI options</summary>
+
 | Command | Description |
-|---------|-------------|
+|:--------|:------------|
 | `python3 -m augent.web` | Start on port 9797 |
 | `python3 -m augent.web --port 3000` | Custom port |
 | `python3 -m augent.web --share` | Create public link |
 
+</details>
+
 ![Augent Web UI - Upload](./images/webui-1.png)
 ![Augent Web UI - Results](./images/webui-2.png)
 
----
-
-## Caching
-
-Transcriptions are cached by file hash + model size. Same file = instant re-search. Cache persists across sessions.
-
----
-
-## Export Formats
-
-JSON, CSV, SRT, VTT, Markdown. Use `--format` with any CLI command.
-
----
+<br />
 
 ## Model Sizes
 
 **`tiny` is the default** and handles nearly everything. Use `small` or above only for heavy accents, poor audio, or lyrics.
 
 | Model | Speed | Accuracy |
-|-------|-------|----------|
+|:------|:------|:---------|
 | **tiny** | Fastest | Excellent (default) |
 | base | Fast | Excellent |
 | small | Medium | Superior |
 | medium | Slow | Outstanding |
 | large | Slowest | Maximum |
 
----
+<br />
 
 ## Contributing
 
 PRs welcome. Open an [issue](https://github.com/AugentDevs/Augent/issues) for bugs or feature requests.
 
----
+<br />
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT
