@@ -2,7 +2,7 @@
 
 <p align="center">
   <picture>
-    <img src="./images/logo.png" width="400" alt="Augent">
+    <img src="./images/logo.png" width="600" alt="Augent">
   </picture>
 </p>
 
