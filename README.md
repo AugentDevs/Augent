@@ -9,7 +9,6 @@
   <a href="https://github.com/AugentDevs/Augent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/AugentDevs/Augent/tests.yml?label=tests&color=00F060&style=for-the-badge" alt="Tests"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-00F060.svg?style=for-the-badge" alt="Python 3.10+"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-00F060.svg?style=for-the-badge" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/platform-macOS%20·%20Linux%20·%20Windows-00F060.svg?style=for-the-badge" alt="Platform">
 </p>
 
 <p align="center"><strong>Audio intelligence for Claude Code agents and agentic swarms</strong><br>Built by <a href="https://augent.app">Augent</a></p>
