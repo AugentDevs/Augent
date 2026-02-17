@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <strong>Audio intelligence for agents.</strong><br>
-  Hours of content, seconds to find it. Fully local, fully private.
+  <strong>Hours of content, seconds to find it. Fully local, fully private.</strong><br>
+  Audio intelligence for agents.
 </p>
 
 <p align="center">
