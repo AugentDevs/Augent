@@ -526,6 +526,8 @@ download_audio, transcribe_audio, search_audio, deep_search, take_notes, chapter
 
 def cmd_help(args: argparse.Namespace):
     """Show detailed help and quick start guide."""
+    from .banner import render_banner
+
     try:
         import importlib.metadata
         version = importlib.metadata.version('augent')
@@ -533,9 +535,8 @@ def cmd_help(args: argparse.Namespace):
         version = "2026.2.16"
 
     help_text = f"""
-================================================================================
+{render_banner('AUGENT')}
   AUGENT v{version} — Audio Intelligence Tool
-================================================================================
 
 QUICK START
 -----------
@@ -614,6 +615,8 @@ GitHub: https://github.com/AugentDevs/Augent
 
 def print_simple_help():
     """Print clean, simple help."""
+    from .banner import render_banner
+
     try:
         import importlib.metadata
         version = importlib.metadata.version('augent')
@@ -621,12 +624,7 @@ def print_simple_help():
         version = "2026.2.16"
 
     help_text = f"""
-    _                          _
-   / \\  _   _  __ _  ___ _ __ | |_
-  / _ \\| | | |/ _` |/ _ \\ '_ \\| __|
- / ___ \\ |_| | (_| |  __/ | | | |_
-/_/   \\_\\__,_|\\__, |\\___|_| |_|\\__|
-              |___/
+{render_banner('AUGENT')}
 
 augent v{version}
 
