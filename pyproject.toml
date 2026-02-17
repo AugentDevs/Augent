@@ -45,6 +45,7 @@ classifiers = [
 dependencies = [
     "faster-whisper>=1.0.0",
     "torch",
+    "pyfiglet",
 ]
 
 [project.optional-dependencies]

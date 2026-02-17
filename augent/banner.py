@@ -6,10 +6,7 @@ Used for CLI splash, MCP startup, and as an MCP tool.
 
 import sys
 
-try:
-    import pyfiglet
-except ImportError:
-    pyfiglet = None
+import pyfiglet
 
 # Augent brand green #00F060
 AUGENT_GREEN = '\033[38;2;0;240;96m'
@@ -40,9 +37,6 @@ def render_banner(text='AUGENT', color='green', plain=False):
     Returns:
         The rendered banner string.
     """
-    if pyfiglet is None:
-        return f"[{text}] (install pyfiglet for ASCII art: pip install pyfiglet)"
-
     banner = pyfiglet.figlet_format(text, font='ansi_shadow')
     # Strip trailing whitespace/empty lines
     lines = banner.rstrip().split('\n')
