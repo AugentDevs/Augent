@@ -1,7 +1,9 @@
 # Augent — Audio + Agents
 
 <p align="center">
-  <img src="./images/logo.png" width="400" alt="Augent">
+  <picture>
+    <img src="./images/logo.png" width="400" alt="Augent">
+  </picture>
 </p>
 
 <p align="center">
