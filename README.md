@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>Audio intelligence for Claude Code agents and agentic swarms.</strong><br>
+  <strong>Audio intelligence for agents.</strong><br>
   Hours of content, seconds to find it. Fully local, fully private.
 </p>
 
