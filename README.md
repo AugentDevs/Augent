@@ -25,6 +25,12 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
+**Augent** is an MCP server (Model Context Protocol) that gives agents the ability to hear. Point it at any URL — YouTube, podcasts, Spaces, lectures — and it downloads, transcribes, and indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. It can identify who's talking, break content into chapters, take formatted notes, and read them back to you with text-to-speech. Built for Claude Code. Compatible with any MCP client.
+
+One prompt can process ten files in parallel — download, transcribe, search, and return exactly the moments that matter. Augent organizes your audio, saves you time, and finds what you don't want to look for yourself.
+
+Runs fully local. Nothing leaves your machine. No API keys, no cloud, no subscriptions.
+
 <br />
 
 ## Install
