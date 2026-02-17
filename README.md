@@ -25,11 +25,16 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server (Model Context Protocol) that gives agents the ability to hear. Point it at any URL — YouTube, podcasts, Spaces, lectures — and it downloads, transcribes, and indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. It can identify who's talking, break content into chapters, take formatted notes, and read them back to you with text-to-speech. Built for Claude Code. Compatible with any MCP client.
+**Augent** is an MCP server (Model Context Protocol) that gives agents the ability to hear. Point it at any URL (YouTube, podcasts, Spaces, lectures) and it downloads, transcribes, and indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. It can identify who's talking, break content into chapters, take formatted notes, and read them back to you with text-to-speech. Built for Claude Code. Compatible with any MCP client.
 
-One prompt can process ten files in parallel — download, transcribe, search, and return exactly the moments that matter. Augent organizes your audio, saves you time, and finds what you don't want to look for yourself.
+One prompt can process dozens of files in parallel: download, transcribe, search, and return exactly the moments that matter. Augent organizes your audio, saves you time, and finds what you don't want to look for yourself.
 
-Runs fully local. Nothing leaves your machine. No API keys, no cloud, no subscriptions.
+[Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [GitHub](https://github.com/AugentDevs/Augent) · [Changelog](CHANGELOG.md)
+
+Preferred setup: run the one-line installer in your terminal.
+The installer handles Python, FFmpeg, yt-dlp, aria2, and all dependencies automatically.
+Works on **macOS and Linux**. Windows users can install via pip.
+New install? Start here: [Getting Started](https://docs.augent.app/getting-started)
 
 <br />
 
