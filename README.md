@@ -25,9 +25,9 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server (Model Context Protocol) that gives agents the ability to hear. Point it at any URL (YouTube, podcasts, Spaces, lectures) and it downloads, transcribes, and indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. It can identify who's talking, break content into chapters, take formatted notes, and read them back to you with text-to-speech. Built for Claude Code. Compatible with any MCP client.
+**Augent** is an MCP server that gives agents audio intelligence — the ability to download, transcribe, search, and analyze content from any URL, entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. Identify who's talking, break content into chapters, take formatted notes, and read them back with text-to-speech. You install it once, and every agent gains access to a growing suite of tools that turn any media into actionable intelligence.
 
-One prompt can process dozens of files in parallel: download, transcribe, search, and return exactly the moments that matter. Augent organizes your audio, saves you time, and finds what you don't want to look for yourself.
+One install, full pipeline — from raw URL to actionable insight in a single prompt. Every transcription is cached permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in a content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
