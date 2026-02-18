@@ -56,6 +56,49 @@ Works on macOS and Linux. Installs everything automatically.
 
 <br />
 
+## How It Works
+
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart LR
+    A["URL"] --> B["Download"]
+    B --> C["Transcribe"]
+    C --> D["Cache"]
+    D --> E["Search"]
+    D --> F["Analyze"]
+    D --> G["Export"]
+
+    E --> E1["Keyword"]
+    E --> E2["Semantic"]
+    E --> E3["Batch"]
+    E --> E4["Proximity"]
+
+    F --> F1["Speaker ID"]
+    F --> F2["Chapters"]
+    F --> F3["Notes"]
+
+    G --> G1["Text to Speech"]
+```
+
+## Project Structure
+
+```
+augent/
+├── mcp.py          # MCP server — tools for Claude
+├── core.py         # Transcription engine (faster-whisper)
+├── search.py       # Keyword search
+├── embeddings.py   # Semantic search + chapters
+├── speakers.py     # Speaker diarization
+├── tts.py          # Text-to-speech (Kokoro)
+├── cache.py        # Three-layer caching (SQLite)
+├── cli.py          # CLI interface
+├── web.py          # Web UI (Gradio)
+├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)
+└── clips.py        # Audio clip extraction
+```
+
+<br />
+
 ## MCP Tools
 
 The primary way to use Augent. Claude Code gets direct access to all 14 audio intelligence tools.
