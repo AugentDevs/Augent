@@ -61,7 +61,7 @@ Works on macOS and Linux. Installs everything automatically.
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
 flowchart LR
-    A["URL"] --> B["Download"]
+    A["URL / File"] --> B["Download"]
     B --> C["Transcribe"]
     C --> D["Cache"]
     D --> E["Search"]
