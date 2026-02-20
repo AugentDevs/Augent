@@ -42,11 +42,12 @@ setup_colors
 # ============================================================================
 # Logging
 # ============================================================================
-log_info()    { echo -e "${BLUE}::${NC} $*"; }
+log_info()    { echo -e "${BLUE}INFO${NC} $*"; }
 log_success() { echo -e "${GREEN}✓${NC} $*"; }
-log_warn()    { echo -e "${YELLOW}!${NC} $*"; }
+log_warn()    { echo -e "${YELLOW}WARN${NC} $*"; }
 log_error()   { echo -e "${RED}✗${NC} $*" >&2; }
 log_step()    { echo -e "\n${CYAN}▶${NC} ${BOLD}$*${NC}"; }
+log_phase()   { echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}\n"; }
 
 # ============================================================================
 # OS Detection
@@ -817,22 +818,30 @@ main() {
     echo -e "\033[38;2;0;240;96m██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \033[0m"
     echo -e "\033[38;2;0;240;96m██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \033[0m"
     echo -e "\033[38;2;0;240;96m╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \033[0m"
-    echo -e "Audio intelligence for agents"
     echo ""
 
-    # macOS: Ensure Homebrew first
+    # ── [1/3] Preparing environment ──────────────────────────────────
+    log_phase 1 3 "Preparing environment"
+
     if [[ "$OS" == "macos" ]]; then
         install_homebrew
         check_homebrew_permissions
     fi
 
-    # Install dependencies
     install_python
     install_pip
     setup_python_user_base
     install_ffmpeg
+
+    # ── [2/3] Installing Augent ──────────────────────────────────────
+    log_phase 2 3 "Installing Augent"
+
     install_augent
     install_audio_downloader
+
+    # ── [3/3] Finalizing setup ───────────────────────────────────────
+    log_phase 3 3 "Finalizing setup"
+
     verify_installation
     verify_packages
 
@@ -847,31 +856,23 @@ main() {
         configure_mcp
     fi
 
+    # Get version for completion message
+    local augent_ver
+    augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver="unknown"
+
     # Done
     echo ""
-    echo -e "${GREEN}${BOLD}════════════════════════════════════════════"
-    echo -e "  ✓ Installation Complete"
-    echo -e "════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${BOLD}CLI Commands${NC}"
-    echo -e "  ${DIM}augent --help${NC}              Show commands"
-    echo -e "  ${DIM}augent-web${NC}                 Launch Web UI"
-    echo -e "  ${DIM}augent transcribe f.mp3${NC}   Transcribe audio"
-    echo -e "  ${DIM}audio-downloader \"URL\"${NC}    Download audio from video"
+    echo -e "\033[38;2;0;240;96m █████╗ ██╗   ██╗ ██████╗ ███████╗███╗   ██╗████████╗\033[0m"
+    echo -e "\033[38;2;0;240;96m██╔══██╗██║   ██║██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝\033[0m"
+    echo -e "\033[38;2;0;240;96m███████║██║   ██║██║  ███╗█████╗  ██╔██╗ ██║   ██║   \033[0m"
+    echo -e "\033[38;2;0;240;96m██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \033[0m"
+    echo -e "\033[38;2;0;240;96m██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \033[0m"
+    echo -e "\033[38;2;0;240;96m╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \033[0m"
+    echo -e "${GREEN}${BOLD}Augent installed successfully (${augent_ver})!${NC}"
+    echo -e "${DIM}Audio intelligence for agents. Ready to go.${NC}"
     echo ""
-    echo -e "  ${BOLD}MCP Integration${NC}"
-    echo -e "  Claude Code + Claude Desktop configured globally"
-    if [[ -d "$HOME/.openclaw" ]] || command_exists openclaw; then
-        echo -e "  OpenClaw skill + MCP configured"
-    else
-        echo -e "  ${DIM}OpenClaw: run 'augent setup openclaw' after installing OpenClaw${NC}"
-    fi
-    echo ""
-    local python_display
-    python_display="$(command -v $PYTHON_CMD 2>/dev/null)" || python_display="$PYTHON_CMD"
-    echo -e "  ${BOLD}Python${NC}  $python_display"
-    echo -e "  ${DIM}Use this Python for future pip installs${NC}"
-    echo ""
+
     if [[ "$PATH_MODIFIED" == "true" ]]; then
         echo -e "${YELLOW}Next steps:${NC}"
         echo -e "  1. Close this terminal and open a new one"
