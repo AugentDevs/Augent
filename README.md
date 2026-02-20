@@ -51,7 +51,9 @@ Works on macOS and Linux. Installs everything automatically.
 <br />
 
 <p align="center">
-  <img src="./images/install-demo.svg" alt="Install demo">
+  <picture>
+    <img src="./images/install-demo.svg" alt="Install demo">
+  </picture>
 </p>
 
 <br />
@@ -143,7 +145,9 @@ Restart Claude Code. Run `/mcp` to verify connection.
 > *"Download these 10 podcasts and find every moment a host covers a product in a positive or unique way. Not just brand mentions, only real endorsements or life-changing recommendations. Give me the timestamps and exactly what they said: url1, url2, url3, url4, url5, url6, url7, url8, url9, url10"*
 
 <p align="center">
-  <img src="./images/pipeline.png" alt="Augent Pipeline — From URLs to insights in one prompt" width="100%">
+  <picture>
+    <img src="./images/pipeline.png" alt="Augent Pipeline — From URLs to insights in one prompt" width="100%">
+  </picture>
 </p>
 
 </details>
@@ -154,7 +158,9 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 For terminal-based usage. Works standalone or inside Claude Code.
 
-<img src="./images/install-demo.svg" alt="Augent CLI">
+<picture>
+  <img src="./images/cli-help.png" alt="Augent CLI">
+</picture>
 
 | Command | Description |
 |:--------|:------------|
@@ -194,8 +200,12 @@ Open: **http://127.0.0.1:9797**
 
 </details>
 
-<picture><img src="./images/webui-1.png" alt="Augent Web UI - Upload"></picture>
-<picture><img src="./images/webui-2.png" alt="Augent Web UI - Results"></picture>
+<picture>
+  <img src="./images/webui-1.png" alt="Augent Web UI - Upload">
+</picture>
+<picture>
+  <img src="./images/webui-2.png" alt="Augent Web UI - Results">
+</picture>
 
 <br />
 
