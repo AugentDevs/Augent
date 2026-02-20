@@ -51,7 +51,7 @@ Works on macOS and Linux. Installs everything automatically.
 <br />
 
 <p align="center">
-  <img src="./images/augent.gif" alt="Watch Nothing. Find Everything.">
+  <img src="./images/install-demo.svg" alt="Install demo">
 </p>
 
 <br />
