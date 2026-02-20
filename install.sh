@@ -425,6 +425,7 @@ install_augent() {
 
     # --- Try [all] first (best case: everything installs in one shot) ---
     local all_ok=false
+    log_info "Installing Augent..."
     start_spinner "Installing Augent"
     if [[ "$is_local" == "true" ]]; then
         if env $pip_env $PYTHON_CMD -m pip install -e "${install_src}[all]" --quiet $pip_flags 2>/dev/null; then
@@ -451,6 +452,7 @@ install_augent() {
 
     # Core install (MUST succeed)
     local core_ok=false
+    log_info "Installing Augent (core)..."
     start_spinner "Installing Augent (core)"
     if [[ "$is_local" == "true" ]]; then
         if env $pip_env $PYTHON_CMD -m pip install -e "$install_src" --quiet $pip_flags 2>/dev/null; then
@@ -533,6 +535,7 @@ install_audio_downloader() {
         fi
     fi
 
+    log_info "Installing audio-downloader..."
     start_spinner "Installing audio-downloader"
 
     # Install yt-dlp and aria2
