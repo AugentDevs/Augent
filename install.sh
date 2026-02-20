@@ -43,11 +43,11 @@ setup_colors
 # Logging
 # ============================================================================
 log_info()    { echo -e "${BLUE}INFO${NC} $*"; }
-log_success() { echo -e "${GREEN}✓${NC} $*"; }
+log_success() { sleep 0.06; echo -e "${GREEN}✓${NC} $*"; }
 log_warn()    { echo -e "${YELLOW}WARN${NC} $*"; }
 log_error()   { echo -e "${RED}✗${NC} $*" >&2; }
 log_step()    { echo -e "\n${BLUE}▶${NC} ${BOLD}$*${NC}"; }
-log_phase()   { echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}\n"; }
+log_phase()   { sleep 0.3; echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}\n"; sleep 0.15; }
 
 SPINNER_PID=""
 start_spinner() {
@@ -72,7 +72,7 @@ start_spinner() {
 stop_spinner() {
     if [[ -n "$SPINNER_PID" ]]; then
         kill "$SPINNER_PID" 2>/dev/null || true
-        wait "$SPINNER_PID" 2>/dev/null || true
+        sleep 0.15
         printf "\r\033[K" > /dev/tty 2>/dev/null || true
         SPINNER_PID=""
     fi
@@ -897,6 +897,7 @@ main() {
     augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver="unknown"
 
     # Done
+    sleep 0.4
     local line1="Augent installed successfully (${augent_ver})!"
     local line2="Audio intelligence for agents. Ready."
     local inner=50
@@ -919,8 +920,11 @@ main() {
     echo ""
     echo ""
     echo -e "${GRN}╔${hbar}╗${NC}"
+    sleep 0.05
     echo -e "${GRN}║${NC}${sp1}${GRN}${BOLD}${line1}${NC}${sr1}${GRN}║${NC}"
+    sleep 0.05
     echo -e "${GRN}║${NC}${sp2}${DIM}${line2}${NC}${sr2}${GRN}║${NC}"
+    sleep 0.05
     echo -e "${GRN}╚${hbar}╝${NC}"
     echo ""
 
