@@ -56,7 +56,7 @@ start_spinner() {
         local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
         local i=0
         while true; do
-            printf "\r  ${MAGENTA}%s${NC}  %s" "${frames[$i]}" "$msg"
+            printf "\r  \033[0;96m%s\033[0m  %s" "${frames[$i]}" "$msg"
             i=$(( (i + 1) % 10 ))
             sleep 0.08
         done
@@ -66,8 +66,8 @@ start_spinner() {
 
 stop_spinner() {
     if [[ -n "$SPINNER_PID" ]]; then
-        kill "$SPINNER_PID" 2>/dev/null
-        wait "$SPINNER_PID" 2>/dev/null
+        kill "$SPINNER_PID" 2>/dev/null || true
+        wait "$SPINNER_PID" 2>/dev/null || true
         printf "\r\033[K"
         SPINNER_PID=""
     fi
