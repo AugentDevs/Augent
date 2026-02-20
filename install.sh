@@ -26,7 +26,7 @@ setup_colors() {
         RED='\033[0;31m'
         GREEN='\033[0;32m'
         YELLOW='\033[1;33m'
-        BLUE='\033[0;34m'
+        BLUE='\033[0;96m'
         MAGENTA='\033[0;35m'
         CYAN='\033[0;36m'
         WHITE='\033[1;37m'
@@ -46,7 +46,7 @@ log_info()    { echo -e "${BLUE}INFO${NC} $*"; }
 log_success() { echo -e "${GREEN}✓${NC} $*"; }
 log_warn()    { echo -e "${YELLOW}WARN${NC} $*"; }
 log_error()   { echo -e "${RED}✗${NC} $*" >&2; }
-log_step()    { echo -e "\n${CYAN}▶${NC} ${BOLD}$*${NC}"; }
+log_step()    { echo -e "\n${BLUE}▶${NC} ${BOLD}$*${NC}"; }
 log_phase()   { echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}\n"; }
 
 # ============================================================================
@@ -863,14 +863,8 @@ main() {
     # Done
     echo ""
     echo ""
-    echo -e "\033[38;2;0;240;96m █████╗ ██╗   ██╗ ██████╗ ███████╗███╗   ██╗████████╗\033[0m"
-    echo -e "\033[38;2;0;240;96m██╔══██╗██║   ██║██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝\033[0m"
-    echo -e "\033[38;2;0;240;96m███████║██║   ██║██║  ███╗█████╗  ██╔██╗ ██║   ██║   \033[0m"
-    echo -e "\033[38;2;0;240;96m██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \033[0m"
-    echo -e "\033[38;2;0;240;96m██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \033[0m"
-    echo -e "\033[38;2;0;240;96m╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \033[0m"
-    echo -e "${GREEN}${BOLD}Augent installed successfully (${augent_ver})!${NC}"
-    echo -e "${DIM}Audio intelligence for agents. Ready to go.${NC}"
+    echo -e "\033[38;2;0;240;96m${BOLD}Augent installed successfully (${augent_ver})!${NC}"
+    echo -e "\033[38;2;0;240;96m${BOLD}Audio intelligence for agents. Ready to go.${NC}"
     echo ""
 
     if [[ "$PATH_MODIFIED" == "true" ]]; then
