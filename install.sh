@@ -49,6 +49,30 @@ log_error()   { echo -e "${RED}✗${NC} $*" >&2; }
 log_step()    { echo -e "\n${BLUE}▶${NC} ${BOLD}$*${NC}"; }
 log_phase()   { echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}\n"; }
 
+SPINNER_PID=""
+start_spinner() {
+    local msg=$1
+    (
+        local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+        local i=0
+        while true; do
+            printf "\r  ${MAGENTA}%s${NC}  %s" "${frames[$i]}" "$msg"
+            i=$(( (i + 1) % 10 ))
+            sleep 0.08
+        done
+    ) &
+    SPINNER_PID=$!
+}
+
+stop_spinner() {
+    if [[ -n "$SPINNER_PID" ]]; then
+        kill "$SPINNER_PID" 2>/dev/null
+        wait "$SPINNER_PID" 2>/dev/null
+        printf "\r\033[K"
+        SPINNER_PID=""
+    fi
+}
+
 # ============================================================================
 # OS Detection
 # ============================================================================
@@ -366,8 +390,6 @@ install_ffmpeg() {
 # Augent Installation
 # ============================================================================
 install_augent() {
-    log_info "Installing Augent..."
-
     local script_dir=""
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
@@ -398,6 +420,7 @@ install_augent() {
 
     # --- Try [all] first (best case: everything installs in one shot) ---
     local all_ok=false
+    start_spinner "Installing Augent"
     if [[ "$is_local" == "true" ]]; then
         if env $pip_env $PYTHON_CMD -m pip install -e "${install_src}[all]" --quiet $pip_flags 2>/dev/null; then
             all_ok=true
@@ -409,6 +432,7 @@ install_augent() {
             all_ok=true
         fi
     fi
+    stop_spinner
 
     if [[ "$all_ok" == "true" ]]; then
         local augent_ver
@@ -422,6 +446,7 @@ install_augent() {
 
     # Core install (MUST succeed)
     local core_ok=false
+    start_spinner "Installing Augent (core)"
     if [[ "$is_local" == "true" ]]; then
         if env $pip_env $PYTHON_CMD -m pip install -e "$install_src" --quiet $pip_flags 2>/dev/null; then
             core_ok=true
@@ -432,6 +457,7 @@ install_augent() {
             core_ok=true
         fi
     fi
+    stop_spinner
 
     if [[ "$core_ok" != "true" ]]; then
         log_error "Core augent installation failed"
@@ -484,8 +510,6 @@ install_augent() {
 }
 
 install_audio_downloader() {
-    log_info "Installing audio-downloader..."
-
     local script_dir=""
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null)" || true
 
@@ -503,6 +527,8 @@ install_audio_downloader() {
             pip_env="PYTHONUSERBASE=$USER_PYTHON_BASE"
         fi
     fi
+
+    start_spinner "Installing audio-downloader"
 
     # Install yt-dlp and aria2
     case "$PKG_MGR" in
@@ -538,6 +564,8 @@ install_audio_downloader() {
         curl -fsSL "https://raw.githubusercontent.com/$AUGENT_REPO/main/bin/audio-downloader" -o "$user_bin/audio-downloader" 2>/dev/null || true
         chmod +x "$user_bin/audio-downloader" 2>/dev/null || true
     fi
+
+    stop_spinner
 
     add_to_path "$user_bin"
     log_success "audio-downloader"
@@ -861,10 +889,31 @@ main() {
     augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver="unknown"
 
     # Done
+    local line1="Augent installed successfully (${augent_ver})!"
+    local line2="Audio intelligence for agents. Ready."
+    local inner=50
+    local GRN='\033[38;2;0;240;96m'
+    local p1=$(( (inner - ${#line1}) / 2 ))
+    local r1=$(( inner - ${#line1} - p1 ))
+    local p2=$(( (inner - ${#line2}) / 2 ))
+    local r2=$(( inner - ${#line2} - p2 ))
+    local hbar
+    hbar=$(printf '═%.0s' $(seq 1 $inner))
+    local sp1
+    sp1=$(printf '%*s' "$p1" "")
+    local sr1
+    sr1=$(printf '%*s' "$r1" "")
+    local sp2
+    sp2=$(printf '%*s' "$p2" "")
+    local sr2
+    sr2=$(printf '%*s' "$r2" "")
+
     echo ""
     echo ""
-    echo -e "\033[38;2;0;240;96m${BOLD}Augent installed successfully (${augent_ver})!${NC}"
-    echo -e "\033[38;2;0;240;96m${BOLD}Audio intelligence for agents. Ready to go.${NC}"
+    echo -e "${GRN}╔${hbar}╗${NC}"
+    echo -e "${GRN}║${NC}${sp1}${GRN}${BOLD}${line1}${NC}${sr1}${GRN}║${NC}"
+    echo -e "${GRN}║${NC}${sp2}${DIM}${line2}${NC}${sr2}${GRN}║${NC}"
+    echo -e "${GRN}╚${hbar}╝${NC}"
     echo ""
 
     if [[ "$PATH_MODIFIED" == "true" ]]; then
