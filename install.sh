@@ -52,7 +52,6 @@ log_phase()   { echo -e "\n\033[38;2;0;240;96m${BOLD}[$1/$2]${NC} ${BOLD}$3${NC}
 SPINNER_PID=""
 start_spinner() {
     local msg=$1
-    # Write to /dev/tty directly — bypasses pipe in curl | bash
     if [[ -r /dev/tty && -w /dev/tty ]]; then
         (
             local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -62,8 +61,9 @@ start_spinner() {
                 i=$(( (i + 1) % 10 ))
                 sleep 0.08
             done
-        ) &
+        ) </dev/null > /dev/null 2>&1 &
         SPINNER_PID=$!
+        disown "$SPINNER_PID" 2>/dev/null || true
     else
         echo -e "  ${BLUE}::${NC}  $*"
     fi
