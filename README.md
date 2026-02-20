@@ -154,7 +154,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 For terminal-based usage. Works standalone or inside Claude Code.
 
-![Augent CLI](./images/cli-help.png)
+<img src="./images/install-demo.svg" alt="Augent CLI">
 
 | Command | Description |
 |:--------|:------------|
@@ -194,8 +194,8 @@ Open: **http://127.0.0.1:9797**
 
 </details>
 
-![Augent Web UI - Upload](./images/webui-1.png)
-![Augent Web UI - Results](./images/webui-2.png)
+<picture><img src="./images/webui-1.png" alt="Augent Web UI - Upload"></picture>
+<picture><img src="./images/webui-2.png" alt="Augent Web UI - Results"></picture>
 
 <br />
 
