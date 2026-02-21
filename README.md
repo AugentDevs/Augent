@@ -65,7 +65,7 @@ Works on macOS and Linux. Installs everything automatically.
 flowchart LR
     A["URL / File"] --> B["Download"]
     B --> C["Transcribe"]
-    C --> D["Cache"]
+    C --> D["Memory"]
     D --> E["Search"]
     D --> F["Analyze"]
     D --> G["Export"]
