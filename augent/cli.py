@@ -25,10 +25,10 @@ from .core import (
     transcribe_audio,
     transcribe_audio_streaming,
     search_audio_proximity,
-    get_cache_stats,
-    clear_cache,
+    get_memory_stats,
+    clear_memory,
     clear_model_cache,
-    list_cached,
+    list_memories,
     TranscriptionProgress
 )
 from .search import find_keyword_matches
@@ -333,27 +333,27 @@ def cmd_proximity(args: argparse.Namespace):
         print(output)
 
 
-def cmd_cache(args: argparse.Namespace):
-    """Handle cache management command."""
-    if args.cache_action == "stats":
-        stats = get_cache_stats()
+def cmd_memory(args: argparse.Namespace):
+    """Handle memory management command."""
+    if args.memory_action == "stats":
+        stats = get_memory_stats()
         print(json.dumps(stats, indent=2))
-    elif args.cache_action == "list":
-        entries = list_cached()
+    elif args.memory_action == "list":
+        entries = list_memories()
         if not entries:
-            print("No cached transcriptions.")
+            print("No stored transcriptions.")
         else:
-            print(f"Cached transcriptions ({len(entries)}):\n")
+            print(f"Stored transcriptions ({len(entries)}):\n")
             for e in entries:
                 print(f"  {e['title']}")
                 print(f"    Duration: {e['duration_formatted']} | Model: {e['model_size']} | Date: {e['date']}")
                 if e.get('md_path'):
                     print(f"    Markdown: {e['md_path']}")
                 print()
-    elif args.cache_action == "clear":
-        count = clear_cache()
-        print(f"Cleared {count} cached transcriptions")
-    elif args.cache_action == "clear-models":
+    elif args.memory_action == "clear":
+        count = clear_memory()
+        print(f"Cleared {count} stored transcriptions")
+    elif args.memory_action == "clear-models":
         clear_model_cache()
         print("Cleared model cache")
 
@@ -513,7 +513,7 @@ curl -fsSL https://augent.app/install.sh | bash
 
 ## Tools
 
-download_audio, transcribe_audio, search_audio, deep_search, take_notes, chapters, search_proximity, identify_speakers, batch_search, text_to_speech, list_files, list_cached, cache_stats, clear_cache
+download_audio, transcribe_audio, search_audio, deep_search, take_notes, chapters, search_proximity, identify_speakers, batch_search, text_to_speech, list_files, list_memories, memory_stats, clear_memory
 
 ## Links
 
@@ -549,10 +549,10 @@ COMMANDS
   augent search <file> "keywords"       Search audio for keywords
   augent transcribe <file>              Full transcription
   augent proximity <file> "A" "B"       Find keyword A near keyword B
-  augent cache stats                    View cache statistics
-  augent cache list                     List cached transcriptions by title
-  augent cache clear                    Clear transcription cache
-  augent cache clear-models             Clear downloaded Whisper models
+  augent memory stats                   View memory statistics
+  augent memory list                    List stored transcriptions by title
+  augent memory clear                   Clear transcription memory
+  augent memory clear-models            Clear downloaded Whisper models
 
 OPTIONS
 -------
@@ -636,7 +636,7 @@ COMMANDS
   search <file> "keywords"         Search audio for keywords
   transcribe <file>                Full transcription
   proximity <file> "A" "B"         Find keyword A near keyword B
-  cache <action>                   Manage cache (stats | list | clear)
+  memory <action>                  Manage memory (stats | list | clear)
   setup openclaw                   Configure augent for OpenClaw
 
 OTHER TOOLS
@@ -813,12 +813,12 @@ def main():
         help="Suppress progress messages"
     )
 
-    # Cache command
-    cache_parser = subparsers.add_parser("cache", help="Manage transcription cache")
-    cache_parser.add_argument(
-        "cache_action",
+    # Memory command
+    memory_parser = subparsers.add_parser("memory", help="Manage transcription memory")
+    memory_parser.add_argument(
+        "memory_action",
         choices=["stats", "list", "clear", "clear-models"],
-        help="Cache action"
+        help="Memory action"
     )
 
     # Setup command
@@ -847,8 +847,8 @@ def main():
             cmd_transcribe(args)
         elif args.command == "proximity":
             cmd_proximity(args)
-        elif args.command == "cache":
-            cmd_cache(args)
+        elif args.command == "memory":
+            cmd_memory(args)
         elif args.command == "setup":
             cmd_setup(args)
         elif args.command == "help":

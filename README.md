@@ -27,7 +27,7 @@
 
 **Augent** is an MCP server that gives agents audio intelligence — the ability to download, transcribe, search, and analyze content from any URL, entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. Identify who's talking, break content into chapters, take formatted notes, and read them back with text-to-speech. You install it once, and every agent gains access to a growing suite of tools that turn any media into actionable intelligence.
 
-One install, full pipeline — from raw URL to actionable insight in a single prompt. Every transcription is cached permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
+One install, full pipeline — from raw URL to actionable insight in a single prompt. Every transcription is stored in memory permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
@@ -92,7 +92,7 @@ augent/
 ├── embeddings.py   # Semantic search + chapters
 ├── speakers.py     # Speaker diarization
 ├── tts.py          # Text-to-speech (Kokoro)
-├── cache.py        # Three-layer caching (SQLite)
+├── memory.py       # Three-layer memory (SQLite)
 ├── cli.py          # CLI interface
 ├── web.py          # Web UI (Gradio)
 ├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)
@@ -133,9 +133,9 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
 | `list_files` | List media files in a directory |
-| `list_cached` | List cached transcriptions by title |
-| `cache_stats` | View transcription cache statistics |
-| `clear_cache` | Clear cached transcriptions |
+| `list_memories` | List stored transcriptions by title |
+| `memory_stats` | View transcription memory statistics |
+| `clear_memory` | Clear stored transcriptions |
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
 
@@ -168,9 +168,9 @@ For terminal-based usage. Works standalone or inside Claude Code.
 | `augent search audio.mp3 "keyword"` | Search for keywords |
 | `augent transcribe audio.mp3` | Full transcription |
 | `augent proximity audio.mp3 "A" "B"` | Find keyword A near keyword B |
-| `augent cache stats` | View cache statistics |
-| `augent cache list` | List cached transcriptions |
-| `augent cache clear` | Clear cache |
+| `augent memory stats` | View memory statistics |
+| `augent memory list` | List stored transcriptions |
+| `augent memory clear` | Clear memory |
 
 <br />
 

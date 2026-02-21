@@ -3,7 +3,7 @@ Tests for the MCP server protocol layer.
 
 Tests JSON-RPC routing, tool listing, response formatting,
 and handlers that don't require audio processing (list_files,
-cache ops, error cases).
+memory ops, error cases).
 """
 
 import json
@@ -22,9 +22,9 @@ from augent.mcp import (
     handle_tools_call,
     handle_request,
     handle_list_files,
-    handle_cache_stats,
-    handle_clear_cache,
-    handle_list_cached,
+    handle_memory_stats,
+    handle_clear_memory,
+    handle_list_memories,
     _get_style_instruction,
 )
 
@@ -91,7 +91,7 @@ class TestToolsList:
             "download_audio", "transcribe_audio", "search_audio",
             "deep_search", "take_notes", "chapters", "batch_search",
             "text_to_speech", "search_proximity", "identify_speakers",
-            "list_files", "list_cached", "cache_stats", "clear_cache",
+            "list_files", "list_memories", "memory_stats", "clear_memory",
         }
         assert names == expected
 
@@ -185,33 +185,33 @@ class TestListFiles:
             assert result["files"] == []
 
 
-# --- Cache handlers (with temp cache) ---
+# --- Memory handlers ---
 
-class TestCacheHandlers:
-    def test_cache_stats_returns_dict(self):
+class TestMemoryHandlers:
+    def test_memory_stats_returns_dict(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            with mock.patch("augent.mcp.get_cache_stats") as mock_stats:
+            with mock.patch("augent.mcp.get_memory_stats") as mock_stats:
                 mock_stats.return_value = {
                     "entries": 0,
                     "total_audio_duration_hours": 0,
-                    "cache_size_mb": 0,
+                    "memory_size_mb": 0,
                 }
-                result = handle_cache_stats({})
+                result = handle_memory_stats({})
                 assert "entries" in result
 
-    def test_clear_cache_returns_count(self):
-        with mock.patch("augent.mcp.clear_cache") as mock_clear:
+    def test_clear_memory_returns_count(self):
+        with mock.patch("augent.mcp.clear_memory") as mock_clear:
             mock_clear.return_value = 5
-            result = handle_clear_cache({})
+            result = handle_clear_memory({})
             assert result["cleared"] == 5
             assert "5" in result["message"]
 
-    def test_list_cached_returns_list(self):
-        with mock.patch("augent.mcp.list_cached") as mock_list:
+    def test_list_memories_returns_list(self):
+        with mock.patch("augent.mcp.list_memories") as mock_list:
             mock_list.return_value = [
                 {"title": "test", "duration": 60, "date": "2026-02-16"}
             ]
-            result = handle_list_cached({})
+            result = handle_list_memories({})
             assert result["count"] == 1
             assert result["transcriptions"][0]["title"] == "test"
 

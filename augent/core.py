@@ -5,7 +5,7 @@ Transcribes audio files locally using faster-whisper (optimized Whisper)
 and searches for keywords with timestamps.
 
 Features:
-- Transcription caching (avoid re-processing same files)
+- Transcription memory (avoid re-processing same files)
 - Model caching (keep models loaded in memory)
 - Streaming transcription with progress callbacks
 - Proximity search
@@ -15,7 +15,7 @@ import os
 from typing import Optional, List, Dict, Any, Generator, Callable, Tuple
 from dataclasses import dataclass
 
-from .cache import get_transcription_cache, get_model_cache
+from .memory import get_transcription_memory, get_model_cache
 from .search import find_keyword_matches, search_with_proximity, KeywordSearcher
 
 
@@ -54,15 +54,15 @@ def transcribe_audio(
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
     if use_cache:
-        cache = get_transcription_cache()
-        cached = cache.get(audio_path, model_size)
-        if cached:
+        memory = get_transcription_memory()
+        stored = memory.get(audio_path, model_size)
+        if stored:
             return {
-                "text": cached.text,
-                "language": cached.language,
-                "duration": cached.duration,
-                "segments": cached.segments,
-                "words": cached.words,
+                "text": stored.text,
+                "language": stored.language,
+                "duration": stored.duration,
+                "segments": stored.segments,
+                "words": stored.words,
                 "cached": True
             }
 
@@ -107,8 +107,8 @@ def transcribe_audio(
     }
 
     if use_cache:
-        cache = get_transcription_cache()
-        cache.set(audio_path, model_size, result)
+        memory = get_transcription_memory()
+        memory.set(audio_path, model_size, result)
 
     return result
 
@@ -127,24 +127,24 @@ def transcribe_audio_streaming(
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
     if use_cache:
-        cache = get_transcription_cache()
-        cached = cache.get(audio_path, model_size)
-        if cached:
+        memory = get_transcription_memory()
+        stored = memory.get(audio_path, model_size)
+        if stored:
             progress = TranscriptionProgress(
                 status="complete",
                 progress=1.0,
-                message="Loaded from cache"
+                message="Loaded from memory"
             )
             if on_progress:
                 on_progress(progress)
             yield progress
 
             return {
-                "text": cached.text,
-                "language": cached.language,
-                "duration": cached.duration,
-                "segments": cached.segments,
-                "words": cached.words,
+                "text": stored.text,
+                "language": stored.language,
+                "duration": stored.duration,
+                "segments": stored.segments,
+                "words": stored.words,
                 "cached": True
             }
 
@@ -220,8 +220,8 @@ def transcribe_audio_streaming(
     }
 
     if use_cache:
-        cache = get_transcription_cache()
-        cache.set(audio_path, model_size, result)
+        memory = get_transcription_memory()
+        memory.set(audio_path, model_size, result)
 
     progress = TranscriptionProgress(
         status="complete",
@@ -353,28 +353,28 @@ def search_audio_proximity(
     )
 
 
-def get_cache_stats() -> Dict[str, Any]:
-    """Get transcription cache statistics."""
-    cache = get_transcription_cache()
-    return cache.stats()
+def get_memory_stats() -> Dict[str, Any]:
+    """Get transcription memory statistics."""
+    memory = get_transcription_memory()
+    return memory.stats()
 
 
-def clear_cache() -> int:
-    """Clear transcription cache. Returns number of entries cleared."""
-    cache = get_transcription_cache()
-    return cache.clear()
+def clear_memory() -> int:
+    """Clear transcription memory. Returns number of entries cleared."""
+    memory = get_transcription_memory()
+    return memory.clear()
 
 
-def list_cached() -> list:
-    """List all cached transcriptions with metadata."""
-    cache = get_transcription_cache()
-    return cache.list_all()
+def list_memories() -> list:
+    """List all stored transcriptions with metadata."""
+    memory = get_transcription_memory()
+    return memory.list_all()
 
 
-def get_cached_by_title(title: str) -> list:
-    """Look up cached transcriptions by title."""
-    cache = get_transcription_cache()
-    return cache.get_by_title(title)
+def get_memory_by_title(title: str) -> list:
+    """Look up stored transcriptions by title."""
+    memory = get_transcription_memory()
+    return memory.get_by_title(title)
 
 
 def clear_model_cache() -> None:

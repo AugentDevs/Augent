@@ -40,7 +40,7 @@ import re
 import gradio as gr
 from typing import Generator, Tuple
 
-from .cache import get_model_cache, get_transcription_cache
+from .memory import get_model_cache, get_transcription_memory
 from .search import KeywordSearcher
 
 
@@ -408,17 +408,17 @@ def search_audio_streaming(
 
     yield "\n".join(log_lines), "{}", "<p style='color:#00F060;'>Starting...</p>"
 
-    cache = get_transcription_cache()
-    cached = cache.get(audio_path, model_size)
+    memory = get_transcription_memory()
+    stored = memory.get(audio_path, model_size)
 
-    if cached:
-        log_lines.append(f"  [cache] loaded from cache")
-        log_lines.append(f"  [info] duration: {format_time(cached.duration)}")
+    if stored:
+        log_lines.append(f"  [memory] loaded from memory")
+        log_lines.append(f"  [info] duration: {format_time(stored.duration)}")
         log_lines.append("")
-        yield "\n".join(log_lines), "{}", "<p style='color:#00F060;'>Loaded from cache</p>"
+        yield "\n".join(log_lines), "{}", "<p style='color:#00F060;'>Loaded from memory</p>"
 
-        all_words = cached.words
-        duration = cached.duration
+        all_words = stored.words
+        duration = stored.duration
 
     else:
         log_lines.append(f"  [model] loading {model_size}...")
@@ -469,7 +469,7 @@ def search_audio_streaming(
 
             yield "\n".join(log_lines), "{}", "<p style='color:#00F060;'>Transcribing...</p>"
 
-        cache.set(audio_path, model_size, {
+        memory.set(audio_path, model_size, {
             "text": " ".join(s["text"].strip() for s in segments),
             "language": info.language,
             "duration": duration,
@@ -568,7 +568,7 @@ def create_demo() -> gr.Blocks:
 ---
 **Tips:**
 - Larger models = more accurate
-- Results cached for repeat searches
+- Results stored in memory for repeat searches
                 """)
 
             with gr.Column(scale=2):

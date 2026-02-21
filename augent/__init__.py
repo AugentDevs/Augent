@@ -2,7 +2,7 @@
 Augent - Local audio keyword search using faster-whisper
 
 Extract timestamped keyword matches from audio files with:
-- Transcription caching (skip re-processing)
+- Transcription memory (skip re-processing)
 - Proximity search (find keywords near each other)
 - Multiple export formats (JSON, CSV, SRT, VTT, Markdown)
 - Audio clip extraction
@@ -34,11 +34,11 @@ from .core import (
     transcribe_audio_streaming,
     search_audio_proximity,
     search_audio_streaming,
-    get_cache_stats,
-    clear_cache,
+    get_memory_stats,
+    clear_memory,
     clear_model_cache,
-    list_cached,
-    get_cached_by_title,
+    list_memories,
+    get_memory_by_title,
     TranscriptionProgress,
 )
 
@@ -59,10 +59,11 @@ from .clips import (
     ClipExtractor,
 )
 
-from .cache import (
-    get_transcription_cache,
+from .memory import (
+    get_transcription_memory,
     get_model_cache,
-    TranscriptionCache,
+    TranscriptionMemory,
+    MemorizedTranscription,
     ModelCache,
 )
 
@@ -97,13 +98,13 @@ __all__ = [
     "transcribe_audio_streaming",
     "search_audio_proximity",
     "search_audio_streaming",
-    # Cache management
-    "get_cache_stats",
-    "clear_cache",
+    # Memory management
+    "get_memory_stats",
+    "clear_memory",
     "clear_model_cache",
-    "list_cached",
-    "get_cached_by_title",
-    "get_transcription_cache",
+    "list_memories",
+    "get_memory_by_title",
+    "get_transcription_memory",
     "get_model_cache",
     # Search
     "find_keyword_matches",
@@ -117,7 +118,8 @@ __all__ = [
     "ClipExtractor",
     # Classes
     "TranscriptionProgress",
-    "TranscriptionCache",
+    "TranscriptionMemory",
+    "MemorizedTranscription",
     "ModelCache",
     # Optional: Speakers
     "identify_speakers",

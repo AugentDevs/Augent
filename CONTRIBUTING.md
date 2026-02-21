@@ -46,7 +46,7 @@ augent/
 ├── embeddings.py   # Semantic search + chapters
 ├── speakers.py     # Speaker diarization
 ├── tts.py          # Text-to-speech (Kokoro)
-├── cache.py        # Three-layer caching (SQLite)
+├── memory.py       # Three-layer memory (SQLite)
 ├── cli.py          # CLI interface
 ├── web.py          # Web UI (Gradio)
 ├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)

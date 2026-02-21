@@ -9,7 +9,7 @@ import os
 from typing import Dict, Any, Optional, List
 
 from .core import transcribe_audio
-from .cache import get_transcription_cache
+from .memory import get_transcription_memory
 
 
 def identify_speakers(
@@ -20,23 +20,23 @@ def identify_speakers(
     """
     Identify speakers in audio and return speaker-labeled transcript.
 
-    Runs faster-whisper transcription (cached) then speechbrain diarization,
+    Runs faster-whisper transcription (from memory) then speechbrain diarization,
     merging results by timestamp overlap.
     """
     if not os.path.exists(audio_path):
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
-    # Step 1: Get transcription (cached)
+    # Step 1: Get transcription (from memory)
     transcription = transcribe_audio(audio_path, model_size)
 
-    # Step 2: Check diarization cache
-    cache = get_transcription_cache()
-    audio_hash = cache.hash_audio_file(audio_path)
-    cached_diarization = cache.get_diarization(audio_hash, num_speakers)
+    # Step 2: Check diarization memory
+    memory = get_transcription_memory()
+    audio_hash = memory.hash_audio_file(audio_path)
+    stored_diarization = memory.get_diarization(audio_hash, num_speakers)
 
-    if cached_diarization:
-        turns = cached_diarization["turns"]
-        speakers = cached_diarization["speakers"]
+    if stored_diarization:
+        turns = stored_diarization["turns"]
+        speakers = stored_diarization["speakers"]
     else:
         # Step 3: Run diarization
         from simple_diarizer.diarizer import Diarizer
@@ -55,8 +55,8 @@ def identify_speakers(
 
         speakers = sorted(set(t["speaker"] for t in turns))
 
-        # Cache the result
-        cache.set_diarization(audio_hash, speakers, turns, num_speakers)
+        # Store the result
+        memory.set_diarization(audio_hash, speakers, turns, num_speakers)
 
     # Step 4: Merge transcription segments with speaker turns
     merged = _merge(transcription["segments"], turns)

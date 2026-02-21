@@ -187,15 +187,15 @@ pattern: (optional, defaults to all common media formats)
 recursive: false (optional, search subdirectories)
 ```
 
-### list_cached
-List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
+### list_memories
+List all stored transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.
 No parameters needed.
 
-### cache_stats
-View cache statistics - no parameters needed.
+### memory_stats
+View transcription memory statistics - no parameters needed.
 
-### clear_cache
-Clear transcription cache - no parameters needed.
+### clear_memory
+Clear transcription memory - no parameters needed.
 
 ## Model Sizes
 
@@ -218,16 +218,16 @@ Clear transcription cache - no parameters needed.
 
 `tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
 
-## Caching Behavior
+## Memory Behavior
 
-- Transcriptions are cached by file hash + model size
-- Same file, same model = instant cache hit
+- Transcriptions are stored by file hash + model size
+- Same file, same model = instant memory hit
 - Same file, different model = new transcription
 - Modified file = new transcription
-- Cache persists at `~/.augent/cache/transcriptions.db`
-- Each cached transcription also writes a `.md` file to `~/.augent/cache/transcriptions/`
+- Memory persists at `~/.augent/memory/transcriptions.db`
+- Each stored transcription also writes a `.md` file to `~/.augent/memory/transcriptions/`
 - Titles are derived from filenames (yt-dlp names files by video title)
-- Use `list_cached` tool or `augent cache list` to browse cached transcriptions by title
+- Use `list_memories` tool or `augent memory list` to browse stored transcriptions by title
 
 ## CLI Commands (via Bash)
 
@@ -252,9 +252,9 @@ augent proximity audio.mp3 "startup" "funding" --distance 30
 augent search audio.mp3 "keyword" --format csv --output results.csv
 
 # Cache management
-augent cache stats
-augent cache list
-augent cache clear
+augent memory stats
+augent memory list
+augent memory clear
 ```
 
 ## Best Practices for Agentic Workflows

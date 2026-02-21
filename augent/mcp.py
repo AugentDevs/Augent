@@ -16,9 +16,9 @@ Tools exposed:
 - search_proximity: Find keywords appearing near each other
 - identify_speakers: Speaker diarization (who said what)
 - list_files: List media files in a directory
-- list_cached: List all cached transcriptions
-- cache_stats: View cache statistics
-- clear_cache: Clear transcription cache
+- list_memories: List all stored transcriptions
+- memory_stats: View transcription memory statistics
+- clear_memory: Clear transcription memory
 
 Usage:
   python -m augent.mcp
@@ -76,11 +76,11 @@ if _MISSING_DEPS:
         raise RuntimeError(_dependency_error()["error"])
     def search_audio_proximity(*args, **kwargs):
         raise RuntimeError(_dependency_error()["error"])
-    def get_cache_stats():
+    def get_memory_stats():
         return _dependency_error()
-    def clear_cache():
+    def clear_memory():
         return 0
-    def list_cached():
+    def list_memories():
         return []
 else:
     from .core import (
@@ -88,9 +88,9 @@ else:
         search_audio_full,
         transcribe_audio,
         search_audio_proximity,
-        get_cache_stats,
-        clear_cache,
-        list_cached
+        get_memory_stats,
+        clear_memory,
+        list_memories
     )
 
 # Optional dependencies (sentence-transformers, simple-diarizer, kokoro)
@@ -432,24 +432,24 @@ def handle_tools_list(id: Any) -> None:
                     }
                 },
                 {
-                    "name": "list_cached",
-                    "description": "List all cached transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.",
+                    "name": "list_memories",
+                    "description": "List all stored transcriptions with their titles, durations, dates, and file paths to markdown files. Useful for browsing what has already been transcribed.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
                     }
                 },
                 {
-                    "name": "cache_stats",
-                    "description": "View transcription cache statistics including number of cached files and total duration.",
+                    "name": "memory_stats",
+                    "description": "View transcription memory statistics including number of stored files and total duration.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
                     }
                 },
                 {
-                    "name": "clear_cache",
-                    "description": "Clear the transcription cache to free disk space.",
+                    "name": "clear_memory",
+                    "description": "Clear the transcription memory to free disk space.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {}
@@ -488,12 +488,12 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_identify_speakers(arguments)
         elif tool_name == "list_files":
             result = handle_list_files(arguments)
-        elif tool_name == "list_cached":
-            result = handle_list_cached(arguments)
-        elif tool_name == "cache_stats":
-            result = handle_cache_stats(arguments)
-        elif tool_name == "clear_cache":
-            result = handle_clear_cache(arguments)
+        elif tool_name == "list_memories":
+            result = handle_list_memories(arguments)
+        elif tool_name == "memory_stats":
+            result = handle_memory_stats(arguments)
+        elif tool_name == "clear_memory":
+            result = handle_clear_memory(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -777,27 +777,27 @@ def handle_list_files(arguments: dict) -> dict:
     }
 
 
-def handle_cache_stats(arguments: dict) -> dict:
-    """Handle cache_stats tool call."""
-    return get_cache_stats()
+def handle_memory_stats(arguments: dict) -> dict:
+    """Handle memory_stats tool call."""
+    return get_memory_stats()
 
 
-def handle_clear_cache(arguments: dict) -> dict:
-    """Handle clear_cache tool call."""
-    count = clear_cache()
+def handle_clear_memory(arguments: dict) -> dict:
+    """Handle clear_memory tool call."""
+    count = clear_memory()
     return {
         "cleared": count,
-        "message": f"Cleared {count} cached transcriptions"
+        "message": f"Cleared {count} stored transcription(s)"
     }
 
 
-def handle_list_cached(arguments: dict) -> dict:
-    """Handle list_cached tool call."""
-    entries = list_cached()
+def handle_list_memories(arguments: dict) -> dict:
+    """Handle list_memories tool call."""
+    entries = list_memories()
     return {
         "count": len(entries),
         "transcriptions": entries,
-        "message": f"Found {len(entries)} cached transcription(s)"
+        "message": f"Found {len(entries)} stored transcription(s)"
     }
 
 

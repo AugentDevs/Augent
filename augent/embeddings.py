@@ -12,7 +12,7 @@ import numpy as np
 from typing import Dict, Any, Optional, List
 
 from .core import transcribe_audio
-from .cache import get_transcription_cache, TranscriptionCache
+from .memory import get_transcription_memory, TranscriptionMemory
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
@@ -62,21 +62,21 @@ def _get_or_compute_embeddings(
     segments: List[Dict], audio_hash: str,
     model_name: str = EMBEDDING_MODEL
 ) -> np.ndarray:
-    """Get embeddings from cache or compute them."""
-    cache = get_transcription_cache()
+    """Get embeddings from memory or compute them."""
+    memory = get_transcription_memory()
 
-    # Check cache
-    cached = cache.get_embeddings(audio_hash, model_name)
-    if cached is not None:
-        return cached["embeddings"]
+    # Check memory
+    stored = memory.get_embeddings(audio_hash, model_name)
+    if stored is not None:
+        return stored["embeddings"]
 
     # Compute embeddings
     model = _get_embedding_model_cache().get(model_name)
     texts = [seg["text"].strip() for seg in segments]
     embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
 
-    # Cache them
-    cache.set_embeddings(
+    # Store them
+    memory.set_embeddings(
         audio_hash, model_name, embeddings,
         segment_count=len(segments),
         embedding_dim=embeddings.shape[1]
@@ -111,9 +111,9 @@ def deep_search(
             "model_used": model_size,
         }
 
-    # Get audio hash for embedding cache
-    cache = get_transcription_cache()
-    audio_hash = cache.hash_audio_file(audio_path)
+    # Get audio hash for embedding memory
+    memory = get_transcription_memory()
+    audio_hash = memory.hash_audio_file(audio_path)
 
     # Get or compute segment embeddings
     segment_embeddings = _get_or_compute_embeddings(segments, audio_hash)
@@ -187,9 +187,9 @@ def detect_chapters(
             "cached": transcription.get("cached", False),
         }
 
-    # Get audio hash for embedding cache
-    cache = get_transcription_cache()
-    audio_hash = cache.hash_audio_file(audio_path)
+    # Get audio hash for embedding memory
+    memory = get_transcription_memory()
+    audio_hash = memory.hash_audio_file(audio_path)
 
     # Get or compute segment embeddings
     embeddings = _get_or_compute_embeddings(segments, audio_hash)

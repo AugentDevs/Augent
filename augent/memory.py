@@ -1,7 +1,7 @@
 """
-Augent Cache - Transcription and model caching system
+Augent Memory - Transcription memory and model caching system
 
-Provides persistent caching for transcriptions to avoid re-processing
+Provides persistent memory for transcriptions to avoid re-processing
 the same audio files, and in-memory model caching to avoid reloading.
 """
 
@@ -19,8 +19,8 @@ import time
 
 
 @dataclass
-class CachedTranscription:
-    """Cached transcription data."""
+class MemorizedTranscription:
+    """Stored transcription data."""
     audio_hash: str
     model_size: str
     language: str
@@ -33,22 +33,22 @@ class CachedTranscription:
     title: str = ""  # Derived from filename, for UX display
 
 
-class TranscriptionCache:
+class TranscriptionMemory:
     """
-    SQLite-based cache for audio transcriptions.
+    SQLite-based memory for audio transcriptions.
 
     Stores transcriptions keyed by audio file hash + model size,
-    so the same file transcribed with different models is cached separately.
+    so the same file transcribed with different models is stored separately.
     """
 
-    def __init__(self, cache_dir: Optional[str] = None):
-        if cache_dir is None:
-            cache_dir = os.path.expanduser("~/.augent/cache")
+    def __init__(self, memory_dir: Optional[str] = None):
+        if memory_dir is None:
+            memory_dir = os.path.expanduser("~/.augent/memory")
 
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = self.cache_dir / "transcriptions.db"
-        self.md_dir = self.cache_dir / "transcriptions"
+        self.memory_dir = Path(memory_dir)
+        self.memory_dir.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.memory_dir / "transcriptions.db"
+        self.md_dir = self.memory_dir / "transcriptions"
         self.md_dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._init_db()
@@ -200,16 +200,16 @@ class TranscriptionCache:
         except Exception:
             return None
 
-    def get(self, file_path: str, model_size: str) -> Optional[CachedTranscription]:
+    def get(self, file_path: str, model_size: str) -> Optional[MemorizedTranscription]:
         """
-        Retrieve cached transcription if available.
+        Retrieve stored transcription if available.
 
         Args:
             file_path: Path to audio file
             model_size: Whisper model size used
 
         Returns:
-            CachedTranscription if found, None otherwise
+            MemorizedTranscription if found, None otherwise
         """
         try:
             audio_hash = self.hash_audio_file(file_path)
@@ -227,7 +227,7 @@ class TranscriptionCache:
                     if row is None:
                         return None
 
-                    return CachedTranscription(
+                    return MemorizedTranscription(
                         audio_hash=row['audio_hash'],
                         model_size=row['model_size'],
                         language=row['language'],
@@ -245,7 +245,7 @@ class TranscriptionCache:
 
     def set(self, file_path: str, model_size: str, transcription: Dict[str, Any]) -> None:
         """
-        Store transcription in cache.
+        Store transcription in memory.
 
         Args:
             file_path: Path to audio file
@@ -283,12 +283,12 @@ class TranscriptionCache:
                     ))
                     conn.commit()
         except Exception:
-            # Silently fail on cache write errors
+            # Silently fail on memory write errors
             pass
 
     def clear(self) -> int:
         """
-        Clear all cached transcriptions and markdown files.
+        Clear all stored transcriptions and markdown files.
 
         Returns:
             Number of entries cleared
@@ -320,7 +320,7 @@ class TranscriptionCache:
             return count
 
     def stats(self) -> Dict[str, Any]:
-        """Get cache statistics including title listing."""
+        """Get memory statistics including title listing."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM transcriptions")
             count = cursor.fetchone()[0]
@@ -361,22 +361,22 @@ class TranscriptionCache:
                 "embedding_entries": embedding_count,
                 "diarization_entries": diarization_count,
                 "total_audio_duration_hours": round(total_duration / 3600, 2),
-                "cache_size_mb": round((db_size + md_size) / (1024 * 1024), 2),
-                "cache_path": str(self.db_path),
+                "memory_size_mb": round((db_size + md_size) / (1024 * 1024), 2),
+                "memory_path": str(self.db_path),
                 "md_dir": str(self.md_dir),
                 "titles": titles
             }
 
 
-    def get_by_title(self, title: str) -> List[CachedTranscription]:
+    def get_by_title(self, title: str) -> List[MemorizedTranscription]:
         """
-        Look up cached transcriptions by title (substring match, case-insensitive).
+        Look up stored transcriptions by title (substring match, case-insensitive).
 
         Args:
             title: Title to search for (supports partial match)
 
         Returns:
-            List of CachedTranscription objects matching the title
+            List of MemorizedTranscription objects matching the title
         """
         results = []
         try:
@@ -388,7 +388,7 @@ class TranscriptionCache:
                         (f"%{title}%",)
                     )
                     for row in cursor.fetchall():
-                        results.append(CachedTranscription(
+                        results.append(MemorizedTranscription(
                             audio_hash=row['audio_hash'],
                             model_size=row['model_size'],
                             language=row['language'],
@@ -406,7 +406,7 @@ class TranscriptionCache:
 
     def list_all(self) -> List[Dict[str, Any]]:
         """
-        List all cached transcriptions with metadata.
+        List all stored transcriptions with metadata.
 
         Returns:
             List of dicts with title, duration, date, model_size, md_path, file_path
@@ -440,14 +440,14 @@ class TranscriptionCache:
             pass
         return entries
 
-    # --- Embeddings cache methods ---
+    # --- Embeddings memory methods ---
 
     @staticmethod
     def _embeddings_cache_key(audio_hash: str, embedding_model: str) -> str:
         return f"{audio_hash}:{embedding_model}"
 
     def get_embeddings(self, audio_hash: str, embedding_model: str) -> Optional[Dict[str, Any]]:
-        """Retrieve cached embeddings. Returns dict with numpy array or None."""
+        """Retrieve stored embeddings. Returns dict with numpy array or None."""
         import numpy as np
         cache_key = self._embeddings_cache_key(audio_hash, embedding_model)
         try:
@@ -472,7 +472,7 @@ class TranscriptionCache:
 
     def set_embeddings(self, audio_hash: str, embedding_model: str,
                        embeddings, segment_count: int, embedding_dim: int) -> None:
-        """Store embeddings in cache. embeddings should be a numpy ndarray."""
+        """Store embeddings in memory. embeddings should be a numpy ndarray."""
         cache_key = self._embeddings_cache_key(audio_hash, embedding_model)
         blob = embeddings.astype('float32').tobytes()
         try:
@@ -489,14 +489,14 @@ class TranscriptionCache:
         except Exception:
             pass
 
-    # --- Diarization cache methods ---
+    # --- Diarization memory methods ---
 
     @staticmethod
     def _diarization_cache_key(audio_hash: str, num_speakers) -> str:
         return f"{audio_hash}:spk:{num_speakers}"
 
     def get_diarization(self, audio_hash: str, num_speakers=None) -> Optional[Dict[str, Any]]:
-        """Retrieve cached diarization result."""
+        """Retrieve stored diarization result."""
         cache_key = self._diarization_cache_key(audio_hash, num_speakers)
         try:
             with self._lock:
@@ -517,7 +517,7 @@ class TranscriptionCache:
 
     def set_diarization(self, audio_hash: str, speakers: list, turns: list,
                         num_speakers=None) -> None:
-        """Store diarization result in cache."""
+        """Store diarization result in memory."""
         cache_key = self._diarization_cache_key(audio_hash, num_speakers)
         try:
             with self._lock:
@@ -598,16 +598,16 @@ class ModelCache:
 
 
 # Global instances for easy access
-_transcription_cache: Optional[TranscriptionCache] = None
+_transcription_memory: Optional[TranscriptionMemory] = None
 _model_cache: Optional[ModelCache] = None
 
 
-def get_transcription_cache(cache_dir: Optional[str] = None) -> TranscriptionCache:
-    """Get the global transcription cache instance."""
-    global _transcription_cache
-    if _transcription_cache is None:
-        _transcription_cache = TranscriptionCache(cache_dir)
-    return _transcription_cache
+def get_transcription_memory(memory_dir: Optional[str] = None) -> TranscriptionMemory:
+    """Get the global transcription memory instance."""
+    global _transcription_memory
+    if _transcription_memory is None:
+        _transcription_memory = TranscriptionMemory(memory_dir)
+    return _transcription_memory
 
 
 def get_model_cache() -> ModelCache:

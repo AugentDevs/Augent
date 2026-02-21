@@ -4,6 +4,19 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.2.21] - 2026-02-21
+
+### Changed
+
+- **"Cache" rebranded to "Memory"** — tools, CLI commands, code, and docs now use "memory" language (`list_memories`, `memory_stats`, `clear_memory`, `augent memory`)
+
+### Improved
+
+- **Installer UX** — animated spinners, paced output, and race condition fix for `curl|bash` piped installs
+- **ASCII banner** for CLI and installer using pyfiglet
+
+---
+
 ## [2026.2.16] - 2026-02-16
 
 ### Added
