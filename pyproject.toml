@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "augent"
-version = "2026.2.16"
+version = "2026.2.21"
 description = "Audio intelligence for agents. An MCP server that gives agents the ability to hear."
 readme = "README.md"
 license = {text = "MIT"}
