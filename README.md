@@ -111,8 +111,7 @@ Add to `~/.claude.json` (global) or `.mcp.json` (project):
 {
   "mcpServers": {
     "augent": {
-      "command": "python3",
-      "args": ["-m", "augent.mcp"]
+      "command": "augent-mcp"
     }
   }
 }

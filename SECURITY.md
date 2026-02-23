@@ -26,7 +26,7 @@ We will acknowledge your report within 48 hours and aim to release a fix within 
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 1.x     | Yes       |
-| < 1.0   | No        |
+| Version  | Supported |
+|----------|-----------|
+| 2026.x   | Yes       |
+| < 2026.1 | No        |

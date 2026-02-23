@@ -297,7 +297,7 @@ For parallel processing: open multiple browser tabs to the same URL. Each tab pr
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - FFmpeg (for audio processing)
 - yt-dlp + aria2 (for audio-downloader)
 - CUDA (optional, for GPU acceleration)

@@ -443,7 +443,7 @@ install_augent() {
     if [[ "$all_ok" == "true" ]]; then
         local augent_ver
         augent_ver=$($PYTHON_CMD -c "import augent; print(augent.__version__)" 2>/dev/null) || augent_ver=""
-        log_success "Augent ${augent_ver:+$augent_ver }installed"
+        log_success "Augent ${augent_ver:+v$augent_ver }installed"
         return 0
     fi
 
@@ -742,41 +742,6 @@ configure_mcp() {
         log_info "  claude mcp add augent -s user -- $python_abs -m augent.mcp"
     fi
 
-    # Claude Desktop config
-    local config_dir=""
-    case "$OS" in
-        macos) config_dir="$HOME/Library/Application Support/Claude" ;;
-        linux|wsl) config_dir="$HOME/.config/Claude" ;;
-    esac
-
-    if [[ -n "$config_dir" ]]; then
-        ensure_dir "$config_dir"
-        local config_file="$config_dir/claude_desktop_config.json"
-        if [[ -f "$config_file" ]]; then
-            if grep -q '"augent"' "$config_file" 2>/dev/null; then
-                log_success "Claude Desktop MCP (already configured)"
-            elif command_exists jq; then
-                local tmp_file="$config_dir/claude_desktop_config.tmp.json"
-                jq --arg py "$python_abs" '.mcpServers.augent = {"command": $py, "args": ["-m", "augent.mcp"]}' "$config_file" > "$tmp_file" 2>/dev/null && mv "$tmp_file" "$config_file"
-                log_success "Claude Desktop MCP (added to existing config)"
-            else
-                log_warn "Add augent to Claude Desktop config manually"
-            fi
-        else
-            cat > "$config_file" << EOF
-{
-  "mcpServers": {
-    "augent": {
-      "command": "$python_abs",
-      "args": ["-m", "augent.mcp"]
-    }
-  }
-}
-EOF
-            log_success "Claude Desktop MCP"
-        fi
-    fi
-
     # OpenClaw MCP + Skill
     local openclaw_detected=false
     if [[ -d "$HOME/.openclaw" ]] || command_exists openclaw; then
@@ -898,7 +863,7 @@ main() {
 
     # Done
     sleep 0.4
-    local line1="Augent installed successfully (${augent_ver})!"
+    local line1="Augent installed successfully (v${augent_ver})!"
     local line2="Audio intelligence for agents. Ready."
     local inner=50
     local GRN='\033[38;2;0;240;96m'
@@ -931,9 +896,9 @@ main() {
     if [[ "$PATH_MODIFIED" == "true" ]]; then
         echo -e "${YELLOW}Next steps:${NC}"
         echo -e "  1. Close this terminal and open a new one"
-        echo -e "  2. Restart Claude Code (or Claude Desktop) to connect MCP"
+        echo -e "  2. Restart Claude Code to connect MCP"
     else
-        echo -e "${YELLOW}Next step:${NC} Restart Claude Code (or Claude Desktop) to connect MCP"
+        echo -e "${YELLOW}Next step:${NC} Restart Claude Code to connect MCP"
     fi
     echo ""
 }
