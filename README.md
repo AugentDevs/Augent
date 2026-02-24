@@ -25,14 +25,14 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server that gives agents audio intelligence — the ability to download, transcribe, search, and analyze content from any URL, entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. Identify who's talking, break content into chapters, take formatted notes, and read them back with text-to-speech. You install it once, and every agent gains access to a growing suite of tools that turn any media into actionable intelligence.
+**Augent** is an MCP server that gives agents audio intelligence. One install, full pipeline. Download, transcribe, search, and analyze content from any URL or file, and more. Entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. Identify who's talking, break content into chapters, take formatted notes, and read them back with text-to-speech. You install it once, and every agent gains access to a growing suite of tools that turn any media into actionable intelligence.
 
-One install, full pipeline — from raw URL to actionable insight in a single prompt. Every transcription is stored in memory permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
+From raw URL to actionable insight in a single prompt. Every transcription is stored in memory permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
 Preferred setup: run the one-line installer in your terminal.
-The installer handles Python, FFmpeg, yt-dlp, aria2, and all dependencies automatically.
+The installer handles all dependencies automatically.
 Works on **macOS and Linux**. Windows users can install via pip.
 New install? Start here: [Getting Started](https://docs.augent.app/getting-started)
 
