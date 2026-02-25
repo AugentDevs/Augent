@@ -1,7 +1,7 @@
 """
 Augent MCP Server
 
-Model Context Protocol server for Claude Desktop and Claude Code integration.
+Model Context Protocol server for Claude Code integration.
 Exposes Augent as a native tool that Claude can call directly.
 
 Tools exposed:
@@ -34,15 +34,6 @@ Add to Claude Code project (.mcp.json):
     }
   }
 
-Add to Claude Desktop config (claude_desktop_config.json):
-  {
-    "mcpServers": {
-      "augent": {
-        "command": "python",
-        "args": ["-m", "augent.mcp"]
-      }
-    }
-  }
 """
 
 import sys
