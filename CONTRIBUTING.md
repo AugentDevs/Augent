@@ -40,7 +40,7 @@ Tests run on Python 3.10, 3.11, and 3.12 via CI.
 
 ```
 augent/
-├── mcp.py          # MCP server (14 tools for Claude)
+├── mcp.py          # MCP server (all tools for Claude)
 ├── core.py         # Transcription engine (faster-whisper)
 ├── search.py       # Keyword search
 ├── embeddings.py   # Semantic search + chapters

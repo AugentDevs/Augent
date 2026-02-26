@@ -356,6 +356,19 @@ def cmd_memory(args: argparse.Namespace):
     elif args.memory_action == "clear-models":
         clear_model_cache()
         print("Cleared model cache")
+    elif args.memory_action == "search":
+        query = args.search_query
+        if not query:
+            print("Error: search requires a query argument", file=sys.stderr)
+            print("Usage: augent memory search \"your query here\"", file=sys.stderr)
+            sys.exit(1)
+        try:
+            from .embeddings import search_memory
+        except ImportError:
+            print("Error: sentence-transformers not installed. Install with: pip install sentence-transformers", file=sys.stderr)
+            sys.exit(1)
+        result = search_memory(query, top_k=args.top_k)
+        print(json.dumps(result, indent=2))
 
 
 def cmd_setup(args: argparse.Namespace):
@@ -482,14 +495,14 @@ def _write_skill_md(dest: Path, mcp_cmd: Optional[str], python_abs: str):
 
     content = f"""---
 name: augent
-description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. 14 MCP tools for audio.
+description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. All MCP tools for audio.
 homepage: https://github.com/AugentDevs/Augent
 metadata: {{"openclaw":{{"emoji":"🎙","requires":{{"bins":["augent-mcp","ffmpeg"]}},"install":[{{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp"],"label":"Install augent (uv)"}}]}}}}
 ---
 
 # Augent — Audio Intelligence for AI Agents
 
-14 MCP tools for audio: transcribe, search, take notes, identify speakers, detect chapters, and text-to-speech. Fully local, fully private.
+All MCP tools for audio: transcribe, search, take notes, identify speakers, detect chapters, and text-to-speech. Fully local, fully private.
 
 ## Config
 
@@ -817,8 +830,19 @@ def main():
     memory_parser = subparsers.add_parser("memory", help="Manage transcription memory")
     memory_parser.add_argument(
         "memory_action",
-        choices=["stats", "list", "clear", "clear-models"],
+        choices=["stats", "list", "clear", "clear-models", "search"],
         help="Memory action"
+    )
+    memory_parser.add_argument(
+        "search_query",
+        nargs="?",
+        help="Search query (required for 'search' action)"
+    )
+    memory_parser.add_argument(
+        "--top-k", "-k",
+        type=int,
+        default=10,
+        help="Number of results for search (default: 10)"
     )
 
     # Setup command
