@@ -19,6 +19,7 @@ Tools exposed:
 - list_memories: List all stored transcriptions
 - memory_stats: View transcription memory statistics
 - clear_memory: Clear transcription memory
+- search_memory: Search across ALL stored transcriptions by meaning
 
 Usage:
   python -m augent.mcp
@@ -446,6 +447,24 @@ def handle_tools_list(id: Any) -> None:
                         "properties": {}
                     }
                 },
+                {
+                    "name": "search_memory",
+                    "description": "Search across ALL stored transcriptions by meaning. No audio_path needed — queries everything in memory.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Natural language search query (e.g. 'discussion about funding challenges')"
+                            },
+                            "top_k": {
+                                "type": "integer",
+                                "description": "Number of results to return. Default: 10"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                },
             ]
         }
     })
@@ -485,6 +504,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_memory_stats(arguments)
         elif tool_name == "clear_memory":
             result = handle_clear_memory(arguments)
+        elif tool_name == "search_memory":
+            result = handle_search_memory(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1070,6 +1091,25 @@ def handle_identify_speakers(arguments: dict) -> dict:
         "cached": result.get("cached", False),
         "model_used": model_size,
     }
+
+
+def handle_search_memory(arguments: dict) -> dict:
+    """Handle search_memory tool call."""
+    try:
+        from .embeddings import search_memory
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+
+    query = arguments.get("query")
+    top_k = arguments.get("top_k", 10)
+
+    if not query:
+        raise ValueError("Missing required parameter: query")
+
+    return search_memory(query, top_k=top_k)
 
 
 def handle_deep_search(arguments: dict) -> dict:

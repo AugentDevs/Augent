@@ -489,6 +489,58 @@ class TranscriptionMemory:
         except Exception:
             pass
 
+    def get_all_with_embeddings(self, embedding_model: str = "all-MiniLM-L6-v2") -> List[Dict[str, Any]]:
+        """
+        Retrieve all transcriptions with their embeddings (if available).
+
+        LEFT JOINs transcriptions with embeddings so files without embeddings
+        are still returned (with embeddings=None). GROUP BY audio_hash
+        deduplicates when same audio was transcribed with multiple model sizes.
+
+        Returns:
+            List of dicts with audio_hash, title, file_path, duration,
+            segments (parsed JSON), embeddings (numpy or None),
+            segment_count, embedding_dim.
+        """
+        import numpy as np
+
+        results = []
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute("""
+                    SELECT t.audio_hash, t.title, t.file_path, t.duration, t.segments,
+                           e.embeddings AS emb_blob, e.segment_count, e.embedding_dim
+                    FROM transcriptions t
+                    LEFT JOIN embeddings e
+                        ON t.audio_hash = e.audio_hash
+                        AND e.embedding_model = ?
+                    GROUP BY t.audio_hash
+                """, (embedding_model,))
+
+                for row in cursor.fetchall():
+                    emb = None
+                    seg_count = row['segment_count']
+                    emb_dim = row['embedding_dim']
+                    if row['emb_blob'] is not None and seg_count and emb_dim:
+                        emb = np.frombuffer(
+                            row['emb_blob'], dtype=np.float32
+                        ).reshape(seg_count, emb_dim)
+
+                    results.append({
+                        "audio_hash": row['audio_hash'],
+                        "title": row['title'] or '',
+                        "file_path": row['file_path'] or '',
+                        "duration": row['duration'] or 0,
+                        "segments": json.loads(row['segments']) if row['segments'] else [],
+                        "embeddings": emb,
+                        "segment_count": seg_count or 0,
+                        "embedding_dim": emb_dim or 0,
+                    })
+        except Exception:
+            pass
+        return results
+
     # --- Diarization memory methods ---
 
     @staticmethod

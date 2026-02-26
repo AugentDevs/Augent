@@ -150,6 +150,95 @@ def deep_search(
     }
 
 
+def search_memory(
+    query: str,
+    top_k: int = 10,
+) -> Dict[str, Any]:
+    """
+    Search across ALL stored transcriptions by meaning.
+
+    No audio_path needed — operates entirely on what's already in memory.
+    """
+    if not query or not query.strip():
+        raise ValueError("Missing required parameter: query")
+
+    memory = get_transcription_memory()
+    entries = memory.get_all_with_embeddings(EMBEDDING_MODEL)
+
+    if not entries:
+        return {
+            "query": query,
+            "results": [],
+            "total_segments": 0,
+            "files_searched": 0,
+            "model_used": EMBEDDING_MODEL,
+        }
+
+    # Build global segment list and embedding matrix
+    all_segments = []  # (segment_dict, title, file_path)
+    all_embeddings = []
+
+    for entry in entries:
+        segments = entry["segments"]
+        if not segments:
+            continue
+
+        # Get or compute embeddings
+        emb = entry["embeddings"]
+        if emb is None or len(segments) != entry["segment_count"]:
+            emb = _get_or_compute_embeddings(segments, entry["audio_hash"])
+
+        if emb is not None and len(emb) == len(segments):
+            for i, seg in enumerate(segments):
+                all_segments.append((seg, entry["title"], entry["file_path"]))
+            all_embeddings.append(emb)
+
+    if not all_segments:
+        return {
+            "query": query,
+            "results": [],
+            "total_segments": 0,
+            "files_searched": len(entries),
+            "model_used": EMBEDDING_MODEL,
+        }
+
+    # Stack all embeddings into one matrix
+    global_embeddings = np.vstack(all_embeddings)
+
+    # Encode query
+    model = _get_embedding_model_cache().get()
+    query_embedding = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
+
+    # Compute similarities
+    similarities = _cosine_similarity(query_embedding.reshape(1, -1), global_embeddings)
+
+    # Get top_k results
+    k = min(top_k, len(all_segments))
+    top_indices = np.argsort(-similarities)[:k]
+
+    results = []
+    for idx in top_indices:
+        seg, title, file_path = all_segments[idx]
+        start = seg.get("start", 0)
+        results.append({
+            "title": title,
+            "file_path": file_path,
+            "start": start,
+            "end": seg.get("end", 0),
+            "text": seg.get("text", "").strip(),
+            "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
+            "similarity": round(float(similarities[idx]), 4),
+        })
+
+    return {
+        "query": query,
+        "results": results,
+        "total_segments": len(all_segments),
+        "files_searched": len(entries),
+        "model_used": EMBEDDING_MODEL,
+    }
+
+
 def detect_chapters(
     audio_path: str,
     model_size: str = "tiny",

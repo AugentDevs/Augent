@@ -119,6 +119,14 @@ top_k: 5 (optional, number of results)
 ```
 Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
 
+### search_memory
+Search across ALL stored transcriptions by meaning. No audio_path needed — queries everything in memory.
+```
+query: "discussion about funding challenges"
+top_k: 10 (optional, number of results)
+```
+Returns `{query, results: [{title, file_path, start, end, text, timestamp, similarity}], total_segments, files_searched, model_used}`
+
 ### take_notes
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
 ```

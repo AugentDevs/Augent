@@ -25,6 +25,7 @@ from augent.mcp import (
     handle_memory_stats,
     handle_clear_memory,
     handle_list_memories,
+    handle_search_memory,
     _get_style_instruction,
 )
 
@@ -71,10 +72,10 @@ class TestInitialize:
 # --- Tools list ---
 
 class TestToolsList:
-    def test_returns_14_tools(self):
+    def test_returns_15_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
-        assert len(tools) == 14
+        assert len(tools) == 15
 
     def test_all_tools_have_required_fields(self):
         resp = capture_stdout(handle_tools_list, 1)
@@ -92,6 +93,7 @@ class TestToolsList:
             "deep_search", "take_notes", "chapters", "batch_search",
             "text_to_speech", "search_proximity", "identify_speakers",
             "list_files", "list_memories", "memory_stats", "clear_memory",
+            "search_memory",
         }
         assert names == expected
 
@@ -260,9 +262,41 @@ class TestToolCallErrors:
         })
         assert resp["error"]["code"] == -32602
 
+    def test_missing_query_search_memory(self):
+        resp = capture_stdout(handle_tools_call, 1, {
+            "name": "search_memory", "arguments": {}
+        })
+        assert resp["error"]["code"] == -32602
+
     def test_missing_audio_path_proximity(self):
         resp = capture_stdout(handle_tools_call, 1, {
             "name": "search_proximity",
             "arguments": {"keyword1": "a", "keyword2": "b"}
         })
         assert resp["error"]["code"] == -32602
+
+
+# --- search_memory ---
+
+class TestSearchMemory:
+    def test_missing_query_raises(self):
+        with pytest.raises(ValueError, match="Missing required parameter: query"):
+            handle_search_memory({})
+
+    def test_tool_schema_present(self):
+        resp = capture_stdout(handle_tools_list, 1)
+        tools = resp["result"]["tools"]
+        names = [t["name"] for t in tools]
+        assert "search_memory" in names
+        schema = next(t for t in tools if t["name"] == "search_memory")
+        assert "query" in schema["inputSchema"]["properties"]
+        assert "query" in schema["inputSchema"]["required"]
+
+    def test_routes_correctly(self):
+        with mock.patch("augent.mcp.handle_search_memory") as mock_handler:
+            mock_handler.return_value = {"query": "test", "results": [], "total_segments": 0, "files_searched": 0, "model_used": "all-MiniLM-L6-v2"}
+            resp = capture_stdout(handle_tools_call, 1, {
+                "name": "search_memory", "arguments": {"query": "test"}
+            })
+            mock_handler.assert_called_once_with({"query": "test"})
+            assert "result" in resp

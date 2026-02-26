@@ -77,10 +77,11 @@ except ImportError:
 
 # Optional: Semantic search + chapters (requires sentence-transformers)
 try:
-    from .embeddings import deep_search, detect_chapters
+    from .embeddings import deep_search, detect_chapters, search_memory
 except ImportError:
     deep_search = None
     detect_chapters = None
+    search_memory = None
 
 # Optional: Text-to-speech (requires kokoro)
 try:
@@ -126,6 +127,7 @@ __all__ = [
     # Optional: Semantic search + chapters
     "deep_search",
     "detect_chapters",
+    "search_memory",
     # Optional: Text-to-speech
     "text_to_speech",
     "read_aloud",
