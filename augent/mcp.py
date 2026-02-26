@@ -449,13 +449,18 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "search_memory",
-                    "description": "Search across ALL stored transcriptions by meaning. No audio_path needed — queries everything in memory.",
+                    "description": "Search across ALL stored transcriptions. No audio_path needed — queries everything in memory. Default mode is 'keyword' (literal match). Use 'semantic' mode for meaning-based search.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "Natural language search query (e.g. 'discussion about funding challenges')"
+                                "description": "Search query. For keyword mode: a word or phrase to find literally. For semantic mode: a natural language description (e.g. 'discussion about funding challenges')."
+                            },
+                            "mode": {
+                                "type": "string",
+                                "enum": ["keyword", "semantic"],
+                                "description": "Search mode. 'keyword' (default) finds segments containing the exact word/phrase. 'semantic' finds segments similar in meaning."
                             },
                             "top_k": {
                                 "type": "integer",
@@ -1095,21 +1100,25 @@ def handle_identify_speakers(arguments: dict) -> dict:
 
 def handle_search_memory(arguments: dict) -> dict:
     """Handle search_memory tool call."""
-    try:
-        from .embeddings import search_memory
-    except ImportError:
-        raise RuntimeError(
-            "Missing dependencies: sentence-transformers. "
-            "Install with: pip install sentence-transformers"
-        )
-
     query = arguments.get("query")
+    mode = arguments.get("mode", "keyword")
     top_k = arguments.get("top_k", 10)
 
     if not query:
         raise ValueError("Missing required parameter: query")
 
-    return search_memory(query, top_k=top_k)
+    if mode == "semantic":
+        try:
+            from .embeddings import search_memory
+        except ImportError:
+            raise RuntimeError(
+                "Missing dependencies: sentence-transformers. "
+                "Install with: pip install sentence-transformers"
+            )
+        return search_memory(query, top_k=top_k, mode="semantic")
+    else:
+        from .embeddings import search_memory
+        return search_memory(query, top_k=top_k, mode="keyword")
 
 
 def handle_deep_search(arguments: dict) -> dict:

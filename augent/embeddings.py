@@ -150,30 +150,54 @@ def deep_search(
     }
 
 
-def search_memory(
-    query: str,
-    top_k: int = 10,
+def _search_memory_keyword(
+    query: str, top_k: int, entries: list
 ) -> Dict[str, Any]:
-    """
-    Search across ALL stored transcriptions by meaning.
+    """Keyword mode: case-insensitive substring match on segment text."""
+    query_lower = query.lower()
+    results = []
+    total_segments = 0
 
-    No audio_path needed — operates entirely on what's already in memory.
-    """
-    if not query or not query.strip():
-        raise ValueError("Missing required parameter: query")
+    for entry in entries:
+        segments = entry["segments"]
+        if not segments:
+            continue
+        total_segments += len(segments)
 
-    memory = get_transcription_memory()
-    entries = memory.get_all_with_embeddings(EMBEDDING_MODEL)
+        for seg in segments:
+            text = seg.get("text", "")
+            if query_lower in text.lower():
+                start = seg.get("start", 0)
+                results.append({
+                    "title": entry["title"],
+                    "file_path": entry["file_path"],
+                    "start": start,
+                    "end": seg.get("end", 0),
+                    "text": text.strip(),
+                    "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
+                })
 
-    if not entries:
-        return {
-            "query": query,
-            "results": [],
-            "total_segments": 0,
-            "files_searched": 0,
-            "model_used": EMBEDDING_MODEL,
-        }
+    # Sort by title then timestamp for readable output
+    results.sort(key=lambda r: (r["title"], r["start"]))
 
+    # Apply top_k limit
+    if top_k and len(results) > top_k:
+        results = results[:top_k]
+
+    return {
+        "query": query,
+        "mode": "keyword",
+        "results": results,
+        "match_count": len(results),
+        "total_segments": total_segments,
+        "files_searched": len(entries),
+    }
+
+
+def _search_memory_semantic(
+    query: str, top_k: int, entries: list
+) -> Dict[str, Any]:
+    """Semantic mode: embedding-based similarity search."""
     # Build global segment list and embedding matrix
     all_segments = []  # (segment_dict, title, file_path)
     all_embeddings = []
@@ -189,13 +213,14 @@ def search_memory(
             emb = _get_or_compute_embeddings(segments, entry["audio_hash"])
 
         if emb is not None and len(emb) == len(segments):
-            for i, seg in enumerate(segments):
+            for seg in segments:
                 all_segments.append((seg, entry["title"], entry["file_path"]))
             all_embeddings.append(emb)
 
     if not all_segments:
         return {
             "query": query,
+            "mode": "semantic",
             "results": [],
             "total_segments": 0,
             "files_searched": len(entries),
@@ -232,11 +257,62 @@ def search_memory(
 
     return {
         "query": query,
+        "mode": "semantic",
         "results": results,
         "total_segments": len(all_segments),
         "files_searched": len(entries),
         "model_used": EMBEDDING_MODEL,
     }
+
+
+def search_memory(
+    query: str,
+    top_k: int = 10,
+    mode: str = "keyword",
+) -> Dict[str, Any]:
+    """
+    Search across ALL stored transcriptions.
+
+    No audio_path needed — operates entirely on what's already in memory.
+
+    Args:
+        query: Search query (keyword or natural language phrase)
+        top_k: Maximum number of results to return
+        mode: "keyword" (default) for literal matching,
+              "semantic" for meaning-based search
+    """
+    if not query or not query.strip():
+        raise ValueError("Missing required parameter: query")
+
+    if mode not in ("keyword", "semantic"):
+        raise ValueError(f"Invalid mode: {mode}. Must be 'keyword' or 'semantic'.")
+
+    memory = get_transcription_memory()
+
+    if mode == "keyword":
+        entries = memory.get_all_with_segments()
+        if not entries:
+            return {
+                "query": query,
+                "mode": "keyword",
+                "results": [],
+                "match_count": 0,
+                "total_segments": 0,
+                "files_searched": 0,
+            }
+        return _search_memory_keyword(query, top_k, entries)
+    else:
+        entries = memory.get_all_with_embeddings(EMBEDDING_MODEL)
+        if not entries:
+            return {
+                "query": query,
+                "mode": "semantic",
+                "results": [],
+                "total_segments": 0,
+                "files_searched": 0,
+                "model_used": EMBEDDING_MODEL,
+            }
+        return _search_memory_semantic(query, top_k, entries)
 
 
 def detect_chapters(

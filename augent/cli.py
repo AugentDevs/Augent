@@ -367,7 +367,8 @@ def cmd_memory(args: argparse.Namespace):
         except ImportError:
             print("Error: sentence-transformers not installed. Install with: pip install sentence-transformers", file=sys.stderr)
             sys.exit(1)
-        result = search_memory(query, top_k=args.top_k)
+        mode = "semantic" if args.semantic else "keyword"
+        result = search_memory(query, top_k=args.top_k, mode=mode)
         print(json.dumps(result, indent=2))
 
 
@@ -843,6 +844,11 @@ def main():
         type=int,
         default=10,
         help="Number of results for search (default: 10)"
+    )
+    memory_parser.add_argument(
+        "--semantic",
+        action="store_true",
+        help="Use semantic (meaning-based) search instead of keyword matching"
     )
 
     # Setup command

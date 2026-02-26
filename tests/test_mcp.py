@@ -291,12 +291,26 @@ class TestSearchMemory:
         schema = next(t for t in tools if t["name"] == "search_memory")
         assert "query" in schema["inputSchema"]["properties"]
         assert "query" in schema["inputSchema"]["required"]
+        assert "mode" in schema["inputSchema"]["properties"]
+        assert schema["inputSchema"]["properties"]["mode"]["enum"] == ["keyword", "semantic"]
 
     def test_routes_correctly(self):
         with mock.patch("augent.mcp.handle_search_memory") as mock_handler:
-            mock_handler.return_value = {"query": "test", "results": [], "total_segments": 0, "files_searched": 0, "model_used": "all-MiniLM-L6-v2"}
+            mock_handler.return_value = {"query": "test", "mode": "keyword", "results": [], "match_count": 0, "total_segments": 0, "files_searched": 0}
             resp = capture_stdout(handle_tools_call, 1, {
                 "name": "search_memory", "arguments": {"query": "test"}
             })
             mock_handler.assert_called_once_with({"query": "test"})
             assert "result" in resp
+
+    def test_defaults_to_keyword_mode(self):
+        with mock.patch("augent.embeddings.search_memory") as mock_fn:
+            mock_fn.return_value = {"query": "dog", "mode": "keyword", "results": [], "match_count": 0, "total_segments": 0, "files_searched": 0}
+            handle_search_memory({"query": "dog"})
+            mock_fn.assert_called_once_with("dog", top_k=10, mode="keyword")
+
+    def test_semantic_mode_passed(self):
+        with mock.patch("augent.embeddings.search_memory") as mock_fn:
+            mock_fn.return_value = {"query": "test", "mode": "semantic", "results": [], "total_segments": 0, "files_searched": 0, "model_used": "all-MiniLM-L6-v2"}
+            handle_search_memory({"query": "test", "mode": "semantic"})
+            mock_fn.assert_called_once_with("test", top_k=10, mode="semantic")

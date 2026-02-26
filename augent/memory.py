@@ -489,6 +489,39 @@ class TranscriptionMemory:
         except Exception:
             pass
 
+    def get_all_with_segments(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all transcriptions with parsed segments (no embeddings).
+
+        GROUP BY audio_hash deduplicates when same audio was transcribed
+        with multiple Whisper model sizes.
+
+        Returns:
+            List of dicts with audio_hash, title, file_path, duration,
+            segments (parsed JSON).
+        """
+        results = []
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute("""
+                    SELECT audio_hash, title, file_path, duration, segments
+                    FROM transcriptions
+                    GROUP BY audio_hash
+                """)
+
+                for row in cursor.fetchall():
+                    results.append({
+                        "audio_hash": row['audio_hash'],
+                        "title": row['title'] or '',
+                        "file_path": row['file_path'] or '',
+                        "duration": row['duration'] or 0,
+                        "segments": json.loads(row['segments']) if row['segments'] else [],
+                    })
+        except Exception:
+            pass
+        return results
+
     def get_all_with_embeddings(self, embedding_model: str = "all-MiniLM-L6-v2") -> List[Dict[str, Any]]:
         """
         Retrieve all transcriptions with their embeddings (if available).
