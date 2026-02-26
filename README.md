@@ -103,7 +103,7 @@ augent/
 
 ## MCP Tools
 
-The primary way to use Augent. Claude Code gets direct access to all 14 audio intelligence tools.
+The primary way to use Augent. Claude Code gets direct access to all Augent tools.
 
 Add to `~/.claude.json` (global) or `.mcp.json` (project):
 

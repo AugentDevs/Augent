@@ -1,13 +1,13 @@
 ---
 name: augent
-description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. 14 MCP tools for audio.
+description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. MCP tools for audio.
 homepage: https://github.com/AugentDevs/Augent
 metadata: {"openclaw":{"emoji":"🎙","requires":{"bins":["augent-mcp","ffmpeg"]},"install":[{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (uv)"}]}}
 ---
 
 # Augent — Audio Intelligence for AI Agents
 
-Augent is an MCP server that gives your agent 14 audio intelligence tools. Transcribe, search, take notes, identify speakers, detect chapters, and generate speech — fully local, fully private.
+Augent is an MCP server that gives your agent audio intelligence tools. Transcribe, search, take notes, identify speakers, detect chapters, and generate speech — fully local, fully private.
 
 ## Config
 
@@ -68,7 +68,7 @@ pip install "augent[all]"
 
 ## Tools
 
-Augent exposes 14 MCP tools:
+Augent exposes these MCP tools:
 
 ### Core
 
