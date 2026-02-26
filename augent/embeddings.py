@@ -58,6 +58,41 @@ def _cosine_similarity(query: np.ndarray, embeddings: np.ndarray) -> np.ndarray:
     return dot / (norm_q * norm_e + 1e-8)
 
 
+def _build_snippet(segments: list, center_idx: int, target_words: int = 16) -> str:
+    """Build a ~target_words snippet by expanding from center segment into neighbors."""
+    words = segments[center_idx].get("text", "").strip().split()
+
+    left = center_idx - 1
+    right = center_idx + 1
+
+    while len(words) < target_words:
+        added = False
+        if right < len(segments):
+            words.extend(segments[right].get("text", "").strip().split())
+            right += 1
+            added = True
+        if len(words) < target_words and left >= 0:
+            words = segments[left].get("text", "").strip().split() + words
+            left -= 1
+            added = True
+        if not added:
+            break
+
+    trimmed = len(words) > target_words
+    if trimmed:
+        words = words[:target_words]
+
+    text = " ".join(words)
+
+    # Ellipsis: content exists before/after our snippet
+    if (left + 1) > 0:
+        text = "..." + text
+    if right < len(segments) or trimmed:
+        text = text + "..."
+
+    return text
+
+
 def _get_or_compute_embeddings(
     segments: List[Dict], audio_hash: str,
     model_name: str = EMBEDDING_MODEL
@@ -136,7 +171,7 @@ def deep_search(
         results.append({
             "start": start,
             "end": seg["end"],
-            "text": seg["text"].strip(),
+            "text": _build_snippet(segments, idx),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })
@@ -164,7 +199,7 @@ def _search_memory_keyword(
             continue
         total_segments += len(segments)
 
-        for seg in segments:
+        for seg_idx, seg in enumerate(segments):
             text = seg.get("text", "")
             if query_lower in text.lower():
                 start = seg.get("start", 0)
@@ -173,7 +208,7 @@ def _search_memory_keyword(
                     "file_path": entry["file_path"],
                     "start": start,
                     "end": seg.get("end", 0),
-                    "text": text.strip(),
+                    "text": _build_snippet(segments, seg_idx),
                     "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
                 })
 
@@ -199,7 +234,7 @@ def _search_memory_semantic(
 ) -> Dict[str, Any]:
     """Semantic mode: embedding-based similarity search."""
     # Build global segment list and embedding matrix
-    all_segments = []  # (segment_dict, title, file_path)
+    all_segments = []  # (segment_dict, title, file_path, seg_idx, file_segments)
     all_embeddings = []
 
     for entry in entries:
@@ -213,8 +248,8 @@ def _search_memory_semantic(
             emb = _get_or_compute_embeddings(segments, entry["audio_hash"])
 
         if emb is not None and len(emb) == len(segments):
-            for seg in segments:
-                all_segments.append((seg, entry["title"], entry["file_path"]))
+            for seg_idx, seg in enumerate(segments):
+                all_segments.append((seg, entry["title"], entry["file_path"], seg_idx, segments))
             all_embeddings.append(emb)
 
     if not all_segments:
@@ -243,14 +278,14 @@ def _search_memory_semantic(
 
     results = []
     for idx in top_indices:
-        seg, title, file_path = all_segments[idx]
+        seg, title, file_path, seg_idx, file_segments = all_segments[idx]
         start = seg.get("start", 0)
         results.append({
             "title": title,
             "file_path": file_path,
             "start": start,
             "end": seg.get("end", 0),
-            "text": seg.get("text", "").strip(),
+            "text": _build_snippet(file_segments, seg_idx),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })
