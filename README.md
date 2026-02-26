@@ -74,6 +74,7 @@ flowchart LR
     E --> E2["Semantic"]
     E --> E3["Batch"]
     E --> E4["Proximity"]
+    E --> E5["Cross-Memory"]
 
     F --> F1["Speaker ID"]
     F --> F2["Chapters"]
@@ -131,6 +132,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
+| `search_memory` | Search across ALL stored transcriptions by keyword or meaning |
 | `list_files` | List media files in a directory |
 | `list_memories` | List stored transcriptions by title |
 | `memory_stats` | View transcription memory statistics |
@@ -167,6 +169,7 @@ For terminal-based usage. Works standalone or inside Claude Code.
 | `augent search audio.mp3 "keyword"` | Search for keywords |
 | `augent transcribe audio.mp3` | Full transcription |
 | `augent proximity audio.mp3 "A" "B"` | Find keyword A near keyword B |
+| `augent memory search "query"` | Search across all stored transcriptions |
 | `augent memory stats` | View memory statistics |
 | `augent memory list` | List stored transcriptions |
 | `augent memory clear` | Clear memory |
