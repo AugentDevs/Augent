@@ -58,7 +58,19 @@ def _cosine_similarity(query: np.ndarray, embeddings: np.ndarray) -> np.ndarray:
     return dot / (norm_q * norm_e + 1e-8)
 
 
-def _build_snippet(segments: list, center_idx: int, target_words: int = 16) -> str:
+def _highlight_keywords(text: str, keywords: List[str]) -> str:
+    """Wrap keyword occurrences in **bold** markers for terminal display."""
+    import re
+    for kw in keywords:
+        if not kw or not kw.strip():
+            continue
+        pattern = re.compile(r'(' + re.escape(kw) + r')', re.IGNORECASE)
+        text = pattern.sub(r'**\1**', text)
+    return text
+
+
+def _build_snippet(segments: list, center_idx: int, target_words: int = 25,
+                   highlight: Optional[List[str]] = None) -> str:
     """Build a ~target_words snippet by expanding from center segment into neighbors."""
     words = segments[center_idx].get("text", "").strip().split()
 
@@ -83,6 +95,10 @@ def _build_snippet(segments: list, center_idx: int, target_words: int = 16) -> s
         words = words[:target_words]
 
     text = " ".join(words)
+
+    # Highlight keywords before adding ellipsis
+    if highlight:
+        text = _highlight_keywords(text, highlight)
 
     # Ellipsis: content exists before/after our snippet
     if (left + 1) > 0:
@@ -164,6 +180,9 @@ def deep_search(
     top_k = min(top_k, len(segments))
     top_indices = np.argsort(-similarities)[:top_k]
 
+    # Highlight query words (4+ chars to skip common words)
+    highlight = [w for w in query.split() if len(w) >= 4]
+
     results = []
     for idx in top_indices:
         seg = segments[idx]
@@ -171,7 +190,7 @@ def deep_search(
         results.append({
             "start": start,
             "end": seg["end"],
-            "text": _build_snippet(segments, idx),
+            "text": _build_snippet(segments, idx, highlight=highlight),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })
@@ -208,7 +227,7 @@ def _search_memory_keyword(
                     "file_path": entry["file_path"],
                     "start": start,
                     "end": seg.get("end", 0),
-                    "text": _build_snippet(segments, seg_idx),
+                    "text": _build_snippet(segments, seg_idx, highlight=[query]),
                     "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
                 })
 
@@ -276,6 +295,9 @@ def _search_memory_semantic(
     k = min(top_k, len(all_segments))
     top_indices = np.argsort(-similarities)[:k]
 
+    # Highlight query words (4+ chars to skip common words)
+    highlight = [w for w in query.split() if len(w) >= 4]
+
     results = []
     for idx in top_indices:
         seg, title, file_path, seg_idx, file_segments = all_segments[idx]
@@ -285,7 +307,7 @@ def _search_memory_semantic(
             "file_path": file_path,
             "start": start,
             "end": seg.get("end", 0),
-            "text": _build_snippet(file_segments, seg_idx),
+            "text": _build_snippet(file_segments, seg_idx, highlight=highlight),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })

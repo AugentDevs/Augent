@@ -118,10 +118,10 @@ class TestKeywordSearcher:
         # Should include words before and after
         assert "significant" in snippet or "last" in snippet
 
-    def test_default_context_words_is_11(self):
-        """Test that default context_words is 11."""
+    def test_default_context_words_is_12(self):
+        """Test that default context_words is 12 (~25 words total)."""
         searcher = KeywordSearcher()
-        assert searcher.context_words == 11
+        assert searcher.context_words == 12
 
 
 class TestProximitySearch:

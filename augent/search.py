@@ -7,6 +7,7 @@ Provides search capabilities including:
 - Proximity search (find keywords near each other)
 """
 
+import re
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
@@ -34,7 +35,17 @@ def clean_word(word: str) -> str:
     return word.lower().strip(".,!?;:'\"()-[]{}").strip()
 
 
-def get_context(words: List[Dict], center_idx: int, context_words: int = 11,
+def highlight_keywords(text: str, keywords: List[str]) -> str:
+    """Wrap keyword occurrences in **bold** markers for terminal display."""
+    for kw in keywords:
+        if not kw or not kw.strip():
+            continue
+        pattern = re.compile(r'(' + re.escape(kw) + r')', re.IGNORECASE)
+        text = pattern.sub(r'**\1**', text)
+    return text
+
+
+def get_context(words: List[Dict], center_idx: int, context_words: int = 12,
                 end_idx: Optional[int] = None) -> str:
     """Extract context snippet around a word index."""
     if end_idx is None:
@@ -53,7 +64,7 @@ class KeywordSearcher:
     Supports exact matching, phrase matching, and proximity-based search.
     """
 
-    def __init__(self, context_words: int = 11):
+    def __init__(self, context_words: int = 12):
         """
         Initialize the searcher.
 
@@ -84,24 +95,28 @@ class KeywordSearcher:
 
                 if len(keyword_parts) == 1:
                     if keyword in current_word or current_word == keyword:
+                        snippet = get_context(words, i, self.context_words)
+                        snippet = highlight_keywords(snippet, [keyword])
                         matches.append(Match(
                             keyword=keyword,
                             timestamp=format_timestamp(word_obj["start"]),
                             timestamp_seconds=word_obj["start"],
-                            snippet=get_context(words, i, self.context_words),
+                            snippet=snippet,
                             confidence=1.0,
                             match_type="exact"
                         ))
                 else:
                     if self._match_phrase(words, i, keyword_parts):
+                        snippet = get_context(
+                            words, i, self.context_words,
+                            end_idx=i + len(keyword_parts) - 1
+                        )
+                        snippet = highlight_keywords(snippet, [keyword])
                         matches.append(Match(
                             keyword=keyword,
                             timestamp=format_timestamp(word_obj["start"]),
                             timestamp_seconds=word_obj["start"],
-                            snippet=get_context(
-                                words, i, self.context_words,
-                                end_idx=i + len(keyword_parts) - 1
-                            ),
+                            snippet=snippet,
                             confidence=1.0,
                             match_type="phrase"
                         ))
@@ -139,11 +154,13 @@ class KeywordSearcher:
                     start_idx = min(pos1, pos2)
                     end_idx = max(pos1, pos2)
 
+                    snippet = get_context(words, start_idx, 2, end_idx)
+                    snippet = highlight_keywords(snippet, [keyword1, keyword2])
                     matches.append(Match(
                         keyword=f"{keyword1} near {keyword2}",
                         timestamp=format_timestamp(words[pos1]["start"]),
                         timestamp_seconds=words[pos1]["start"],
-                        snippet=get_context(words, start_idx, 2, end_idx),
+                        snippet=snippet,
                         confidence=1.0 - (distance / max_distance) * 0.3,
                         match_type="proximity"
                     ))
@@ -201,7 +218,7 @@ class KeywordSearcher:
 def find_keyword_matches(
     words: List[Dict],
     keywords: List[str],
-    context_words: int = 11
+    context_words: int = 12
 ) -> List[Dict]:
     """
     Convenience function for keyword matching.
@@ -235,7 +252,7 @@ def search_with_proximity(
     keyword1: str,
     keyword2: str,
     max_distance: int = 30,
-    context_words: int = 11
+    context_words: int = 12
 ) -> List[Dict]:
     """
     Search for keyword1 appearing near keyword2.
