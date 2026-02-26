@@ -4,6 +4,22 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.2.26] - 2026-02-26
+
+### Added
+
+- **`search_memory` tool** — search across ALL stored transcriptions in one query, no audio_path needed
+- **Keyword and semantic modes** — `search_memory` defaults to literal keyword matching; opt into meaning-based search with `mode: "semantic"`
+- **CSV export** — optional `output` parameter on `search_memory` saves results as a CSV file
+- **25-word snippets** — all search tools now return consistent ~25-word context snippets with keyword highlighting
+
+### Improved
+
+- **Keyword highlighting** — matched keywords shown in **bold** across all search results (search_audio, deep_search, search_memory, search_proximity)
+- **CLI** — `augent memory search "query"` with `--semantic` and `--top-k` flags
+
+---
+
 ## [2026.2.21] - 2026-02-21
 
 ### Changed

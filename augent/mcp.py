@@ -118,7 +118,7 @@ def handle_initialize(id: Any, params: dict) -> None:
             },
             "serverInfo": {
                 "name": "augent",
-                "version": "2026.2.21"
+                "version": "2026.2.26"
             }
         }
     })
@@ -465,6 +465,10 @@ def handle_tools_list(id: Any) -> None:
                             "top_k": {
                                 "type": "integer",
                                 "description": "Number of results to return. Default: 10"
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save results as CSV. Example: ~/Desktop/results.csv"
                             }
                         },
                         "required": ["query"]
@@ -1103,6 +1107,7 @@ def handle_search_memory(arguments: dict) -> dict:
     query = arguments.get("query")
     mode = arguments.get("mode", "keyword")
     top_k = arguments.get("top_k", 10)
+    output = arguments.get("output")
 
     if not query:
         raise ValueError("Missing required parameter: query")
@@ -1115,10 +1120,10 @@ def handle_search_memory(arguments: dict) -> dict:
                 "Missing dependencies: sentence-transformers. "
                 "Install with: pip install sentence-transformers"
             )
-        return search_memory(query, top_k=top_k, mode="semantic")
+        return search_memory(query, top_k=top_k, mode="semantic", output=output)
     else:
         from .embeddings import search_memory
-        return search_memory(query, top_k=top_k, mode="keyword")
+        return search_memory(query, top_k=top_k, mode="keyword", output=output)
 
 
 def handle_deep_search(arguments: dict) -> dict:

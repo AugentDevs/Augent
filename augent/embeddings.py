@@ -6,6 +6,8 @@ Uses sentence-transformers for embedding-based audio analysis:
 - detect_chapters: Auto-detect topic boundaries in audio
 """
 
+import csv
+import io
 import os
 import threading
 import numpy as np
@@ -134,6 +136,52 @@ def _get_or_compute_embeddings(
     )
 
     return embeddings
+
+
+def _write_results_csv(results: List[Dict], output_path: str, query: str) -> str:
+    """Write search results to a CSV file. Returns the absolute path written."""
+    path = os.path.expanduser(output_path)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+
+    # Strip **bold** markers from snippets for clean CSV
+    import re
+    bold_pattern = re.compile(r'\*\*(.+?)\*\*')
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    # Detect columns from first result
+    has_title = any("title" in r for r in results)
+    has_similarity = any("similarity" in r for r in results)
+
+    # Header
+    header = []
+    if has_title:
+        header.extend(["Source", "Timestamp", "Snippet"])
+    else:
+        header.extend(["Timestamp", "Snippet"])
+    if has_similarity:
+        header.append("Similarity")
+    writer.writerow(header)
+
+    for r in results:
+        text = r.get("text", "")
+        text = bold_pattern.sub(r'\1', text)  # strip bold markers
+        text = text.replace("...", "").strip()
+
+        row = []
+        if has_title:
+            row.append(r.get("title", ""))
+        row.append(r.get("timestamp", ""))
+        row.append(text)
+        if has_similarity:
+            row.append(r.get("similarity", ""))
+        writer.writerow(row)
+
+    with open(path, "w", newline="") as f:
+        f.write(buf.getvalue())
+
+    return os.path.abspath(path)
 
 
 def deep_search(
@@ -326,6 +374,7 @@ def search_memory(
     query: str,
     top_k: int = 10,
     mode: str = "keyword",
+    output: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Search across ALL stored transcriptions.
@@ -337,6 +386,7 @@ def search_memory(
         top_k: Maximum number of results to return
         mode: "keyword" (default) for literal matching,
               "semantic" for meaning-based search
+        output: Optional file path to save results as CSV
     """
     if not query or not query.strip():
         raise ValueError("Missing required parameter: query")
@@ -349,7 +399,7 @@ def search_memory(
     if mode == "keyword":
         entries = memory.get_all_with_segments()
         if not entries:
-            return {
+            result = {
                 "query": query,
                 "mode": "keyword",
                 "results": [],
@@ -357,11 +407,12 @@ def search_memory(
                 "total_segments": 0,
                 "files_searched": 0,
             }
-        return _search_memory_keyword(query, top_k, entries)
+        else:
+            result = _search_memory_keyword(query, top_k, entries)
     else:
         entries = memory.get_all_with_embeddings(EMBEDDING_MODEL)
         if not entries:
-            return {
+            result = {
                 "query": query,
                 "mode": "semantic",
                 "results": [],
@@ -369,7 +420,15 @@ def search_memory(
                 "files_searched": 0,
                 "model_used": EMBEDDING_MODEL,
             }
-        return _search_memory_semantic(query, top_k, entries)
+        else:
+            result = _search_memory_semantic(query, top_k, entries)
+
+    # Write CSV if output path provided
+    if output and result.get("results"):
+        csv_path = _write_results_csv(result["results"], output, query)
+        result["csv_path"] = csv_path
+
+    return result
 
 
 def detect_chapters(

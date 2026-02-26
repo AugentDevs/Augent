@@ -125,9 +125,11 @@ Search across ALL stored transcriptions. No audio_path needed — queries everyt
 query: "Porsche"
 mode: "keyword" (default — literal match) or "semantic" (meaning-based)
 top_k: 10 (optional, number of results)
+output: "~/Desktop/results.csv" (optional, saves results as CSV)
 ```
 Keyword mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp}], match_count, total_segments, files_searched}`
 Semantic mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp, similarity}], total_segments, files_searched, model_used}`
+When `output` is provided and results exist, adds `csv_path` to the response with the absolute path of the written CSV file.
 
 ### take_notes
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.

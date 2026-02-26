@@ -62,7 +62,7 @@ class TestInitialize:
         result = resp["result"]
         assert "protocolVersion" in result
         assert result["serverInfo"]["name"] == "augent"
-        assert result["serverInfo"]["version"] == "2026.2.21"
+        assert result["serverInfo"]["version"] == "2026.2.26"
 
     def test_declares_tools_capability(self):
         resp = capture_stdout(handle_initialize, 1, {})
@@ -293,6 +293,7 @@ class TestSearchMemory:
         assert "query" in schema["inputSchema"]["required"]
         assert "mode" in schema["inputSchema"]["properties"]
         assert schema["inputSchema"]["properties"]["mode"]["enum"] == ["keyword", "semantic"]
+        assert "output" in schema["inputSchema"]["properties"]
 
     def test_routes_correctly(self):
         with mock.patch("augent.mcp.handle_search_memory") as mock_handler:
@@ -307,10 +308,56 @@ class TestSearchMemory:
         with mock.patch("augent.embeddings.search_memory") as mock_fn:
             mock_fn.return_value = {"query": "dog", "mode": "keyword", "results": [], "match_count": 0, "total_segments": 0, "files_searched": 0}
             handle_search_memory({"query": "dog"})
-            mock_fn.assert_called_once_with("dog", top_k=10, mode="keyword")
+            mock_fn.assert_called_once_with("dog", top_k=10, mode="keyword", output=None)
 
     def test_semantic_mode_passed(self):
         with mock.patch("augent.embeddings.search_memory") as mock_fn:
             mock_fn.return_value = {"query": "test", "mode": "semantic", "results": [], "total_segments": 0, "files_searched": 0, "model_used": "all-MiniLM-L6-v2"}
             handle_search_memory({"query": "test", "mode": "semantic"})
-            mock_fn.assert_called_once_with("test", top_k=10, mode="semantic")
+            mock_fn.assert_called_once_with("test", top_k=10, mode="semantic", output=None)
+
+    def test_output_param_passed(self):
+        with mock.patch("augent.embeddings.search_memory") as mock_fn:
+            mock_fn.return_value = {"query": "test", "mode": "keyword", "results": [], "match_count": 0, "total_segments": 0, "files_searched": 0}
+            handle_search_memory({"query": "test", "output": "~/Desktop/results.csv"})
+            mock_fn.assert_called_once_with("test", top_k=10, mode="keyword", output="~/Desktop/results.csv")
+
+
+class TestWriteResultsCsv:
+    def test_writes_csv_with_title_column(self):
+        from augent.embeddings import _write_results_csv
+        results = [
+            {"title": "Episode 1", "timestamp": "1:30", "text": "...hello **world**...", "start": 90},
+            {"title": "Episode 2", "timestamp": "5:00", "text": "...foo bar...", "start": 300},
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "out.csv")
+            written = _write_results_csv(results, path, "test")
+            assert os.path.exists(written)
+            with open(written) as f:
+                content = f.read()
+            assert "Source,Timestamp,Snippet" in content
+            assert "Episode 1" in content
+            assert "hello world" in content  # bold markers stripped
+            assert "**" not in content
+
+    def test_writes_csv_with_similarity(self):
+        from augent.embeddings import _write_results_csv
+        results = [
+            {"title": "Ep1", "timestamp": "0:10", "text": "test", "similarity": 0.85},
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "out.csv")
+            _write_results_csv(results, path, "q")
+            with open(path) as f:
+                content = f.read()
+            assert "Similarity" in content
+            assert "0.85" in content
+
+    def test_no_csv_on_empty_results(self):
+        """search_memory should not write CSV when results are empty."""
+        with mock.patch("augent.embeddings.get_transcription_memory") as mock_mem:
+            mock_mem.return_value.get_all_with_segments.return_value = []
+            from augent.embeddings import search_memory
+            result = search_memory("test", output="/tmp/should_not_exist.csv")
+            assert "csv_path" not in result
