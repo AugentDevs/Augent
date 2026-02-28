@@ -24,15 +24,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`search_memory` tool** — search across ALL stored transcriptions in one query, no audio_path needed
-- **Keyword and semantic modes** — `search_memory` defaults to literal keyword matching; opt into meaning-based search with `mode: "semantic"`
-- **CSV export** — optional `output` parameter on `search_memory` saves results as a CSV file
-- **25-word snippets** — all search tools now return consistent ~25-word context snippets with keyword highlighting
+- **`search_memory` tool:** search across ALL stored transcriptions in one query, no audio_path needed
+- **Keyword and semantic modes:** `search_memory` defaults to literal keyword matching; opt into meaning-based search with `mode: "semantic"`
+- **CSV export:** optional `output` parameter on `search_memory` saves results as a CSV file
+- **25-word snippets:** all search tools now return consistent ~25-word context snippets with keyword highlighting
 
 ### Improved
 
-- **Keyword highlighting** — matched keywords shown in **bold** across all search results (search_audio, deep_search, search_memory, search_proximity)
-- **CLI** — `augent memory search "query"` with `--semantic` and `--top-k` flags
+- **Keyword highlighting:** matched keywords shown in **bold** across all search results (search_audio, deep_search, search_memory, search_proximity)
+- **CLI:** `augent memory search "query"` with `--semantic` and `--top-k` flags
 
 ---
 
@@ -40,11 +40,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- **"Cache" rebranded to "Memory"** — tools, CLI commands, code, and docs now use "memory" language (`list_memories`, `memory_stats`, `clear_memory`, `augent memory`)
+- **"Cache" rebranded to "Memory":** tools, CLI commands, code, and docs now use "memory" language (`list_memories`, `memory_stats`, `clear_memory`, `augent memory`)
 
 ### Improved
 
-- **Installer UX** — animated spinners, paced output, and race condition fix for `curl|bash` piped installs
+- **Installer UX:** animated spinners, paced output, and race condition fix for `curl|bash` piped installs
 - **ASCII banner** for CLI and installer using pyfiglet
 
 ---
@@ -53,9 +53,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **OpenClaw integration** — skill package for ClawHub + `augent setup openclaw` one-liner
+- **OpenClaw integration:** skill package for ClawHub + `augent setup openclaw` one-liner
 - **Installer auto-detects OpenClaw** and configures MCP alongside Claude
-- **MCP protocol tests** — 33 tests covering routing, tool listing, and error handling
+- **MCP protocol tests:** 33 tests covering routing, tool listing, and error handling
 
 ---
 
@@ -63,7 +63,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **TTS no longer blocks MCP** — runs in background subprocess with job polling
+- **TTS no longer blocks MCP:** runs in background subprocess with job polling
 - Installer correctly selects framework Python for MCP config on macOS
 
 ---
@@ -72,7 +72,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Improved
 
-- **Quiz checkbox syntax** — answer options render as Obsidian checkboxes
+- **Quiz checkbox syntax:** answer options render as Obsidian checkboxes
 - Answer key formatting enforced (bold number + letter, em dash, explanation)
 - Claude always routes video URLs through `take_notes`, never WebFetch
 
@@ -82,7 +82,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`save_content` mode for `take_notes`** — bypasses Write tool, ensures post-processing runs
+- **`save_content` mode for `take_notes`:** bypasses Write tool, ensures post-processing runs
 - Installer auto-installs Python 3.12 when only 3.13 is available
 
 ### Fixed
@@ -97,7 +97,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Improved
 
-- **Lazy imports** for optional dependencies — installing mid-session works without restart
+- **Lazy imports for optional dependencies:** installing mid-session works without restart
 - Preserve WAV file when ffmpeg conversion fails in TTS
 
 ---
@@ -106,8 +106,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **Text-to-speech** — Kokoro TTS with 54 voices across 9 languages
-- **`read_aloud` option** for `take_notes` — generates spoken MP3 and embeds in Obsidian
+- **Text-to-speech:** Kokoro TTS with 54 voices across 9 languages
+- **`read_aloud` option for `take_notes`:** generates spoken MP3 and embeds in Obsidian
 
 ---
 
@@ -115,11 +115,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`identify_speakers`** — speaker diarization, no API keys required
-- **`deep_search`** — semantic search using sentence-transformers (find by meaning, not keywords)
-- **`chapters`** — auto-detect topic boundaries with embedding similarity
+- **`identify_speakers`:** speaker diarization, no API keys required
+- **`deep_search`:** semantic search using sentence-transformers (find by meaning, not keywords)
+- **`chapters`:** auto-detect topic boundaries with embedding similarity
 - **5 note styles** for `take_notes`: tldr, notes, highlight, eye-candy, quiz
-- **Obsidian .txt integration guide** — full setup for live-synced notes
+- **Obsidian .txt integration guide:** full setup for live-synced notes
 
 ### Changed
 
@@ -132,7 +132,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`take_notes` tool** — one-click URL to formatted notes pipeline (download + transcribe + save .txt)
+- **`take_notes` tool:** one-click URL to formatted notes pipeline (download + transcribe + save .txt)
 
 ---
 
@@ -140,8 +140,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **Title-based cache lookups** — search cached transcriptions by name
-- **Markdown transcription files** — each cached transcription also saved as readable `.md`
+- **Title-based cache lookups:** search cached transcriptions by name
+- **Markdown transcription files:** each cached transcription also saved as readable `.md`
 
 ---
 
@@ -163,8 +163,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`audio-downloader` CLI tool** — speed-optimized with aria2c (16 parallel connections)
-- **`download_audio` MCP tool** — Claude can download audio directly
+- **`audio-downloader` CLI tool:** speed-optimized with aria2c (16 parallel connections)
+- **`download_audio` MCP tool:** Claude can download audio directly
 - Model size warnings for medium/large (resource-intensive)
 
 ### Fixed
@@ -178,9 +178,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **Web UI v1** — polished Gradio interface with failproof startup
-- **CI/CD** — GitHub Actions testing on Python 3.10, 3.11, 3.12
-- **Professional installer** — one-liner `curl | bash` setup
+- **Web UI v1:** polished Gradio interface with failproof startup
+- **CI/CD:** GitHub Actions testing on Python 3.10, 3.11, 3.12
+- **Professional installer:** one-liner `curl | bash` setup
 - Logo and branding
 
 ---
@@ -193,9 +193,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **MCP server** exposing tools for Claude Code and Claude Desktop
 - **Transcription engine** powered by faster-whisper with word-level timestamps
 - **Keyword search** with timestamped matches and context snippets
-- **Proximity search** — find where keywords appear near each other
-- **Batch processing** — search multiple files in parallel
-- **Three-layer caching** — transcriptions, embeddings, and diarization in SQLite
+- **Proximity search:** find where keywords appear near each other
+- **Batch processing:** search multiple files in parallel
+- **Three-layer caching:** transcriptions, embeddings, and diarization in SQLite
 - **CLI** with search, transcribe, proximity, and cache management commands
-- **Export formats** — JSON, CSV, SRT, VTT, Markdown
-- **Cross-platform support** — macOS, Linux, Windows
+- **Export formats:** JSON, CSV, SRT, VTT, Markdown
+- **Cross-platform support:** macOS, Linux, Windows
