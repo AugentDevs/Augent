@@ -8,6 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`ask` tool** — ask questions about your content and get full evidence blocks (~150 words of context each) instead of short snippets. Works on a single file or across all stored transcriptions. Overlapping matches within a configurable time window are automatically merged
 - **File output on all tools** — `transcribe_audio`, `search_audio`, `deep_search`, `search_proximity` now support an `output` parameter for saving results directly to disk
 - **XLSX export** — pass a `.xlsx` path for styled spreadsheets with bold headers and formatted timestamps, or `.csv` for plain data. Auto-detected from file extension
 - **Per-segment timestamps on `transcribe_audio`** — responses now include `segments: [{start, end, timestamp, text}]` instead of a combined text blob

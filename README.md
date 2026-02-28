@@ -25,9 +25,9 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server that gives agents audio intelligence. One install, full pipeline. Download, transcribe, search, and analyze content from any URL or file, and more. Entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, by speaker, by topic, or by _meaning_. Identify who's talking, break content into chapters, take formatted notes, and read them back with text-to-speech. You install it once, and every agent gains access to a growing suite of tools that turn any media into actionable intelligence.
+**Augent** is an MCP server that gives agents audio intelligence. One install, full pipeline. Download, transcribe, search, and analyze content from any URL or file. Entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, speaker, topic, or meaning. Identify who's talking, break content into chapters, take formatted notes, read them back with text-to-speech. One install, every agent gets the full toolkit.
 
-From raw URL to actionable insight in a single prompt. Every transcription is stored in memory permanently; the first run processes, every search after that is instant. Batch process entire libraries in one prompt with no file limit. Market research, competitive analysis, content repurposing, due diligence, education — if it's hidden in content form, Augent finds it. Built for Claude Code. Compatible with any MCP client.
+Raw URL to answer in a single prompt. Every transcription stays in memory -- first run transcribes, every search after that is instant. Batch process entire libraries with no file limit. Market research, competitive analysis, content repurposing, due diligence, education -- if it's buried in audio, Augent finds it. Built for Claude Code. Compatible with any MCP client.
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
@@ -75,6 +75,7 @@ flowchart LR
     E --> E3["Batch"]
     E --> E4["Proximity"]
     E --> E5["Cross-Memory"]
+    E --> E6["Ask"]
 
     F --> F1["Speaker ID"]
     F --> F2["Chapters"]
@@ -132,6 +133,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
+| `ask` | Ask a question about your content — returns full evidence blocks for answer synthesis |
 | `search_memory` | Search across ALL stored transcriptions by keyword or meaning |
 | `list_files` | List media files in a directory |
 | `list_memories` | List stored transcriptions by title |
@@ -213,7 +215,7 @@ Open: **http://127.0.0.1:9797**
 
 ## Model Sizes
 
-**`tiny` is the default** and handles nearly everything. Use `small` or above only for heavy accents, poor audio, or lyrics.
+**`tiny` is the default.** Handles almost everything. Use `small` or above for heavy accents, poor audio, or lyrics.
 
 | Model | Speed | Accuracy |
 |:------|:------|:---------|

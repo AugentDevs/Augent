@@ -138,6 +138,19 @@ Keyword mode returns `{query, mode, results: [{title, file_path, start, end, tex
 Semantic mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp, similarity}], total_segments, files_searched, model_used}`
 When `output` is provided and results exist, adds `output_path` to the response.
 
+### ask
+Ask a question about your content. Returns evidence blocks with ~150 words of context (not short snippets) so Claude can synthesize a real answer. Works on a single file or across all stored transcriptions.
+```
+query: "What did they say about pricing?" (required)
+audio_path: "/path/to/audio.mp3" (optional — omit to search all memory)
+top_k: 5 (optional, number of evidence blocks)
+context: 60 (optional, seconds — overlapping matches within this window are merged)
+model_size: "tiny" (optional, default)
+output: "~/Desktop/evidence.csv" (optional, .csv or .xlsx)
+```
+Returns `{query, evidence: [{source, file_path, timestamp, start, end, text, similarity}], mode, total_segments, files_searched}`
+When `output` is provided, adds `output_path` to the response.
+
 ### take_notes
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
 ```

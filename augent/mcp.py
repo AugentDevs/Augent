@@ -20,6 +20,7 @@ Tools exposed:
 - memory_stats: View transcription memory statistics
 - clear_memory: Clear transcription memory
 - search_memory: Search across ALL stored transcriptions by meaning
+- ask: Ask questions about content — returns full evidence blocks for answer synthesis
 
 Usage:
   python -m augent.mcp
@@ -666,6 +667,41 @@ def handle_tools_list(id: Any) -> None:
                         "required": ["query"]
                     }
                 },
+                {
+                    "name": "ask",
+                    "description": "Ask a question about your content. Returns evidence blocks with full context so Claude can synthesize an answer. Works on a single file or across all stored transcriptions.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Natural language question (e.g. 'What did they say about pricing?')"
+                            },
+                            "audio_path": {
+                                "type": "string",
+                                "description": "Scope to a single audio file. Omit to search across all stored transcriptions."
+                            },
+                            "top_k": {
+                                "type": "integer",
+                                "description": "Number of evidence blocks to return. Default: 5"
+                            },
+                            "context": {
+                                "type": "integer",
+                                "description": "Seconds of context around each match — overlapping matches within this window are merged. Default: 60"
+                            },
+                            "model_size": {
+                                "type": "string",
+                                "enum": ["tiny", "base", "small", "medium", "large"],
+                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets."
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                },
             ]
         }
     })
@@ -707,6 +743,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_clear_memory(arguments)
         elif tool_name == "search_memory":
             result = handle_search_memory(arguments)
+        elif tool_name == "ask":
+            result = handle_ask(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1405,6 +1443,46 @@ def handle_search_memory(arguments: dict) -> dict:
     else:
         from .embeddings import search_memory
         return search_memory(query, top_k=top_k, mode="keyword", output=output)
+
+
+def handle_ask(arguments: dict) -> dict:
+    """Handle ask tool call."""
+    try:
+        from .embeddings import ask
+    except ImportError:
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        )
+
+    query = arguments.get("query")
+    audio_path = arguments.get("audio_path")
+    model_size = arguments.get("model_size", "tiny")
+    top_k = arguments.get("top_k", 5)
+    context = arguments.get("context", 60)
+    output = arguments.get("output")
+
+    if not query:
+        raise ValueError("Missing required parameter: query")
+
+    result = ask(
+        query,
+        audio_path=audio_path,
+        model_size=model_size,
+        top_k=top_k,
+        context=context,
+    )
+
+    # Write output file if requested
+    if output and result.get("evidence"):
+        result["output_path"] = _write_output_file(
+            output,
+            result["evidence"],
+            columns=["source", "timestamp", "text", "similarity"],
+            bold_columns=["source", "timestamp"],
+        )
+
+    return result
 
 
 def handle_deep_search(arguments: dict) -> dict:
