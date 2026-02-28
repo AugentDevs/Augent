@@ -649,7 +649,7 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "search_memory",
-                    "description": "Search across ALL stored transcriptions. No audio_path needed — queries everything in memory. Default mode is 'keyword' (literal match). Use 'semantic' mode for meaning-based search.",
+                    "description": "Search across ALL stored transcriptions by keyword or meaning. No audio_path needed, queries everything in memory.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
