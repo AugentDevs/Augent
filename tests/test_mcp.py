@@ -75,7 +75,7 @@ class TestToolsList:
     def test_returns_15_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
-        assert len(tools) == 16
+        assert len(tools) == 15
 
     def test_all_tools_have_required_fields(self):
         resp = capture_stdout(handle_tools_list, 1)
@@ -93,7 +93,7 @@ class TestToolsList:
             "deep_search", "take_notes", "chapters", "batch_search",
             "text_to_speech", "search_proximity", "identify_speakers",
             "list_files", "list_memories", "memory_stats", "clear_memory",
-            "search_memory", "ask",
+            "search_memory",
         }
         assert names == expected
 
@@ -314,7 +314,7 @@ class TestSearchMemory:
         with mock.patch("augent.embeddings.search_memory") as mock_fn:
             mock_fn.return_value = {"query": "test", "mode": "semantic", "results": [], "total_segments": 0, "files_searched": 0, "model_used": "all-MiniLM-L6-v2"}
             handle_search_memory({"query": "test", "mode": "semantic"})
-            mock_fn.assert_called_once_with("test", top_k=10, mode="semantic", output=None)
+            mock_fn.assert_called_once_with("test", top_k=10, mode="semantic", output=None, context_words=25, dedup_seconds=0)
 
     def test_output_param_passed(self):
         with mock.patch("augent.embeddings.search_memory") as mock_fn:

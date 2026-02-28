@@ -20,7 +20,6 @@ Tools exposed:
 - memory_stats: View transcription memory statistics
 - clear_memory: Clear transcription memory
 - search_memory: Search across ALL stored transcriptions by meaning
-- ask: Ask questions about content — returns full evidence blocks for answer synthesis
 
 Usage:
   python -m augent.mcp
@@ -407,6 +406,14 @@ def handle_tools_list(id: Any) -> None:
                             "output": {
                                 "type": "string",
                                 "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
+                            },
+                            "context_words": {
+                                "type": "integer",
+                                "description": "Words of context per result. Default: 25. Use 150 for full evidence blocks when Claude needs to answer a question, not just find a moment."
+                            },
+                            "dedup_seconds": {
+                                "type": "number",
+                                "description": "Merge matches within this many seconds of each other to avoid redundant results. Default: 0 (off). Use 60 for Q&A."
                             }
                         },
                         "required": ["audio_path", "query"]
@@ -662,41 +669,14 @@ def handle_tools_list(id: Any) -> None:
                             "output": {
                                 "type": "string",
                                 "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                },
-                {
-                    "name": "ask",
-                    "description": "Ask a question about your content. Returns evidence blocks with full context so Claude can synthesize an answer. Works on a single file or across all stored transcriptions.",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Natural language question (e.g. 'What did they say about pricing?')"
                             },
-                            "audio_path": {
-                                "type": "string",
-                                "description": "Scope to a single audio file. Omit to search across all stored transcriptions."
-                            },
-                            "top_k": {
+                            "context_words": {
                                 "type": "integer",
-                                "description": "Number of evidence blocks to return. Default: 5"
+                                "description": "Words of context per result. Default: 25. Use 150 for full evidence blocks when Claude needs to answer a question. Semantic mode only."
                             },
-                            "context": {
-                                "type": "integer",
-                                "description": "Seconds of context around each match — overlapping matches within this window are merged. Default: 60"
-                            },
-                            "model_size": {
-                                "type": "string",
-                                "enum": ["tiny", "base", "small", "medium", "large"],
-                                "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
-                            },
-                            "output": {
-                                "type": "string",
-                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets."
+                            "dedup_seconds": {
+                                "type": "number",
+                                "description": "Merge matches within this many seconds of each other. Default: 0 (off). Semantic mode only."
                             }
                         },
                         "required": ["query"]
@@ -743,8 +723,6 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_clear_memory(arguments)
         elif tool_name == "search_memory":
             result = handle_search_memory(arguments)
-        elif tool_name == "ask":
-            result = handle_ask(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1427,6 +1405,8 @@ def handle_search_memory(arguments: dict) -> dict:
     mode = arguments.get("mode", "keyword")
     top_k = arguments.get("top_k", 10)
     output = arguments.get("output")
+    context_words = arguments.get("context_words", 25)
+    dedup_seconds = arguments.get("dedup_seconds", 0)
 
     if not query:
         raise ValueError("Missing required parameter: query")
@@ -1439,50 +1419,10 @@ def handle_search_memory(arguments: dict) -> dict:
                 "Missing dependencies: sentence-transformers. "
                 "Install with: pip install sentence-transformers"
             )
-        return search_memory(query, top_k=top_k, mode="semantic", output=output)
+        return search_memory(query, top_k=top_k, mode="semantic", output=output, context_words=context_words, dedup_seconds=dedup_seconds)
     else:
         from .embeddings import search_memory
         return search_memory(query, top_k=top_k, mode="keyword", output=output)
-
-
-def handle_ask(arguments: dict) -> dict:
-    """Handle ask tool call."""
-    try:
-        from .embeddings import ask
-    except ImportError:
-        raise RuntimeError(
-            "Missing dependencies: sentence-transformers. "
-            "Install with: pip install sentence-transformers"
-        )
-
-    query = arguments.get("query")
-    audio_path = arguments.get("audio_path")
-    model_size = arguments.get("model_size", "tiny")
-    top_k = arguments.get("top_k", 5)
-    context = arguments.get("context", 60)
-    output = arguments.get("output")
-
-    if not query:
-        raise ValueError("Missing required parameter: query")
-
-    result = ask(
-        query,
-        audio_path=audio_path,
-        model_size=model_size,
-        top_k=top_k,
-        context=context,
-    )
-
-    # Write output file if requested
-    if output and result.get("evidence"):
-        result["output_path"] = _write_output_file(
-            output,
-            result["evidence"],
-            columns=["source", "timestamp", "text", "similarity"],
-            bold_columns=["source", "timestamp"],
-        )
-
-    return result
 
 
 def handle_deep_search(arguments: dict) -> dict:
@@ -1500,6 +1440,8 @@ def handle_deep_search(arguments: dict) -> dict:
     model_size = arguments.get("model_size", "tiny")
     top_k = arguments.get("top_k", 5)
     output = arguments.get("output")
+    context_words = arguments.get("context_words", 25)
+    dedup_seconds = arguments.get("dedup_seconds", 0)
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -1511,6 +1453,8 @@ def handle_deep_search(arguments: dict) -> dict:
         query,
         model_size=model_size,
         top_k=top_k,
+        context_words=context_words,
+        dedup_seconds=dedup_seconds,
     )
 
     # Write output file if requested

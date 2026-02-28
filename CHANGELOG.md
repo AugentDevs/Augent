@@ -8,7 +8,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`ask` tool:** ask questions about your content and get full evidence blocks (~150 words of context each) instead of short snippets. Works on a single file or across all stored transcriptions. Overlapping matches within a configurable time window are automatically merged
+- **`context_words` parameter on `deep_search` and `search_memory`:** control how much context each result returns. Default 25 words (unchanged). Set to 150 for full evidence blocks when Claude needs to answer a question, not just find a moment
+- **`dedup_seconds` parameter on `deep_search` and `search_memory`:** merge matches from the same time range to avoid redundant results. Default 0 (off). Set to 60 for Q&A workflows
 - **File output on all search and transcription tools:** `transcribe_audio`, `search_audio`, `deep_search`, `search_proximity` now accept an `output` parameter for saving results directly to disk
 - **XLSX export:** `.xlsx` for styled spreadsheets with bold headers and formatted timestamps, `.csv` for plain data. Auto-detected from file extension
 - **Per-segment timestamps on `transcribe_audio`:** responses now include a `segments` array with `start`, `end`, `timestamp`, and `text` per segment instead of one flat text string

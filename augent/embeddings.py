@@ -198,11 +198,17 @@ def deep_search(
     query: str,
     model_size: str = "tiny",
     top_k: int = 5,
+    context_words: int = 25,
+    dedup_seconds: float = 0,
 ) -> Dict[str, Any]:
     """
     Semantic search across audio transcription.
 
     Finds segments by meaning, not just keywords.
+
+    Args:
+        context_words: Words of context per result (default 25, use 150 for full evidence blocks).
+        dedup_seconds: Merge matches from the same time range (0 = off).
     """
     if not os.path.exists(audio_path):
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
@@ -233,21 +239,37 @@ def deep_search(
     # Compute similarities
     similarities = _cosine_similarity(query_embedding.reshape(1, -1), segment_embeddings)
 
-    # Get top_k results
-    top_k = min(top_k, len(segments))
-    top_indices = np.argsort(-similarities)[:top_k]
+    # Overcollect candidates when dedup is on
+    candidate_k = min(top_k * 3, len(segments)) if dedup_seconds > 0 else min(top_k, len(segments))
+    top_indices = np.argsort(-similarities)[:candidate_k]
 
     # Highlight query words (4+ chars to skip common words)
     highlight = [w for w in query.split() if len(w) >= 4]
 
     results = []
+    used_ranges = []
+
     for idx in top_indices:
+        if len(results) >= top_k:
+            break
+
         seg = segments[idx]
         start = seg["start"]
+
+        # Skip if overlapping with an already-used time range
+        if dedup_seconds > 0:
+            merged = any(
+                abs(start - ur[0]) < dedup_seconds or abs(start - ur[1]) < dedup_seconds
+                for ur in used_ranges
+            )
+            if merged:
+                continue
+            used_ranges.append((start, seg["end"]))
+
         results.append({
             "start": start,
             "end": seg["end"],
-            "text": _build_snippet(segments, idx, highlight=highlight),
+            "text": _build_snippet(segments, idx, target_words=context_words, highlight=highlight),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })
@@ -306,7 +328,8 @@ def _search_memory_keyword(
 
 
 def _search_memory_semantic(
-    query: str, top_k: int, entries: list
+    query: str, top_k: int, entries: list,
+    context_words: int = 25, dedup_seconds: float = 0,
 ) -> Dict[str, Any]:
     """Semantic mode: embedding-based similarity search."""
     # Build global segment list and embedding matrix
@@ -348,23 +371,40 @@ def _search_memory_semantic(
     # Compute similarities
     similarities = _cosine_similarity(query_embedding.reshape(1, -1), global_embeddings)
 
-    # Get top_k results
-    k = min(top_k, len(all_segments))
-    top_indices = np.argsort(-similarities)[:k]
+    # Overcollect candidates when dedup is on
+    candidate_k = min(top_k * 3, len(all_segments)) if dedup_seconds > 0 else min(top_k, len(all_segments))
+    top_indices = np.argsort(-similarities)[:candidate_k]
 
     # Highlight query words (4+ chars to skip common words)
     highlight = [w for w in query.split() if len(w) >= 4]
 
     results = []
+    used_ranges = {}  # file_path -> [(start, end)]
+
     for idx in top_indices:
+        if len(results) >= top_k:
+            break
+
         seg, title, file_path, seg_idx, file_segments = all_segments[idx]
         start = seg.get("start", 0)
+
+        # Skip if overlapping with an already-used time range in same file
+        if dedup_seconds > 0:
+            ranges = used_ranges.get(file_path, [])
+            merged = any(
+                abs(start - ur[0]) < dedup_seconds or abs(start - ur[1]) < dedup_seconds
+                for ur in ranges
+            )
+            if merged:
+                continue
+            used_ranges.setdefault(file_path, []).append((start, seg.get("end", 0)))
+
         results.append({
             "title": title,
             "file_path": file_path,
             "start": start,
             "end": seg.get("end", 0),
-            "text": _build_snippet(file_segments, seg_idx, highlight=highlight),
+            "text": _build_snippet(file_segments, seg_idx, target_words=context_words, highlight=highlight),
             "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         })
@@ -384,6 +424,8 @@ def search_memory(
     top_k: int = 10,
     mode: str = "keyword",
     output: Optional[str] = None,
+    context_words: int = 25,
+    dedup_seconds: float = 0,
 ) -> Dict[str, Any]:
     """
     Search across ALL stored transcriptions.
@@ -396,6 +438,8 @@ def search_memory(
         mode: "keyword" (default) for literal matching,
               "semantic" for meaning-based search
         output: Optional file path to save results as CSV
+        context_words: Words of context per result (default 25, use 150 for full evidence blocks).
+        dedup_seconds: Merge matches from the same time range (0 = off). Semantic mode only.
     """
     if not query or not query.strip():
         raise ValueError("Missing required parameter: query")
@@ -430,7 +474,7 @@ def search_memory(
                 "model_used": EMBEDDING_MODEL,
             }
         else:
-            result = _search_memory_semantic(query, top_k, entries)
+            result = _search_memory_semantic(query, top_k, entries, context_words, dedup_seconds)
 
     # Write CSV if output path provided
     if output and result.get("results"):
@@ -439,194 +483,6 @@ def search_memory(
 
     return result
 
-
-def ask(
-    query: str,
-    audio_path: Optional[str] = None,
-    model_size: str = "tiny",
-    top_k: int = 5,
-    context: int = 60,
-) -> Dict[str, Any]:
-    """
-    Ask a question about content. Returns evidence blocks with full context
-    (~150 words each) so Claude can synthesize an answer.
-
-    Works on a single file or across all stored transcriptions.
-
-    Args:
-        query: Natural language question (e.g. "What did they say about pricing?")
-        audio_path: Scope to a single file. Omit to search all memory.
-        model_size: Whisper model size for transcription.
-        top_k: Number of evidence blocks to return.
-        context: Seconds of context around each match for deduplication.
-    """
-    if not query or not query.strip():
-        raise ValueError("Missing required parameter: query")
-
-    EVIDENCE_WORDS = 150
-
-    if audio_path:
-        # --- Single-file mode (reuse deep_search logic) ---
-        if not os.path.exists(audio_path):
-            raise FileNotFoundError(f"Audio file not found: {audio_path}")
-
-        transcription = transcribe_audio(audio_path, model_size)
-        segments = transcription["segments"]
-
-        if not segments:
-            return {"query": query, "evidence": [], "mode": "single_file"}
-
-        memory = get_transcription_memory()
-        audio_hash = memory.hash_audio_file(audio_path)
-        segment_embeddings = _get_or_compute_embeddings(segments, audio_hash)
-
-        model = _get_embedding_model_cache().get()
-        query_embedding = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
-        similarities = _cosine_similarity(query_embedding.reshape(1, -1), segment_embeddings)
-
-        # Get more candidates than top_k to allow for merging
-        candidate_k = min(top_k * 3, len(segments))
-        top_indices = np.argsort(-similarities)[:candidate_k]
-
-        # Build evidence blocks with deduplication
-        evidence = []
-        used_ranges = []  # (start_time, end_time) of already-used blocks
-
-        for idx in top_indices:
-            if len(evidence) >= top_k:
-                break
-
-            seg = segments[idx]
-            seg_start = seg["start"]
-
-            # Check if this overlaps with an existing block
-            merged = False
-            for ur in used_ranges:
-                if abs(seg_start - ur[0]) < context or abs(seg_start - ur[1]) < context:
-                    merged = True
-                    break
-
-            if merged:
-                continue
-
-            text = _build_snippet(segments, idx, target_words=EVIDENCE_WORDS)
-            start = seg["start"]
-            end = seg["end"]
-            used_ranges.append((start, end))
-
-            evidence.append({
-                "source": os.path.basename(audio_path),
-                "file_path": audio_path,
-                "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
-                "start": start,
-                "end": end,
-                "text": text,
-                "similarity": round(float(similarities[idx]), 4),
-            })
-
-        return {
-            "query": query,
-            "evidence": evidence,
-            "mode": "single_file",
-            "total_segments": len(segments),
-            "model_used": model_size,
-            "cached": transcription.get("cached", False),
-        }
-
-    else:
-        # --- Cross-memory mode (reuse _search_memory_semantic logic) ---
-        memory = get_transcription_memory()
-        entries = memory.get_all_with_embeddings(EMBEDDING_MODEL)
-
-        if not entries:
-            return {
-                "query": query,
-                "evidence": [],
-                "mode": "memory",
-                "files_searched": 0,
-            }
-
-        # Build global segment list and embedding matrix
-        all_segments = []  # (seg, title, file_path, seg_idx, file_segments)
-        all_embeddings = []
-
-        for entry in entries:
-            segments = entry["segments"]
-            if not segments:
-                continue
-            emb = entry["embeddings"]
-            if emb is None or len(segments) != entry["segment_count"]:
-                emb = _get_or_compute_embeddings(segments, entry["audio_hash"])
-            if emb is not None and len(emb) == len(segments):
-                for seg_idx, seg in enumerate(segments):
-                    all_segments.append((seg, entry["title"], entry["file_path"], seg_idx, segments))
-                all_embeddings.append(emb)
-
-        if not all_segments:
-            return {
-                "query": query,
-                "evidence": [],
-                "mode": "memory",
-                "files_searched": len(entries),
-            }
-
-        global_embeddings = np.vstack(all_embeddings)
-
-        model = _get_embedding_model_cache().get()
-        query_embedding = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
-        similarities = _cosine_similarity(query_embedding.reshape(1, -1), global_embeddings)
-
-        candidate_k = min(top_k * 3, len(all_segments))
-        top_indices = np.argsort(-similarities)[:candidate_k]
-
-        # Build evidence blocks with per-file deduplication
-        evidence = []
-        used_ranges = {}  # file_path -> [(start, end)]
-
-        for idx in top_indices:
-            if len(evidence) >= top_k:
-                break
-
-            seg, title, file_path, seg_idx, file_segments = all_segments[idx]
-            seg_start = seg.get("start", 0)
-
-            # Check overlap within same file
-            ranges = used_ranges.get(file_path, [])
-            merged = False
-            for ur in ranges:
-                if abs(seg_start - ur[0]) < context or abs(seg_start - ur[1]) < context:
-                    merged = True
-                    break
-
-            if merged:
-                continue
-
-            text = _build_snippet(file_segments, seg_idx, target_words=EVIDENCE_WORDS)
-            start = seg.get("start", 0)
-            end = seg.get("end", 0)
-
-            if file_path not in used_ranges:
-                used_ranges[file_path] = []
-            used_ranges[file_path].append((start, end))
-
-            evidence.append({
-                "source": title,
-                "file_path": file_path,
-                "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
-                "start": start,
-                "end": end,
-                "text": text,
-                "similarity": round(float(similarities[idx]), 4),
-            })
-
-        return {
-            "query": query,
-            "evidence": evidence,
-            "mode": "memory",
-            "total_segments": len(all_segments),
-            "files_searched": len(entries),
-            "model_used": EMBEDDING_MODEL,
-        }
 
 
 def detect_chapters(

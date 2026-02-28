@@ -123,6 +123,8 @@ query: "discussion about funding challenges"
 model_size: "tiny" (optional, default)
 top_k: 5 (optional, number of results)
 output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
+context_words: 25 (optional, default. Use 150 for full evidence blocks)
+dedup_seconds: 0 (optional, default. Use 60 to merge overlapping matches)
 ```
 Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
 
@@ -133,23 +135,12 @@ query: "Porsche"
 mode: "keyword" (default — literal match) or "semantic" (meaning-based)
 top_k: 10 (optional, number of results)
 output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
+context_words: 25 (optional, semantic mode only. Use 150 for full evidence blocks)
+dedup_seconds: 0 (optional, semantic mode only. Use 60 to merge overlapping matches)
 ```
 Keyword mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp}], match_count, total_segments, files_searched}`
 Semantic mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp, similarity}], total_segments, files_searched, model_used}`
 When `output` is provided and results exist, adds `output_path` to the response.
-
-### ask
-Ask a question about your content. Returns evidence blocks with ~150 words of context (not short snippets) so Claude can synthesize a real answer. Works on a single file or across all stored transcriptions.
-```
-query: "What did they say about pricing?" (required)
-audio_path: "/path/to/audio.mp3" (optional — omit to search all memory)
-top_k: 5 (optional, number of evidence blocks)
-context: 60 (optional, seconds — overlapping matches within this window are merged)
-model_size: "tiny" (optional, default)
-output: "~/Desktop/evidence.csv" (optional, .csv or .xlsx)
-```
-Returns `{query, evidence: [{source, file_path, timestamp, start, end, text, similarity}], mode, total_segments, files_searched}`
-When `output` is provided, adds `output_path` to the response.
 
 ### take_notes
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.

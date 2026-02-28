@@ -75,7 +75,6 @@ flowchart LR
     E --> E3["Batch"]
     E --> E4["Proximity"]
     E --> E5["Cross-Memory"]
-    E --> E6["Ask"]
 
     F --> F1["Speaker ID"]
     F --> F2["Chapters"]
@@ -133,7 +132,6 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
-| `ask` | Ask a question about your content — returns full evidence blocks for answer synthesis |
 | `search_memory` | Search across ALL stored transcriptions by keyword or meaning |
 | `list_files` | List media files in a directory |
 | `list_memories` | List stored transcriptions by title |
