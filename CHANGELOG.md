@@ -8,15 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- **`ask` tool** — ask questions about your content and get full evidence blocks (~150 words of context each) instead of short snippets. Works on a single file or across all stored transcriptions. Overlapping matches within a configurable time window are automatically merged
-- **File output on all tools** — `transcribe_audio`, `search_audio`, `deep_search`, `search_proximity` now support an `output` parameter for saving results directly to disk
-- **XLSX export** — pass a `.xlsx` path for styled spreadsheets with bold headers and formatted timestamps, or `.csv` for plain data. Auto-detected from file extension
-- **Per-segment timestamps on `transcribe_audio`** — responses now include `segments: [{start, end, timestamp, text}]` instead of a combined text blob
-- **Audio trimming** — `start` and `duration` parameters on `transcribe_audio` to transcribe specific sections without manual ffmpeg trimming
+- **`ask` tool:** ask questions about your content and get full evidence blocks (~150 words of context each) instead of short snippets. Works on a single file or across all stored transcriptions. Overlapping matches within a configurable time window are automatically merged
+- **File output on all search and transcription tools:** `transcribe_audio`, `search_audio`, `deep_search`, `search_proximity` now accept an `output` parameter for saving results directly to disk
+- **XLSX export:** `.xlsx` for styled spreadsheets with bold headers and formatted timestamps, `.csv` for plain data. Auto-detected from file extension
+- **Per-segment timestamps on `transcribe_audio`:** responses now include a `segments` array with `start`, `end`, `timestamp`, and `text` per segment instead of one flat text string
+- **Audio trimming on `transcribe_audio`:** `start` and `duration` parameters (in seconds) to transcribe specific sections without manual ffmpeg
 
 ### Improved
 
-- **Consistent `output` parameter** — all search and transcription tools now follow the same pattern `search_memory` introduced in 2026.2.26
+- **Consistent `output` parameter:** all search and transcription tools now follow the same export pattern `search_memory` introduced in 2026.2.26
 
 ---
 
