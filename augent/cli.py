@@ -14,10 +14,21 @@ import argparse
 import glob
 import json
 import os
+import platform
+import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+def _strip_quarantine(path: str) -> None:
+    """Remove macOS quarantine flag from a file."""
+    if platform.system() == "Darwin":
+        try:
+            subprocess.run(["xattr", "-d", "com.apple.quarantine", path], capture_output=True)
+        except Exception:
+            pass
 
 from .core import (
     search_audio,
@@ -245,6 +256,7 @@ def cmd_search(args: argparse.Namespace):
     if args.output:
         with open(args.output, "w") as f:
             f.write(output)
+        _strip_quarantine(args.output)
         if not args.quiet:
             print(f"\nResults written to: {args.output}", file=sys.stderr)
     else:
@@ -293,6 +305,7 @@ def cmd_transcribe(args: argparse.Namespace):
     if args.output:
         with open(args.output, "w") as f:
             f.write(output)
+        _strip_quarantine(args.output)
         if not args.quiet:
             print(f"\nTranscription written to: {args.output}", file=sys.stderr)
     else:
@@ -327,6 +340,7 @@ def cmd_proximity(args: argparse.Namespace):
     if args.output:
         with open(args.output, "w") as f:
             f.write(output)
+        _strip_quarantine(args.output)
         if not args.quiet:
             print(f"\nResults written to: {args.output}", file=sys.stderr)
     else:

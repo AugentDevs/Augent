@@ -181,6 +181,15 @@ def _write_results_csv(results: List[Dict], output_path: str, query: str) -> str
     with open(path, "w", newline="") as f:
         f.write(buf.getvalue())
 
+    # Strip macOS quarantine flag
+    import subprocess
+    import platform
+    if platform.system() == "Darwin":
+        try:
+            subprocess.run(["xattr", "-d", "com.apple.quarantine", path], capture_output=True)
+        except Exception:
+            pass
+
     return os.path.abspath(path)
 
 

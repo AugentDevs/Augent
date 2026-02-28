@@ -94,11 +94,16 @@ output_dir: "~/Downloads" (optional, default)
 Returns the downloaded file path, ready for transcription.
 
 ### transcribe_audio
-Get full transcription of an audio file.
+Get full transcription of an audio file with per-segment timestamps.
 ```
 audio_path: "/path/to/audio.mp3"
 model_size: "tiny" (optional)
+start: 403 (optional, start transcription at this many seconds)
+duration: 600 (optional, only transcribe this many seconds)
+output: "~/Desktop/transcription.csv" (optional, .csv or .xlsx)
 ```
+Returns `{text, language, duration, segments: [{start, end, timestamp, text}], segment_count, cached, model_used}`
+When `output` is provided, adds `output_path` to the response. Use .xlsx for styled spreadsheets with bold headers.
 
 ### search_audio
 Search for keywords in audio files with timestamped results.
@@ -107,6 +112,7 @@ audio_path: "/path/to/audio.mp3"
 keywords: ["lucrative", "funding", "healthiest"]
 model_size: "tiny" (optional, default)
 include_full_text: false (optional)
+output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 ```
 
 ### deep_search
@@ -116,6 +122,7 @@ audio_path: "/path/to/audio.mp3"
 query: "discussion about funding challenges"
 model_size: "tiny" (optional, default)
 top_k: 5 (optional, number of results)
+output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 ```
 Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
 
@@ -125,11 +132,11 @@ Search across ALL stored transcriptions. No audio_path needed — queries everyt
 query: "Porsche"
 mode: "keyword" (default — literal match) or "semantic" (meaning-based)
 top_k: 10 (optional, number of results)
-output: "~/Desktop/results.csv" (optional, saves results as CSV)
+output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 ```
 Keyword mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp}], match_count, total_segments, files_searched}`
 Semantic mode returns `{query, mode, results: [{title, file_path, start, end, text, timestamp, similarity}], total_segments, files_searched, model_used}`
-When `output` is provided and results exist, adds `csv_path` to the response with the absolute path of the written CSV file.
+When `output` is provided and results exist, adds `output_path` to the response.
 
 ### take_notes
 Download, transcribe, and save notes from any video/audio URL as a .txt on Desktop.
@@ -180,6 +187,7 @@ audio_path: "/path/to/audio.mp3"
 keyword1: "startup"
 keyword2: "funding"
 max_distance: 30 (optional, words between)
+output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 ```
 
 ### identify_speakers

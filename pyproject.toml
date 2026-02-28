@@ -66,6 +66,9 @@ tts = [
     "kokoro>=0.7.0",
     "soundfile",
 ]
+xlsx = [
+    "openpyxl>=3.1.0",
+]
 all = [
     "gradio>=4.0.0,<5.0.0",
     "huggingface-hub>=0.20.0,<0.24.0",
@@ -74,6 +77,7 @@ all = [
     "sentence-transformers>=2.2.0",
     "kokoro>=0.7.0",
     "soundfile",
+    "openpyxl>=3.1.0",
 ]
 dev = [
     "pytest>=7.0.0",

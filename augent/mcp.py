@@ -37,6 +37,7 @@ Add to Claude Code project (.mcp.json):
 
 """
 
+import os
 import sys
 import json
 from typing import Any
@@ -95,6 +96,173 @@ def send_response(response: dict) -> None:
     output = json.dumps(response)
     sys.stdout.write(output + "\n")
     sys.stdout.flush()
+
+
+def _strip_quarantine(path: str) -> None:
+    """Remove macOS quarantine flag from a file."""
+    import subprocess
+    import platform
+    if platform.system() == "Darwin":
+        try:
+            subprocess.run(
+                ["xattr", "-d", "com.apple.quarantine", path],
+                capture_output=True
+            )
+        except Exception:
+            pass
+
+
+def _write_output_file(
+    output_path: str,
+    rows: list,
+    columns: list,
+    bold_columns: list = None,
+    keyword_column: str = None,
+) -> str:
+    """
+    Write results to CSV or XLSX based on file extension.
+
+    Args:
+        output_path: File path (.csv or .xlsx)
+        rows: List of dicts with data
+        columns: Column keys to include
+        bold_columns: Column keys to bold in XLSX
+        keyword_column: Column key containing text with **bold** keywords
+    Returns:
+        Absolute path of written file
+    """
+    import os
+    import re
+
+    path = os.path.expanduser(output_path)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    bold_columns = bold_columns or []
+
+    if path.endswith(".xlsx"):
+        _write_xlsx(path, rows, columns, bold_columns, keyword_column)
+    else:
+        _write_csv(path, rows, columns)
+
+    _strip_quarantine(path)
+    return os.path.abspath(path)
+
+
+def _write_csv(path: str, rows: list, columns: list) -> None:
+    """Write plain CSV file."""
+    import csv
+    import io
+    import re
+
+    bold_pattern = re.compile(r'\*\*(.+?)\*\*')
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    # Header
+    header_names = {
+        "timestamp": "Timestamp",
+        "text": "Text",
+        "snippet": "Snippet",
+        "keyword": "Keyword",
+        "timestamp_seconds": "Seconds",
+        "confidence": "Confidence",
+        "match_type": "Match Type",
+        "similarity": "Similarity",
+        "source": "Source",
+        "title": "Source",
+    }
+    writer.writerow([header_names.get(c, c.title()) for c in columns])
+
+    for row in rows:
+        vals = []
+        for c in columns:
+            v = row.get(c, "")
+            if isinstance(v, str):
+                v = bold_pattern.sub(r'\1', v)
+                v = v.replace("...", "").strip()
+            vals.append(v)
+        writer.writerow(vals)
+
+    with open(path, "w", newline="") as f:
+        f.write(buf.getvalue())
+
+
+def _write_xlsx(
+    path: str, rows: list, columns: list,
+    bold_columns: list, keyword_column: str = None
+) -> None:
+    """Write styled XLSX file with bold headers, timestamps, and keywords."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    except ImportError:
+        # Fallback to CSV if openpyxl not installed
+        _write_csv(path.replace(".xlsx", ".csv"), rows, columns)
+        return
+
+    import re
+    bold_pattern = re.compile(r'\*\*(.+?)\*\*')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Results"
+
+    # Styles
+    header_font = Font(bold=True, size=11)
+    header_fill = PatternFill(start_color="1F1F1F", end_color="1F1F1F", fill_type="solid")
+    header_font_white = Font(bold=True, size=11, color="FFFFFF")
+    bold_font = Font(bold=True, size=10)
+    normal_font = Font(size=10)
+    thin_border = Border(
+        bottom=Side(style="thin", color="E0E0E0")
+    )
+
+    # Column names
+    header_names = {
+        "timestamp": "Timestamp",
+        "text": "Text",
+        "snippet": "Snippet",
+        "keyword": "Keyword",
+        "timestamp_seconds": "Seconds",
+        "confidence": "Confidence",
+        "match_type": "Match Type",
+        "similarity": "Similarity",
+        "source": "Source",
+        "title": "Source",
+    }
+
+    # Write header row
+    for col_idx, col_key in enumerate(columns, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header_names.get(col_key, col_key.title()))
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="left")
+
+    # Write data rows
+    for row_idx, row_data in enumerate(rows, 2):
+        for col_idx, col_key in enumerate(columns, 1):
+            val = row_data.get(col_key, "")
+            if isinstance(val, str):
+                val = bold_pattern.sub(r'\1', val)
+                val = val.replace("...", "").strip()
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            if col_key in bold_columns:
+                cell.font = bold_font
+            else:
+                cell.font = normal_font
+            cell.border = thin_border
+            cell.alignment = Alignment(wrap_text=True)
+
+    # Auto-width columns
+    for col_idx, col_key in enumerate(columns, 1):
+        max_len = len(header_names.get(col_key, col_key))
+        for row in ws.iter_rows(min_row=2, min_col=col_idx, max_col=col_idx):
+            for cell in row:
+                if cell.value:
+                    max_len = max(max_len, min(len(str(cell.value)), 80))
+        ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = max_len + 4
+
+    wb.save(path)
 
 
 def send_error(id: Any, code: int, message: str) -> None:
@@ -163,6 +331,18 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
                                 "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "start": {
+                                "type": "number",
+                                "description": "Start transcription at this many seconds into the audio. Default: 0 (beginning)"
+                            },
+                            "duration": {
+                                "type": "number",
+                                "description": "Only transcribe this many seconds of audio. Example: 600 = first 10 minutes. Default: full file"
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save transcription. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
                             }
                         },
                         "required": ["audio_path"]
@@ -191,6 +371,10 @@ def handle_tools_list(id: Any) -> None:
                             "include_full_text": {
                                 "type": "boolean",
                                 "description": "Include full transcription text in response. Default: false"
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
                             }
                         },
                         "required": ["audio_path", "keywords"]
@@ -218,6 +402,10 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
                                 "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
                             }
                         },
                         "required": ["audio_path", "query"]
@@ -373,6 +561,10 @@ def handle_tools_list(id: Any) -> None:
                                 "type": "string",
                                 "enum": ["tiny", "base", "small", "medium", "large"],
                                 "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size. tiny is already highly accurate."
+                            },
+                            "output": {
+                                "type": "string",
+                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
                             }
                         },
                         "required": ["audio_path", "keyword1", "keyword2"]
@@ -468,7 +660,7 @@ def handle_tools_list(id: Any) -> None:
                             },
                             "output": {
                                 "type": "string",
-                                "description": "Optional file path to save results as CSV. Example: ~/Desktop/results.csv"
+                                "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting."
                             }
                         },
                         "required": ["query"]
@@ -615,6 +807,7 @@ def handle_search_audio(arguments: dict) -> dict:
     keywords = arguments.get("keywords", [])
     model_size = arguments.get("model_size", "tiny")
     include_full = arguments.get("include_full_text", False)
+    output = arguments.get("output")
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -633,28 +826,104 @@ def handle_search_audio(arguments: dict) -> dict:
         )
 
     result["model_used"] = model_size
+
+    # Write output file if requested
+    if output:
+        # Flatten grouped results into rows
+        rows = []
+        for kw, matches in result.items():
+            if isinstance(matches, list):
+                for m in matches:
+                    rows.append({
+                        "keyword": kw,
+                        "timestamp": m.get("timestamp", ""),
+                        "timestamp_seconds": m.get("timestamp_seconds", 0),
+                        "snippet": m.get("snippet", ""),
+                    })
+        if rows:
+            result["output_path"] = _write_output_file(
+                output,
+                rows,
+                columns=["keyword", "timestamp", "snippet"],
+                bold_columns=["keyword", "timestamp"],
+            )
+
     return result
 
 
 def handle_transcribe_audio(arguments: dict) -> dict:
     """Handle transcribe_audio tool call."""
+    import subprocess
+    import tempfile
+
     audio_path = arguments.get("audio_path")
     model_size = arguments.get("model_size", "tiny")
+    start = arguments.get("start")
+    duration = arguments.get("duration")
+    output = arguments.get("output")
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
 
-    result = transcribe_audio(audio_path, model_size)
+    # If start or duration specified, trim audio with ffmpeg first
+    trimmed_path = None
+    if start is not None or duration is not None:
+        trimmed_path = tempfile.mktemp(suffix=".webm")
+        cmd = ["ffmpeg", "-y", "-i", audio_path]
+        if start is not None:
+            cmd.extend(["-ss", str(start)])
+        if duration is not None:
+            cmd.extend(["-t", str(duration)])
+        cmd.extend(["-vn", "-acodec", "copy", trimmed_path])
+        subprocess.run(cmd, capture_output=True, check=True)
+        audio_path = trimmed_path
 
-    return {
+    try:
+        result = transcribe_audio(audio_path, model_size)
+    finally:
+        # Clean up temp file
+        if trimmed_path and os.path.exists(trimmed_path):
+            os.remove(trimmed_path)
+
+    # Build per-segment timestamps
+    segments = []
+    for seg in result.get("segments", []):
+        s = seg["start"]
+        # Offset timestamps back if start was specified
+        if start:
+            s += start
+        e = seg["end"]
+        if start:
+            e += start
+        minutes_s, secs_s = int(s // 60), int(s % 60)
+        segments.append({
+            "start": round(s, 1),
+            "end": round(e, 1),
+            "timestamp": f"{minutes_s}:{secs_s:02d}",
+            "text": seg["text"].strip()
+        })
+
+    response = {
         "text": result["text"],
         "language": result["language"],
         "duration": result["duration"],
         "duration_formatted": f"{int(result['duration'] // 60)}:{int(result['duration'] % 60):02d}",
-        "segment_count": len(result.get("segments", [])),
+        "segments": segments,
+        "segment_count": len(segments),
         "cached": result.get("cached", False),
         "model_used": model_size
     }
+
+    # Write output file if requested
+    if output:
+        response["output_path"] = _write_output_file(
+            output,
+            segments,
+            columns=["timestamp", "text"],
+            bold_columns=["timestamp"],
+        )
+
+    return response
 
 
 def handle_search_proximity(arguments: dict) -> dict:
@@ -664,6 +933,7 @@ def handle_search_proximity(arguments: dict) -> dict:
     keyword2 = arguments.get("keyword2")
     max_distance = arguments.get("max_distance", 30)
     model_size = arguments.get("model_size", "tiny")
+    output = arguments.get("output")
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -678,12 +948,23 @@ def handle_search_proximity(arguments: dict) -> dict:
         model_size=model_size
     )
 
-    return {
+    result = {
         "query": f"'{keyword1}' within {max_distance} words of '{keyword2}'",
         "match_count": len(matches),
         "matches": matches,
         "model_used": model_size
     }
+
+    # Write output file if requested
+    if output and matches:
+        result["output_path"] = _write_output_file(
+            output,
+            matches,
+            columns=["timestamp", "snippet"],
+            bold_columns=["timestamp"],
+        )
+
+    return result
 
 
 def handle_batch_search(arguments: dict) -> dict:
@@ -1140,18 +1421,30 @@ def handle_deep_search(arguments: dict) -> dict:
     query = arguments.get("query")
     model_size = arguments.get("model_size", "tiny")
     top_k = arguments.get("top_k", 5)
+    output = arguments.get("output")
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
     if not query:
         raise ValueError("Missing required parameter: query")
 
-    return deep_search(
+    result = deep_search(
         audio_path,
         query,
         model_size=model_size,
         top_k=top_k,
     )
+
+    # Write output file if requested
+    if output and result.get("results"):
+        result["output_path"] = _write_output_file(
+            output,
+            result["results"],
+            columns=["timestamp", "text", "similarity"],
+            bold_columns=["timestamp"],
+        )
+
+    return result
 
 
 def handle_chapters(arguments: dict) -> dict:

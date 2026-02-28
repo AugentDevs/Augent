@@ -4,6 +4,21 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.2.28] - 2026-02-28
+
+### Added
+
+- **File output on all tools** — `transcribe_audio`, `search_audio`, `deep_search`, `search_proximity` now support an `output` parameter for saving results directly to disk
+- **XLSX export** — pass a `.xlsx` path for styled spreadsheets with bold headers and formatted timestamps, or `.csv` for plain data. Auto-detected from file extension
+- **Per-segment timestamps on `transcribe_audio`** — responses now include `segments: [{start, end, timestamp, text}]` instead of a combined text blob
+- **Audio trimming** — `start` and `duration` parameters on `transcribe_audio` to transcribe specific sections without manual ffmpeg trimming
+
+### Improved
+
+- **Consistent `output` parameter** — all search and transcription tools now follow the same pattern `search_memory` introduced in 2026.2.26
+
+---
+
 ## [2026.2.26] - 2026-02-26
 
 ### Added
