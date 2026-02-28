@@ -111,6 +111,73 @@ def _build_snippet(segments: list, center_idx: int, target_words: int = 25,
     return text
 
 
+def _ranked_semantic_search(
+    query_embedding: np.ndarray,
+    segment_embeddings: np.ndarray,
+    segments_meta: List[dict],
+    query: str,
+    top_k: int,
+    context_words: int = 25,
+    dedup_seconds: float = 0,
+) -> List[dict]:
+    """Rank segments by cosine similarity to query, with dedup and snippet building.
+
+    Each entry in segments_meta must have: seg, seg_idx, file_segments.
+    Optional keys: title, file_path (included in results when present).
+    """
+    similarities = _cosine_similarity(query_embedding.reshape(1, -1), segment_embeddings)
+
+    # Overcollect candidates when dedup is on
+    candidate_k = min(top_k * 3, len(segments_meta)) if dedup_seconds > 0 else min(top_k, len(segments_meta))
+    top_indices = np.argsort(-similarities)[:candidate_k]
+
+    # Highlight query words (4+ chars to skip common words)
+    highlight = [w for w in query.split() if len(w) >= 4]
+
+    results = []
+    used_ranges = {}  # file_key -> [(start, end)]
+
+    for idx in top_indices:
+        if len(results) >= top_k:
+            break
+
+        meta = segments_meta[idx]
+        seg = meta["seg"]
+        start = seg.get("start", seg.get("start", 0))
+        end = seg.get("end", 0)
+
+        # Dedup by time range, keyed per file when multi-file
+        if dedup_seconds > 0:
+            file_key = meta.get("file_path", "_single")
+            ranges = used_ranges.get(file_key, [])
+            merged = any(
+                abs(start - ur[0]) < dedup_seconds or abs(start - ur[1]) < dedup_seconds
+                for ur in ranges
+            )
+            if merged:
+                continue
+            used_ranges.setdefault(file_key, []).append((start, end))
+
+        entry = {
+            "start": start,
+            "end": end,
+            "text": _build_snippet(meta["file_segments"], meta["seg_idx"],
+                                   target_words=context_words, highlight=highlight),
+            "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
+            "similarity": round(float(similarities[idx]), 4),
+        }
+
+        # Include multi-file metadata when present
+        if "title" in meta:
+            entry["title"] = meta["title"]
+        if "file_path" in meta:
+            entry["file_path"] = meta["file_path"]
+
+        results.append(entry)
+
+    return results
+
+
 def _get_or_compute_embeddings(
     segments: List[Dict], audio_hash: str,
     model_name: str = EMBEDDING_MODEL
@@ -236,43 +303,16 @@ def deep_search(
     model = _get_embedding_model_cache().get()
     query_embedding = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
 
-    # Compute similarities
-    similarities = _cosine_similarity(query_embedding.reshape(1, -1), segment_embeddings)
+    # Build metadata list for shared ranking function
+    segments_meta = [
+        {"seg": seg, "seg_idx": i, "file_segments": segments}
+        for i, seg in enumerate(segments)
+    ]
 
-    # Overcollect candidates when dedup is on
-    candidate_k = min(top_k * 3, len(segments)) if dedup_seconds > 0 else min(top_k, len(segments))
-    top_indices = np.argsort(-similarities)[:candidate_k]
-
-    # Highlight query words (4+ chars to skip common words)
-    highlight = [w for w in query.split() if len(w) >= 4]
-
-    results = []
-    used_ranges = []
-
-    for idx in top_indices:
-        if len(results) >= top_k:
-            break
-
-        seg = segments[idx]
-        start = seg["start"]
-
-        # Skip if overlapping with an already-used time range
-        if dedup_seconds > 0:
-            merged = any(
-                abs(start - ur[0]) < dedup_seconds or abs(start - ur[1]) < dedup_seconds
-                for ur in used_ranges
-            )
-            if merged:
-                continue
-            used_ranges.append((start, seg["end"]))
-
-        results.append({
-            "start": start,
-            "end": seg["end"],
-            "text": _build_snippet(segments, idx, target_words=context_words, highlight=highlight),
-            "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
-            "similarity": round(float(similarities[idx]), 4),
-        })
+    results = _ranked_semantic_search(
+        query_embedding, segment_embeddings, segments_meta,
+        query, top_k, context_words, dedup_seconds,
+    )
 
     return {
         "query": query,
@@ -348,7 +388,10 @@ def _search_memory_semantic(
 
         if emb is not None and len(emb) == len(segments):
             for seg_idx, seg in enumerate(segments):
-                all_segments.append((seg, entry["title"], entry["file_path"], seg_idx, segments))
+                all_segments.append({
+                    "seg": seg, "seg_idx": seg_idx, "file_segments": segments,
+                    "title": entry["title"], "file_path": entry["file_path"],
+                })
             all_embeddings.append(emb)
 
     if not all_segments:
@@ -368,46 +411,10 @@ def _search_memory_semantic(
     model = _get_embedding_model_cache().get()
     query_embedding = model.encode(query, convert_to_numpy=True, show_progress_bar=False)
 
-    # Compute similarities
-    similarities = _cosine_similarity(query_embedding.reshape(1, -1), global_embeddings)
-
-    # Overcollect candidates when dedup is on
-    candidate_k = min(top_k * 3, len(all_segments)) if dedup_seconds > 0 else min(top_k, len(all_segments))
-    top_indices = np.argsort(-similarities)[:candidate_k]
-
-    # Highlight query words (4+ chars to skip common words)
-    highlight = [w for w in query.split() if len(w) >= 4]
-
-    results = []
-    used_ranges = {}  # file_path -> [(start, end)]
-
-    for idx in top_indices:
-        if len(results) >= top_k:
-            break
-
-        seg, title, file_path, seg_idx, file_segments = all_segments[idx]
-        start = seg.get("start", 0)
-
-        # Skip if overlapping with an already-used time range in same file
-        if dedup_seconds > 0:
-            ranges = used_ranges.get(file_path, [])
-            merged = any(
-                abs(start - ur[0]) < dedup_seconds or abs(start - ur[1]) < dedup_seconds
-                for ur in ranges
-            )
-            if merged:
-                continue
-            used_ranges.setdefault(file_path, []).append((start, seg.get("end", 0)))
-
-        results.append({
-            "title": title,
-            "file_path": file_path,
-            "start": start,
-            "end": seg.get("end", 0),
-            "text": _build_snippet(file_segments, seg_idx, target_words=context_words, highlight=highlight),
-            "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
-            "similarity": round(float(similarities[idx]), 4),
-        })
+    results = _ranked_semantic_search(
+        query_embedding, global_embeddings, all_segments,
+        query, top_k, context_words, dedup_seconds,
+    )
 
     return {
         "query": query,
