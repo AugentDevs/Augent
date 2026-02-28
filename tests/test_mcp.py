@@ -62,7 +62,7 @@ class TestInitialize:
         result = resp["result"]
         assert "protocolVersion" in result
         assert result["serverInfo"]["name"] == "augent"
-        assert result["serverInfo"]["version"] == "2026.2.26"
+        assert result["serverInfo"]["version"] == "2026.2.28"
 
     def test_declares_tools_capability(self):
         resp = capture_stdout(handle_initialize, 1, {})
@@ -75,7 +75,7 @@ class TestToolsList:
     def test_returns_15_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
-        assert len(tools) == 15
+        assert len(tools) == 16
 
     def test_all_tools_have_required_fields(self):
         resp = capture_stdout(handle_tools_list, 1)
@@ -93,7 +93,7 @@ class TestToolsList:
             "deep_search", "take_notes", "chapters", "batch_search",
             "text_to_speech", "search_proximity", "identify_speakers",
             "list_files", "list_memories", "memory_stats", "clear_memory",
-            "search_memory",
+            "search_memory", "ask",
         }
         assert names == expected
 

@@ -90,7 +90,7 @@ except ImportError:
     text_to_speech = None
     read_aloud = None
 
-__version__ = "2026.2.26"
+__version__ = "2026.2.28"
 __all__ = [
     # Core functions
     "search_audio",

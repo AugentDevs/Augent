@@ -287,7 +287,7 @@ def handle_initialize(id: Any, params: dict) -> None:
             },
             "serverInfo": {
                 "name": "augent",
-                "version": "2026.2.26"
+                "version": "2026.2.28"
             }
         }
     })

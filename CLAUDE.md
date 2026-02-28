@@ -1,6 +1,6 @@
 # Augent — Audio + Agents
 
-Augent is an MCP server (Model Context Protocol) that gives agents the ability to hear. It downloads, transcribes, searches, and analyzes audio from any URL. Built for Claude Code. Compatible with any MCP client.
+Augent is an MCP server (Model Context Protocol) that gives agents audio intelligence. Download, transcribe, search, and analyze audio from any URL. Built for Claude Code. Compatible with any MCP client.
 
 ## audio-downloader (Built by Augent)
 
