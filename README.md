@@ -31,8 +31,6 @@ Raw URL to answer in a single prompt. Every transcription stays in memory. First
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
-New install? Start here: [Getting Started](https://docs.augent.app/getting-started)
-
 <br />
 
 ## Install
