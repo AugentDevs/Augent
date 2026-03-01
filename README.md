@@ -1,4 +1,4 @@
-# Augent — Audio + Agents
+# Augent — The Audio Layer for Agents
 
 <p align="center">
   <picture>
