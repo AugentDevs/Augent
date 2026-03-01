@@ -25,7 +25,7 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server that gives agents audio intelligence. Point it at any audio or video source and every word becomes searchable. Search by keyword, speaker, topic, or meaning. Identify who's talking, break content into chapters, take formatted notes, read them back with text-to-speech, and more. One install, full pipeline, entirely on your machine.
+**Augent** turns any audio or video source into structured, searchable intelligence for agents. Search by keyword, speaker, topic, or meaning. Identify who's talking, break content into chapters, take formatted notes, read them back with text-to-speech, and more. One install, full pipeline, entirely on your machine.
 
 Raw URL to answer in a single prompt. Every transcription stays in memory. First run transcribes, every search after that is instant. Batch process entire libraries with no file limit. If it's buried in audio, Augent finds it. Compatible with any MCP client. First-class support for Claude Code.
 
