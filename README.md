@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Hours of content, seconds to find it. Fully local, fully private.</strong>
+  <strong>Any amount of content, seconds to find it. Fully local, fully private.</strong>
 </p>
 
 <p align="center">
@@ -25,15 +25,12 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** is an MCP server that gives agents audio intelligence. One install, full pipeline. Download, transcribe, search, and analyze content from any URL or file. Entirely on your machine. Point it at any video, podcast, lecture, or recording and it indexes every word. Search by keyword, speaker, topic, or meaning. Identify who's talking, break content into chapters, take formatted notes, read them back with text-to-speech. One install, every agent gets the full toolkit.
+**Augent** is an MCP server that gives agents audio intelligence. One install, full pipeline. Download, transcribe, search, and analyze content from any URL or file. Entirely on your machine. Point it at any audio or video source and it indexes every word. Search by keyword, speaker, topic, or meaning. Identify who's talking, break content into chapters, take formatted notes, read them back with text-to-speech. One install, every agent gets the full pipeline.
 
-Raw URL to answer in a single prompt. Every transcription stays in memory. First run transcribes, every search after that is instant. Batch process entire libraries with no file limit. If it's buried in audio, Augent finds it. Built for Claude Code. Compatible with any MCP client.
+Raw URL to answer in a single prompt. Every transcription stays in memory. First run transcribes, every search after that is instant. Batch process entire libraries with no file limit. If it's buried in audio, Augent finds it. Compatible with any MCP client. First-class support for Claude Code.
 
 [Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
-Preferred setup: run the one-line installer in your terminal.
-The installer handles all dependencies automatically.
-Works on **macOS and Linux**. Windows users can install via pip.
 New install? Start here: [Getting Started](https://docs.augent.app/getting-started)
 
 <br />
@@ -104,7 +101,7 @@ augent/
 
 ## MCP Tools
 
-The primary way to use Augent. Claude Code gets direct access to all Augent tools.
+The primary way to use Augent. Any MCP client gets direct access to all tools.
 
 Add to `~/.claude.json` (global) or `.mcp.json` (project):
 
@@ -122,13 +119,13 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 | Tool | Description |
 |:-----|:------------|
-| `download_audio` | Download audio from video URLs at maximum speed (YouTube, Vimeo, TikTok, etc.) |
+| `download_audio` | Download audio from video URLs at maximum speed (1,000+ supported sites) |
 | `transcribe_audio` | Full transcription with metadata |
 | `search_audio` | Find keywords with timestamps and context snippets |
 | `deep_search` | Search audio by meaning, not just keywords (semantic search) |
 | `take_notes` | Take notes from any URL with style presets |
 | `chapters` | Auto-detect topic chapters in audio with timestamps |
-| `batch_search` | Search multiple files in parallel (for swarms) |
+| `batch_search` | Search multiple files in parallel — built for batch workflows and agent swarms |
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
@@ -157,7 +154,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 ## CLI
 
-For terminal-based usage. Works standalone or inside Claude Code.
+Full CLI for terminal-based workflows. Works standalone or with any agent.
 
 <picture>
   <img src="./images/cli-help.png" alt="Augent CLI">
@@ -178,7 +175,7 @@ For terminal-based usage. Works standalone or inside Claude Code.
 
 ## Web UI
 
-Visual interface for manual use. Runs 100% locally — no internet required.
+Local web interface. Runs 100% locally — no internet, no API keys, no data leaves your machine.
 
 ```bash
 python3 -m augent.web
@@ -213,7 +210,7 @@ Open: **http://127.0.0.1:9797**
 
 ## Model Sizes
 
-**`tiny` is the default.** Handles almost everything. Use `small` or above for heavy accents, poor audio, or lyrics.
+**`tiny` is the default.** Handles everything from clean studio recordings to noisy field audio. Use `small` or above for heavy accents, poor audio, or lyrics.
 
 | Model | Speed | Accuracy |
 |:------|:------|:---------|
