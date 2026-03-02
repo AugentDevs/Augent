@@ -82,7 +82,7 @@ flowchart LR
 
 ```
 augent/
-├── mcp.py          # MCP server — tools for Claude
+├── mcp.py          # MCP server — tools for agents
 ├── core.py         # Transcription engine (faster-whisper)
 ├── search.py       # Keyword search
 ├── embeddings.py   # Semantic search + chapters
