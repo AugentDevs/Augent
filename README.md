@@ -25,11 +25,11 @@
   <a href="https://docs.augent.app">Docs</a>
 </p>
 
-**Augent** turns any audio or video source into structured, searchable intelligence for agents. Search by keyword, meaning, speaker, or topic. Find where concepts intersect, batch process entire libraries, generate chapters and notes, and more. One install, full pipeline, entirely on your machine.
+**Augent** turns any audio or video source into structured, searchable intelligence for agents. Give it URLs or files. It downloads, transcribes, indexes, and stores everything in persistent memory. Search by keyword or meaning, find where concepts intersect, identify speakers, generate chapters and notes, batch process entire libraries, and more. One install, full pipeline, entirely on your machine.
 
-Raw URL to answer in a single prompt. Every transcription stays in memory. First run transcribes, every search after that is instant. Batch process entire libraries with no file limit. If it's buried in audio, Augent finds it. Compatible with any MCP client. First-class support for Claude Code.
+If it is buried in audio, Augent finds it. Compatible with any MCP client.
 
-[Website](https://augent.app) · [Docs](https://docs.augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
+[Website](https://augent.app) · [Getting Started](https://docs.augent.app/getting-started) · [Tool Reference](https://docs.augent.app/tools/download-audio) · [Changelog](CHANGELOG.md)
 
 <br />
 
