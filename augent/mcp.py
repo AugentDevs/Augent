@@ -421,7 +421,7 @@ def handle_tools_list(id: Any) -> None:
                 },
                 {
                     "name": "take_notes",
-                    "description": "Take notes from a URL. Downloads audio, transcribes, and saves .txt to Desktop. Returns audio_path for follow-up tools (chapters, search) — do NOT call download_audio separately. Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
+                    "description": "Take notes from a URL. Downloads audio, transcribes, and saves .txt to Desktop. This single tool handles the entire pipeline — download, transcribe, and save — when the user asks for notes, summaries, highlights, takeaways, eye-candy, quiz, or any formatted content from a video/audio URL. Returns audio_path for follow-up tools (chapters, search). Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -919,16 +919,35 @@ def handle_transcribe_audio(arguments: dict) -> dict:
             "text": seg["text"].strip()
         })
 
+    # Cap response size to prevent token overflow in Claude Code.
+    # For large transcriptions, truncate text and suggest using output param.
+    full_text = result["text"]
+    max_chars = 12000
+    max_segments = 200
+    truncated = len(full_text) > max_chars or len(segments) > max_segments
+
+    if truncated:
+        capped_text = full_text[:max_chars] + "\n\n[... truncated — use the output parameter to export full transcription to .csv or .xlsx ...]"
+        capped_segments = segments[:max_segments]
+    else:
+        capped_text = full_text
+        capped_segments = segments
+
     response = {
-        "text": result["text"],
+        "text": capped_text,
         "language": result["language"],
         "duration": result["duration"],
         "duration_formatted": f"{int(result['duration'] // 60)}:{int(result['duration'] % 60):02d}",
-        "segments": segments,
+        "segments": capped_segments,
         "segment_count": len(segments),
         "cached": result.get("cached", False),
         "model_used": model_size
     }
+
+    if truncated:
+        response["truncated"] = True
+        response["full_segment_count"] = len(segments)
+        response["hint"] = "Response was truncated to prevent overflow. Use the output parameter (e.g. output: '~/Desktop/transcript.csv') to get the full transcription."
 
     # Write output file if requested
     if output:
@@ -1348,6 +1367,14 @@ def handle_take_notes(arguments: dict) -> dict:
     # Style-specific formatting instructions
     instruction = _get_style_instruction(style, read_aloud=read_aloud, output_dir=output_dir, safe_title=safe_title, txt_path=txt_path)
 
+    # Cap transcription in response to prevent token overflow in Claude Code.
+    # Full transcript is already saved to txt_path — Claude reads the file.
+    max_chars = 12000
+    if len(text) > max_chars:
+        truncated_text = text[:max_chars] + f"\n\n[... truncated — full transcript saved to {txt_path} — read the file for complete text ...]"
+    else:
+        truncated_text = text
+
     return {
         "success": True,
         "write_to": txt_path,
@@ -1360,7 +1387,7 @@ def handle_take_notes(arguments: dict) -> dict:
         "cached": result.get("cached", False),
         "model_used": model_size,
         "style": style,
-        "transcription": text,
+        "transcription": truncated_text,
     }
 
 
