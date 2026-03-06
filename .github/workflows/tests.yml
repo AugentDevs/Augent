@@ -45,15 +45,8 @@ jobs:
 
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
-        run: pytest tests/ -v --tb=short --cov=augent --cov-report=term-missing --cov-report=xml
+        run: pytest tests/ -v --tb=short --cov=augent --cov-report=term-missing
 
       - name: Run tests
         if: matrix.python-version != '3.12'
         run: pytest tests/ -v --tb=short
-
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.12'
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
-          fail_ci_if_error: false
