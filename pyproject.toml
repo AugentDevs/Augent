@@ -136,3 +136,15 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["augent"]
+
+[tool.coverage.run]
+source = ["augent"]
+omit = ["augent/web.py"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__",
+    "raise NotImplementedError",
+]
