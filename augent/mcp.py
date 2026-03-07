@@ -939,7 +939,9 @@ def handle_transcribe_audio(arguments: dict) -> dict:
     # If start or duration specified, trim audio with ffmpeg first
     trimmed_path = None
     if start is not None or duration is not None:
-        trimmed_path = tempfile.mktemp(suffix=".webm")
+        tmp = tempfile.NamedTemporaryFile(suffix=".webm", delete=False)
+        trimmed_path = tmp.name
+        tmp.close()
         cmd = ["ffmpeg", "-y", "-i", audio_path]
         if start is not None:
             cmd.extend(["-ss", str(start)])

@@ -132,6 +132,7 @@ class TranscriptionMemory:
         Uses SHA256 for reliable uniqueness.
         """
         hasher = hashlib.sha256()
+        file_path = os.path.realpath(file_path)
         with open(file_path, "rb") as f:
             # Read in chunks for memory efficiency with large files
             for chunk in iter(lambda: f.read(8192), b""):
