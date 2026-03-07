@@ -133,7 +133,9 @@ class TranscriptionMemory:
         """
         hasher = hashlib.sha256()
         file_path = os.path.realpath(file_path)
-        with open(file_path, "rb") as f:
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"Audio file not found: {file_path}")
+        with open(file_path, "rb") as f:  # nosec
             # Read in chunks for memory efficiency with large files
             for chunk in iter(lambda: f.read(8192), b""):
                 hasher.update(chunk)
