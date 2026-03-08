@@ -85,6 +85,13 @@ except ImportError:
     text_to_speech = None
     read_aloud = None
 
+# Optional: Audio source separation (requires demucs)
+try:
+    from .separator import get_vocal_stem, separate_audio as separate_audio_stems
+except ImportError:
+    separate_audio_stems = None
+    get_vocal_stem = None
+
 __version__ = "2026.2.28"
 __all__ = [
     # Core functions
@@ -126,6 +133,9 @@ __all__ = [
     # Optional: Text-to-speech
     "text_to_speech",
     "read_aloud",
+    # Optional: Audio source separation
+    "separate_audio_stems",
+    "get_vocal_stem",
     # CLI
     "main",
     # Version

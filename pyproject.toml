@@ -67,6 +67,9 @@ tts = [
     "kokoro>=0.7.0",
     "soundfile",
 ]
+separator = [
+    "demucs>=4.0.0",
+]
 xlsx = [
     "openpyxl>=3.1.0",
 ]
@@ -79,6 +82,7 @@ all = [
     "kokoro>=0.7.0",
     "soundfile",
     "openpyxl>=3.1.0",
+    "demucs>=4.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -133,6 +137,7 @@ ignore = [
 "augent/__init__.py" = ["F401"]  # re-exports
 "augent/mcp.py" = ["F401"]      # availability checks (try/import/except)
 "augent/clips.py" = ["F401"]    # availability check (pydub)
+"augent/separator.py" = ["F401"]  # availability check (demucs)
 
 [tool.ruff.lint.isort]
 known-first-party = ["augent"]
