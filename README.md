@@ -63,7 +63,8 @@ Works on macOS and Linux. Installs everything automatically.
 %%{init: {'theme': 'dark'}}%%
 flowchart LR
     A["URL / File"] --> B["Download"]
-    B --> C["Transcribe"]
+    B --> S["Separate"]
+    S --> C["Transcribe"]
     C --> D["Memory"]
     D --> E["Search"]
     D --> F["Analyze"]
@@ -90,7 +91,8 @@ augent/
 ├── core.py         # Transcription engine (faster-whisper)
 ├── search.py       # Keyword search
 ├── embeddings.py   # Semantic search + chapters
-├── speakers.py     # Speaker diarization
+├── speakers.py     # Speaker diarization (pyannote-audio)
+├── separator.py    # Audio source separation (Demucs v4)
 ├── tts.py          # Text-to-speech (Kokoro)
 ├── memory.py       # Three-layer memory (SQLite)
 ├── cli.py          # CLI interface
