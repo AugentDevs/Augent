@@ -19,7 +19,8 @@ Tools exposed:
 - list_memories: List all stored transcriptions
 - memory_stats: View transcription memory statistics
 - clear_memory: Clear transcription memory
-- search_memory: Search across ALL stored transcriptions by meaning
+- search_memory: Search across ALL stored transcriptions
+- separate_audio: Separate audio into stems (vocals, drums, bass, other) using Demucs v4 by meaning
 
 Usage:
   python -m augent.mcp
@@ -701,6 +702,29 @@ def handle_tools_list(id: Any) -> None:
                         "inputSchema": {"type": "object", "properties": {}},
                     },
                     {
+                        "name": "separate_audio",
+                        "description": "Separate audio into stems (vocals, drums, bass, other) using Meta's Demucs v4. Isolates vocals from music, background noise, and other sounds. Use this before transcription when audio has music, intros, or heavy background noise for dramatically cleaner results.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "audio_path": {
+                                    "type": "string",
+                                    "description": "Path to the audio file",
+                                },
+                                "vocals_only": {
+                                    "type": "boolean",
+                                    "description": "If true, only separate into vocals + no_vocals (faster). If false, separate into all 4 stems: vocals, drums, bass, other. Default: true",
+                                },
+                                "model": {
+                                    "type": "string",
+                                    "enum": ["htdemucs", "htdemucs_ft"],
+                                    "description": "Demucs model. htdemucs is the default (fast, great quality). htdemucs_ft is fine-tuned (slower, best quality). Default: htdemucs",
+                                },
+                            },
+                            "required": ["audio_path"],
+                        },
+                    },
+                    {
                         "name": "search_memory",
                         "description": "Search across ALL stored transcriptions. No audio_path needed, queries everything in memory. Default mode is 'keyword' (literal match). Use 'semantic' mode for meaning-based search.",
                         "inputSchema": {
@@ -777,6 +801,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_clear_memory(arguments)
         elif tool_name == "search_memory":
             result = handle_search_memory(arguments)
+        elif tool_name == "separate_audio":
+            result = handle_separate_audio(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1741,6 +1767,49 @@ except Exception as e:
         "job_id": job_id,
         "message": f"TTS generation started in background. Call text_to_speech with job_id='{job_id}' to check status.",
     }
+
+
+def handle_separate_audio(arguments: dict) -> dict:
+    """Handle separate_audio tool call."""
+    audio_path = arguments.get("audio_path")
+    vocals_only = arguments.get("vocals_only", True)
+    model = arguments.get("model", "htdemucs")
+
+    if not audio_path:
+        raise ValueError("Missing required parameter: audio_path")
+
+    audio_path = os.path.expanduser(audio_path)
+    if not os.path.exists(audio_path):
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+    from .separator import separate_audio
+
+    two_stems = "vocals" if vocals_only else None
+
+    result = separate_audio(
+        audio_path,
+        model=model,
+        two_stems=two_stems,
+    )
+
+    response = {
+        "stems": result["stems"],
+        "model": result["model"],
+        "source_file": result["source_file"],
+        "cached": result["cached"],
+        "output_dir": result["output_dir"],
+    }
+
+    # Highlight the vocals path for easy piping into transcribe_audio
+    vocals_path = result["stems"].get("vocals")
+    if vocals_path:
+        response["vocals_path"] = vocals_path
+        response["hint"] = (
+            "Use the vocals_path as the audio_path in transcribe_audio, "
+            "search_audio, deep_search, or any other tool for clean results."
+        )
+
+    return response
 
 
 def handle_request(request: dict) -> None:

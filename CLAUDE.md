@@ -194,6 +194,17 @@ max_distance: 30 (optional, words between)
 output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 ```
 
+### separate_audio
+Separate audio into stems (vocals, drums, bass, other) using Meta's Demucs v4. Isolates vocals from music, background noise, and other sounds. Use this before transcription when audio has music, intros, or heavy background noise.
+```
+audio_path: "/path/to/audio.mp3"
+vocals_only: true (optional, default. Faster — only vocals + no_vocals. Set false for all 4 stems)
+model: "htdemucs" (optional, default. Use "htdemucs_ft" for best quality, slower)
+```
+Returns `{stems: {vocals: "/path", ...}, vocals_path: "/path/to/vocals.wav", model, cached, output_dir}`
+
+**Workflow:** Use `vocals_path` from the response as the `audio_path` for transcribe_audio, search_audio, deep_search, or any other tool.
+
 ### identify_speakers
 Identify who speaks when in audio using speaker diarization. No auth tokens required.
 ```
