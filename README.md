@@ -133,11 +133,11 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
 | `search_proximity` | Find where keywords appear near each other |
 | `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
+| `separate_audio` | Isolate vocals from music and background noise (Demucs v4) |
 | `search_memory` | Search across ALL stored transcriptions by keyword or meaning |
 | `list_files` | List media files in a directory |
 | `list_memories` | List stored transcriptions by title |
 | `memory_stats` | View transcription memory statistics |
-| `separate_audio` | Isolate vocals from music and background noise (Demucs v4) |
 | `clear_memory` | Clear stored transcriptions |
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
