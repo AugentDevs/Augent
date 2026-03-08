@@ -4,10 +4,6 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
-
----
-
 ## [2026.3.8] - 2026-03-08
 
 ### Added
