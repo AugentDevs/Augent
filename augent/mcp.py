@@ -1524,7 +1524,8 @@ def handle_identify_speakers(arguments: dict) -> dict:
     except ImportError as err:
         raise RuntimeError(
             "Missing dependencies: pyannote-audio. "
-            "Install with: pip install augent[speakers]"
+            "Install with: pip install augent[speakers]\n"
+            "Then run: curl -fsSL https://augent.app/install.sh | bash"
         ) from err
 
     audio_path = arguments.get("audio_path")

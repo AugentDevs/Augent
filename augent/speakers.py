@@ -4,38 +4,21 @@ Augent Speakers - Speaker diarization
 Uses pyannote-audio for state-of-the-art speaker diarization.
 Automatically detects who speaks when and how many speakers are present.
 
-Requires:
-    pip install augent[speakers]
-    A Hugging Face token (free) to download the pretrained model.
-    Accept the license at https://huggingface.co/pyannote/speaker-diarization-3.1
-    Then set HF_TOKEN env var or run: huggingface-cli login
+Models are bundled with Augent (downloaded during install). No API keys
+or tokens required.
+
+Requires: pip install augent[speakers]
 """
 
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .core import transcribe_audio
 from .memory import get_transcription_memory
 
-
-def _get_hf_token() -> Optional[str]:
-    """Get Hugging Face token from environment or cached login."""
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-    if token:
-        return token
-
-    # Check huggingface-cli login token
-    for token_path in [
-        os.path.expanduser("~/.huggingface/token"),
-        os.path.expanduser("~/.cache/huggingface/token"),
-    ]:
-        if os.path.exists(token_path):
-            with open(token_path) as f:
-                stored = f.read().strip()
-                if stored:
-                    return stored
-
-    return None
+# Where the installer places pre-downloaded pyannote models
+_MODELS_CACHE = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "hub")
 
 
 def identify_speakers(
@@ -73,19 +56,21 @@ def identify_speakers(
                 "Or directly: pip install pyannote-audio"
             ) from None
 
-        hf_token = _get_hf_token()
-        if not hf_token:
+        # Models are pre-downloaded by the installer to the HuggingFace cache.
+        # Load from local cache (no token needed).
+        model_dir = os.path.join(
+            _MODELS_CACHE, "models--pyannote--speaker-diarization-3.1"
+        )
+        if not os.path.exists(model_dir):
             raise RuntimeError(
-                "Hugging Face token required for pyannote speaker diarization.\n"
-                "1. Create a free token at https://huggingface.co/settings/tokens\n"
-                "2. Accept the model license at https://huggingface.co/pyannote/speaker-diarization-3.1\n"
-                "3. Set the token: export HF_TOKEN=your_token\n"
-                "   Or run: huggingface-cli login"
+                "Pyannote speaker diarization models not found.\n"
+                "Run the Augent installer to download them:\n"
+                "  curl -fsSL https://augent.app/install.sh | bash\n"
+                "Or reinstall with: pip install augent[speakers]"
             )
 
         pipeline = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
-            use_auth_token=hf_token,
         )
 
         # Run diarization
