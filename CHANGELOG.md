@@ -4,6 +4,30 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **78 new tests:** CLI, TTS, speakers, and clips modules now fully tested (133 → 211 total)
+- **CodeQL security scanning:** weekly + on every push/PR
+- **Dependabot:** daily automated dependency and GitHub Actions updates
+- **Makefile:** `make test`, `make lint`, `make fmt`, `make check` for developer convenience
+
+### Improved
+
+- **CI pipeline:** added ruff + black enforcement, pip caching, Python 3.13 to test matrix
+- **Ruff config:** migrated to `[tool.ruff.lint]` namespace, added per-file ignores for intentional patterns
+- **Coverage reporting:** pytest-cov on Python 3.12 in CI with `[tool.coverage]` config
+
+### Fixed
+
+- **Insecure temp file** in `mcp.py`: replaced `tempfile.mktemp` with `NamedTemporaryFile`
+- **Path validation** in `memory.py`: `realpath` + `isfile` check before file access
+- **Lint violations:** 66 issues resolved across all modules (unused imports, raise-from, set comprehensions)
+- **Formatting:** entire codebase now passes black
+
+---
+
 ## [2026.2.28] - 2026-02-28
 
 ### Added
