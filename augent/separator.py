@@ -85,9 +85,13 @@ def separate_audio(
 
     # Run demucs via CLI (most reliable across versions)
     cmd = [
-        "python3", "-m", "demucs",
-        "--name", model,
-        "--out", dest,
+        "python3",
+        "-m",
+        "demucs",
+        "--name",
+        model,
+        "--out",
+        dest,
         audio_path,
     ]
 
@@ -101,9 +105,7 @@ def separate_audio(
     )
 
     if result.returncode != 0:
-        raise RuntimeError(
-            f"Demucs separation failed:\n{result.stderr}"
-        )
+        raise RuntimeError(f"Demucs separation failed:\n{result.stderr}")
 
     # Demucs outputs to: {out}/{model}/{filename_without_ext}/
     filename_stem = Path(audio_path).stem
