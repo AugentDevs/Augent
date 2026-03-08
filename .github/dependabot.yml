@@ -4,8 +4,7 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
     rebase-strategy: "auto"
     commit-message:
       prefix: "deps"
@@ -17,8 +16,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
     rebase-strategy: "auto"
     commit-message:
       prefix: "ci"
