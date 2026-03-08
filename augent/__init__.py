@@ -87,7 +87,8 @@ except ImportError:
 
 # Optional: Audio source separation (requires demucs)
 try:
-    from .separator import get_vocal_stem, separate_audio as separate_audio_stems
+    from .separator import get_vocal_stem
+    from .separator import separate_audio as separate_audio_stems
 except ImportError:
     separate_audio_stems = None
     get_vocal_stem = None

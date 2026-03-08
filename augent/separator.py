@@ -14,7 +14,6 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-
 # Stem output directory
 SEPARATOR_DIR = os.path.join(os.path.expanduser("~"), ".augent", "separated")
 
@@ -62,7 +61,7 @@ def separate_audio(
         raise ImportError(
             "Demucs is not installed. Install it with: pip install augent[separator]\n"
             "Or directly: pip install demucs"
-        )
+        ) from None
 
     # Set up output directory
     dest = output_dir or SEPARATOR_DIR
