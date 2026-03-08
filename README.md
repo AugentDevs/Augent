@@ -137,6 +137,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | `list_files` | List media files in a directory |
 | `list_memories` | List stored transcriptions by title |
 | `memory_stats` | View transcription memory statistics |
+| `separate_audio` | Isolate vocals from music and background noise (Demucs v4) |
 | `clear_memory` | Clear stored transcriptions |
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
