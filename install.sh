@@ -480,8 +480,8 @@ install_augent() {
     log_success "Augent ${augent_ver:+$augent_ver }(core)"
 
     # Try each optional extra individually and report results
-    local extras=("semantic" "speakers" "tts" "clips")
-    local extra_features=("Deep search & chapters" "Speaker identification" "Text-to-speech" "Audio clip extraction")
+    local extras=("semantic" "speakers" "tts" "clips" "separator")
+    local extra_features=("Deep search & chapters" "Speaker identification" "Text-to-speech" "Audio clip extraction" "Audio source separation")
     local failed_extras=()
 
     for i in "${!extras[@]}"; do
@@ -657,6 +657,11 @@ verify_packages() {
     if ! $PYTHON_CMD -c "import kokoro" 2>/dev/null; then
         log_warn "kokoro not available (text-to-speech)"
         missing_extras+=("tts")
+    fi
+
+    if ! $PYTHON_CMD -c "import demucs" 2>/dev/null; then
+        log_warn "demucs not available (audio source separation)"
+        missing_extras+=("separator")
     fi
 
     if [[ ${#missing_extras[@]} -eq 0 ]]; then
