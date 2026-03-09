@@ -130,8 +130,12 @@ class TranscriptionMemory:
         """Resolve and validate that a file path is safe to open."""
         resolved = os.path.realpath(file_path)
         home = os.path.expanduser("~")
-        if not resolved.startswith(home + os.sep) and not resolved.startswith("/tmp" + os.sep):
-            raise ValueError(f"Access denied: path must be under home directory or /tmp: {resolved}")
+        if not resolved.startswith(home + os.sep) and not resolved.startswith(
+            "/tmp" + os.sep
+        ):
+            raise ValueError(
+                f"Access denied: path must be under home directory or /tmp: {resolved}"
+            )
         if not os.path.isfile(resolved):
             raise FileNotFoundError(f"Audio file not found: {resolved}")
         return resolved
