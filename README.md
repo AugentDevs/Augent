@@ -123,22 +123,22 @@ Restart Claude Code. Run `/mcp` to verify connection.
 
 | Tool | Description |
 |:-----|:------------|
-| `download_audio` | Download audio from video URLs at maximum speed (1,000+ supported sites) |
-| `transcribe_audio` | Full transcription with metadata |
-| `search_audio` | Find keywords with timestamps and context snippets |
-| `deep_search` | Search audio by meaning, not just keywords (semantic search) |
-| `take_notes` | Take notes from any URL with style presets |
-| `chapters` | Auto-detect topic chapters in audio with timestamps |
-| `batch_search` | Search multiple files in parallel — built for batch workflows and agent swarms |
-| `text_to_speech` | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
-| `search_proximity` | Find where keywords appear near each other |
-| `identify_speakers` | Identify who speaks when in audio (speaker diarization) |
-| `separate_audio` | Isolate vocals from music and background noise (Demucs v4) |
-| `search_memory` | Search across ALL stored transcriptions by keyword or meaning |
-| `list_files` | List media files in a directory |
-| `list_memories` | List stored transcriptions by title |
-| `memory_stats` | View transcription memory statistics |
-| `clear_memory` | Clear stored transcriptions |
+| [`download_audio`](https://docs.augent.app/tools/download-audio) | Download audio from video URLs at maximum speed (1,000+ supported sites) |
+| [`transcribe_audio`](https://docs.augent.app/tools/transcribe-audio) | Full transcription with metadata |
+| [`search_audio`](https://docs.augent.app/tools/search-audio) | Find keywords with timestamps and context snippets |
+| [`deep_search`](https://docs.augent.app/tools/deep-search) | Search audio by meaning, not just keywords (semantic search) |
+| [`take_notes`](https://docs.augent.app/tools/take-notes) | Take notes from any URL with style presets |
+| [`chapters`](https://docs.augent.app/tools/chapters) | Auto-detect topic chapters in audio with timestamps |
+| [`batch_search`](https://docs.augent.app/tools/batch-search) | Search multiple files in parallel — built for batch workflows and agent swarms |
+| [`text_to_speech`](https://docs.augent.app/tools/text-to-speech) | Convert text to natural speech audio (Kokoro TTS, 54 voices, 9 languages) |
+| [`search_proximity`](https://docs.augent.app/tools/search-proximity) | Find where keywords appear near each other |
+| [`identify_speakers`](https://docs.augent.app/tools/identify-speakers) | Identify who speaks when in audio (speaker diarization) |
+| [`separate_audio`](https://docs.augent.app/tools/separate-audio) | Isolate vocals from music and background noise (Demucs v4) |
+| [`search_memory`](https://docs.augent.app/tools/search-memory) | Search across ALL stored transcriptions by keyword or meaning |
+| [`list_files`](https://docs.augent.app/tools/list-files) | List media files in a directory |
+| [`list_memories`](https://docs.augent.app/tools/list-memories) | List stored transcriptions by title |
+| [`memory_stats`](https://docs.augent.app/tools/memory-stats) | View transcription memory statistics |
+| [`clear_memory`](https://docs.augent.app/tools/clear-memory) | Clear stored transcriptions |
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
 
