@@ -622,7 +622,7 @@ download_pyannote_models() {
 
     log_info "Downloading pyannote speaker diarization models (~29MB)..."
 
-    local url="https://github.com/AugentDevs/Augent/releases/download/v2026.3.8/pyannote-speaker-diarization-3.1.tar.gz"
+    local url="https://github.com/AugentDevs/Augent/releases/download/v2026.3.10/pyannote-speaker-diarization-3.1.tar.gz"
     local tmp_tar="/tmp/pyannote-models.tar.gz"
 
     if curl -fsSL "$url" -o "$tmp_tar" 2>/dev/null; then
