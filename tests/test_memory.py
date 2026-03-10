@@ -26,7 +26,7 @@ class TestTranscriptionMemory:
     @pytest.fixture
     def sample_audio_file(self):
         """Create a temporary file to simulate an audio file."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", dir="/tmp") as f:
             f.write(b"fake audio content for testing")
             yield f.name
         os.unlink(f.name)
