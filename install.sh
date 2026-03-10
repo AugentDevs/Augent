@@ -414,12 +414,31 @@ install_augent() {
     local is_local=false
     local install_src=""
 
+    # Clean up stale augent from other Python versions (e.g. old 3.9 pip install
+    # that shadows the new entrypoints). Only clean on macOS where this is common.
+    if [[ "$OS" == "macos" ]]; then
+        for old_py in python3.9 python3.10 python3.11 python3.12 python3.13; do
+            local old_bin
+            old_bin="$(command -v "$old_py" 2>/dev/null)" || continue
+            [[ "$old_bin" == "$PYTHON_CMD" ]] && continue
+            "$old_bin" -m pip uninstall augent -y --quiet --break-system-packages >/dev/null 2>&1 || \
+            "$old_bin" -m pip uninstall augent -y --quiet >/dev/null 2>&1 || true
+        done
+        # Remove orphaned entrypoints from known pip bin locations
+        for old_dir in "$HOME/Library/Python"/*/bin; do
+            [[ -d "$old_dir" ]] || continue
+            for ent in augent augent-web augent-mcp; do
+                [[ -f "$old_dir/$ent" ]] && rm -f "$old_dir/$ent" 2>/dev/null || true
+            done
+        done
+    fi
+
     if [[ -n "$script_dir" ]] && [[ -f "$script_dir/pyproject.toml" ]]; then
         is_local=true
         install_src="$script_dir"
     else
         install_src="git+https://github.com/$AUGENT_REPO.git@main"
-        # Remove old augent code (but keep dependencies intact)
+        # Remove old augent code from target Python (but keep dependencies intact)
         $PYTHON_CMD -m pip uninstall augent -y --quiet $pip_flags >/dev/null 2>&1 || true
     fi
 
