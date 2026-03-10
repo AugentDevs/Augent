@@ -4,6 +4,38 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.3.10] - 2026-03-10
+
+### Added
+
+- **Persistent YouTube URLs:** YouTube source URLs are now stored permanently by audio file hash in a dedicated `source_urls` table. Any future search or transcription of the same file — even after restarts, from a different path — automatically includes clickable YouTube timestamps. No manual URL entry needed.
+- **Web UI Memory Explorer:** browse, search, view, and delete stored transcriptions from the browser. Each entry shows title, duration, model size, and date. YouTube-sourced entries are marked with a YT badge.
+- **Web UI memory deletion:** trash icon on each memory card with confirmation dialog. Removes the transcription, embeddings, and `.md` file.
+- **Web UI YouTube timestamp linking:** after uploading a file, paste a YouTube URL inline in the results to retroactively add clickable timestamp links to all matches.
+- **Web UI URL paste:** paste a YouTube or video URL directly in the search view to download and search audio without leaving the browser.
+- **Web UI Share as HTML:** download any transcript as a self-contained HTML page with all styling inline.
+- **Web UI Show in Finder:** reveal the original audio file in Finder (macOS), file manager (Linux), or Explorer (Windows). Uses AppleScript on macOS for reliable handling of special characters in paths.
+- **Web UI favicon:** custom Augent favicon embedded as base64, ships with every install.
+- **Web UI PNG banner:** Augent logo displayed in the log area, served from the package. Replaces the ASCII art banner.
+- **Source URL in `.md` files:** transcription markdown files now include a `**URL:**` line in the metadata header when a source URL is available.
+
+### Changed
+
+- **Web UI title:** browser tab now reads "Augent Web UI" instead of "Augent"
+- **Web UI tagline:** displays "Web UI v{version}" dynamically from package version
+- **Web UI keywords:** changed from single-line input to resizable textarea
+- **Web UI results:** row hover animation changed from border-left (caused text jitter) to clean `translateY(-1px)` on tbody rows only
+- **Web UI snippets:** markdown `**` bold markers stripped from keyword matches (the UI already bolds keywords with CSS)
+- **File upload naming:** uploaded files now preserve their original filename in memory instead of storing as temp file names
+
+### Fixed
+
+- **YouTube timestamp linking in Web UI:** `lastGrouped` was not being set in the file upload SSE path, causing the "Link timestamps" button to silently fail
+- **Results header hover:** `Time | Context` header row no longer animates on hover (scoped to `tbody tr` only)
+- **Show in Finder reliability:** switched from `open -R` to AppleScript on macOS for paths with special characters
+
+---
+
 ## [2026.3.8] - 2026-03-08
 
 ### Added
