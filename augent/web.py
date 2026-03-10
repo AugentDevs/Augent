@@ -1,20 +1,25 @@
 """
 Augent Web UI - FastAPI + vanilla HTML/JS/CSS
 
-Replaces the Gradio-based web UI with a clean, custom interface.
-Same features: upload audio, keyword search, live streaming log, results table, JSON view.
-New: export buttons (CSV, JSON, SRT).
+Two views:
+  Search  — Upload audio or paste a URL, keyword search, streaming log, results, exports
+  Memory  — Browse all stored transcriptions, full transcript view, cross-memory search,
+            shareable HTML export, Show in Finder
 """
 
 import asyncio
+import html as html_mod
 import json
 import os
+import re
+import shutil
+import subprocess
 import tempfile
 import time
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, File, Form, Query, UploadFile
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 from .memory import get_model_cache, get_transcription_memory
@@ -41,21 +46,43 @@ def format_time_srt(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
-HTML_PAGE = """<!DOCTYPE html>
+# --- YouTube helpers (copied from mcp.py to keep web.py self-contained) ---
+
+_YOUTUBE_VIDEO_ID_RE = re.compile(
+    r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/)"
+    r"([a-zA-Z0-9_-]{11})"
+)
+
+
+def _extract_youtube_id(url: str) -> str:
+    if not url:
+        return ""
+    m = _YOUTUBE_VIDEO_ID_RE.search(url)
+    return m.group(1) if m else ""
+
+
+def _youtube_timestamp_link(source_url: str, seconds: float) -> str:
+    video_id = _extract_youtube_id(source_url)
+    if not video_id:
+        return ""
+    return f"https://youtube.com/watch?v={video_id}&t={int(seconds)}"
+
+
+# ---------------------------------------------------------------------------
+# HTML
+# ---------------------------------------------------------------------------
+
+HTML_PAGE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Augent Web UI</title>
+<title>Augent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/wavesurfer.js@7"></script>
 <style>
-*, *::before, *::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :root {
     --green: #00F060;
@@ -66,7 +93,7 @@ HTML_PAGE = """<!DOCTYPE html>
     --green-border: rgba(0, 240, 96, 0.15);
     --green-border-hover: rgba(0, 240, 96, 0.35);
     --black: #000000;
-    --mono: 'Monaco', 'Menlo', 'Consolas', monospace;
+    --mono: 'Monaco','Menlo','Consolas', monospace;
     --sans: 'Montserrat', sans-serif;
 }
 
@@ -77,27 +104,55 @@ html, body {
     height: 100%;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
-::selection {
-    background: var(--green);
-    color: var(--black);
-}
+::selection { background: var(--green); color: var(--black); }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar { width:10px; height:10px; }
+::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--green) 0%, var(--green-secondary) 100%);
-    border-radius: 5px;
-    border: 2px solid transparent;
+    border-radius:5px; border:2px solid transparent;
 }
-::-webkit-scrollbar-thumb:hover { filter: brightness(1.1); }
-* { scrollbar-width: thin; scrollbar-color: rgba(0, 240, 96, 0.4) transparent; }
+* { scrollbar-width:thin; scrollbar-color:rgba(0,240,96,0.4) transparent; }
 
-.layout {
+/* ---- Top nav ---- */
+.top-nav {
     display: flex;
-    height: 100vh;
+    align-items: center;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--green-border);
+    height: 48px;
+    gap: 0;
+}
+.top-nav .brand {
+    font-size: 18px;
+    font-weight: 700;
+    margin-right: 32px;
+    letter-spacing: -0.5px;
+}
+.nav-btn {
+    padding: 0 20px;
+    height: 48px;
+    background: none;
+    border: none;
+    color: var(--green-dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+}
+.nav-btn:hover { color: var(--green); }
+.nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* ---- Views ---- */
+.view { display: none; height: calc(100vh - 48px); }
+.view.active { display: flex; }
+
+/* ======== SEARCH VIEW ======== */
+.search-view {
     padding: 24px;
     gap: 24px;
 }
@@ -118,24 +173,8 @@ html, body {
     min-width: 0;
 }
 
-h1 {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-label {
-    font-size: 13px;
-    font-weight: 600;
-    display: block;
-    margin-bottom: 6px;
-}
-
-.hint {
-    font-size: 11px;
-    color: var(--green-dim);
-    margin-top: 4px;
-}
+label { font-size:13px; font-weight:600; display:block; margin-bottom:6px; }
+.hint { font-size:11px; color:var(--green-dim); margin-top:4px; }
 
 input[type="text"], select {
     width: 100%;
@@ -150,14 +189,8 @@ input[type="text"], select {
     caret-color: var(--green);
     transition: border-color 0.15s ease-out;
 }
-
-input[type="text"]::placeholder {
-    color: var(--green-hint);
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: var(--green-border-hover);
-}
+input[type="text"]::placeholder { color: var(--green-hint); }
+input[type="text"]:focus, select:focus { border-color: var(--green-border-hover); }
 
 select {
     cursor: pointer;
@@ -168,335 +201,364 @@ select {
     background-position: right 12px center;
     padding-right: 32px;
 }
+select option { background:var(--black); color:var(--green); }
 
-select option {
-    background: var(--black);
-    color: var(--green);
-}
-
-/* Audio upload zone */
+/* Upload zone */
 .upload-zone {
     border: 1px dashed var(--green-border);
     border-radius: 16px;
     padding: 24px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+    transition: border-color 0.15s, box-shadow 0.15s;
     position: relative;
 }
-
 .upload-zone:hover, .upload-zone.dragover {
     border-color: var(--green-border-hover);
-    box-shadow: 0 8px 30px rgba(0, 240, 96, 0.08);
+    box-shadow: 0 8px 30px rgba(0,240,96,0.08);
 }
+.upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.upload-zone .icon { font-size:28px; margin-bottom:8px; }
+.upload-zone .label { font-size:13px; color:var(--green-dim); }
+.upload-zone.has-file { border-style:solid; border-color:var(--green-border-hover); }
+.upload-zone.has-file .label { color:var(--green); font-weight:500; }
 
-.upload-zone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-}
-
-.upload-zone .icon {
-    font-size: 28px;
-    margin-bottom: 8px;
-}
-
-.upload-zone .label {
-    font-size: 13px;
-    color: var(--green-dim);
-}
-
-.upload-zone.has-file {
-    border-style: solid;
-    border-color: var(--green-border-hover);
-}
-
-.upload-zone.has-file .label {
-    color: var(--green);
-    font-weight: 500;
-}
-
-/* WaveSurfer waveform */
-.waveform-wrap {
-    display: none;
-    margin-top: 10px;
-    border: 1px solid var(--green-border);
-    border-radius: 12px;
-    padding: 8px;
-    cursor: pointer;
-}
-
-.waveform-wrap.visible {
-    display: block;
-}
-
-#waveform {
-    width: 100%;
-    height: 48px;
-}
-
-.wave-controls {
+/* URL input section */
+.url-section {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 6px;
-    padding: 0 2px;
+    flex-direction: column;
+    gap: 6px;
 }
-
-.wave-time {
-    font-family: var(--mono);
+.url-section .or-divider {
+    text-align: center;
     font-size: 11px;
-    color: var(--green-dim);
+    color: var(--green-hint);
+    padding: 4px 0;
 }
 
+/* WaveSurfer */
+.waveform-wrap { display:none; margin-top:10px; border:1px solid var(--green-border); border-radius:12px; padding:8px; cursor:pointer; }
+.waveform-wrap.visible { display:block; }
+#waveform { width:100%; height:48px; }
+.wave-controls { display:flex; align-items:center; gap:10px; margin-top:6px; padding:0 2px; }
+.wave-time { font-family:var(--mono); font-size:11px; color:var(--green-dim); }
 .play-btn {
-    background: none;
-    border: 1px solid var(--green-border);
-    color: var(--green);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    transition: border-color 0.15s ease-out, background 0.15s ease-out;
+    background:none; border:1px solid var(--green-border); color:var(--green);
+    width:28px; height:28px; border-radius:50%; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:11px;
+    transition: border-color 0.15s, background 0.15s;
 }
-
-.play-btn:hover {
-    border-color: var(--green-border-hover);
-    background: var(--green-hover);
-}
+.play-btn:hover { border-color:var(--green-border-hover); background:var(--green-hover); }
 
 /* Search button */
 .search-btn {
-    width: 100%;
-    padding: 12px;
-    background: var(--green);
-    color: var(--black);
-    border: none;
-    font-family: var(--sans);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    width:100%; padding:12px; background:var(--green); color:var(--black);
+    border:none; font-family:var(--sans); font-size:15px; font-weight:700;
+    letter-spacing:1px; cursor:pointer; border-radius:12px;
+    transition: transform 0.15s, box-shadow 0.15s;
 }
+.search-btn:hover { transform:scale(1.02); box-shadow:0 8px 30px rgba(0,240,96,0.2); }
+.search-btn:active { transform:scale(1); }
+.search-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
 
-.search-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 30px rgba(0, 240, 96, 0.2);
-}
-
-.search-btn:active {
-    transform: scale(1);
-}
-
-.search-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Tips */
 .tips {
-    font-size: 12px;
-    color: var(--green-dim);
-    line-height: 1.6;
-    border-top: 1px solid var(--green-border);
-    padding-top: 12px;
-    margin-top: auto;
+    font-size:12px; color:var(--green-dim); line-height:1.6;
+    border-top:1px solid var(--green-border); padding-top:12px; margin-top:auto;
 }
-
-.tips strong {
-    color: var(--green);
-}
+.tips strong { color:var(--green); }
 
 /* Tabs */
-.tabs {
-    display: flex;
-    gap: 0;
-}
-
+.tabs { display:flex; gap:0; }
 .tab {
-    padding: 8px 20px;
-    background: var(--black);
-    color: var(--green);
-    border: none;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: background 0.15s ease-out;
+    padding:8px 20px; background:var(--black); color:var(--green); border:none;
+    font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer;
+    border-bottom:2px solid transparent; transition:background 0.15s;
 }
+.tab:hover { background:var(--green-hover); }
+.tab.active { background:var(--green); color:var(--black); border-bottom-color:var(--green); }
 
-.tab:hover {
-    background: var(--green-hover);
-}
-
-.tab.active {
-    background: var(--green);
-    color: var(--black);
-    border-bottom-color: var(--green);
-}
-
-/* Log area */
+/* Log */
 .log-box {
-    flex: 1;
-    background: var(--black);
-    border: 1px solid var(--green-border);
-    border-radius: 12px;
-    padding: 12px;
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.5;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-    min-height: 0;
+    flex:1; background:var(--black); border:1px solid var(--green-border);
+    border-radius:12px; padding:12px; font-family:var(--mono); font-size:13px;
+    line-height:1.5; overflow-y:auto; white-space:pre-wrap; word-break:break-word; min-height:0;
 }
 
-/* Tab panels */
-.tab-panel {
-    display: none;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-}
-
-.tab-panel.active {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
+.tab-panel { display:none; flex:1; min-height:0; overflow-y:auto; }
+.tab-panel.active { display:flex; flex-direction:column; overflow-y:auto; }
 
 /* Results table */
 .results-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-    border: 1px solid var(--green-border);
-    border-radius: 12px;
+    flex:1; overflow-y:auto; padding:12px;
+    border:1px solid var(--green-border); border-radius:12px;
 }
+.results-content h3 { font-size:16px; margin-bottom:12px; }
+.results-content h4 { font-size:14px; margin:20px 0 8px; }
+.results-content table { width:100%; border-collapse:collapse; }
+.results-content th { text-align:left; padding:8px; border-bottom:1px solid var(--green-border-hover); font-size:12px; font-weight:600; }
+.results-content td { padding:8px; border-bottom:1px solid var(--green-border); font-size:13px; }
+.results-content tr { transition: border-color 0.15s, transform 0.15s; }
+.results-content tr:hover { border-left:1px solid var(--green); transform:translateY(-0.5px); }
+.results-content td:first-child { font-family:var(--mono); white-space:nowrap; width:70px; }
+.results-content .match-word { color:#FFFFFF; font-weight:700; }
 
-.results-content h3 {
-    font-size: 16px;
-    margin-bottom: 12px;
-}
-
-.results-content h4 {
-    font-size: 14px;
-    margin: 20px 0 8px;
-}
-
-.results-content table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.results-content th {
-    text-align: left;
-    padding: 8px;
-    border-bottom: 1px solid var(--green-border-hover);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.results-content td {
-    padding: 8px;
-    border-bottom: 1px solid var(--green-border);
-    font-size: 13px;
-}
-
-.results-content tr {
-    transition: border-color 0.15s ease-out, transform 0.15s ease-out;
-}
-
-.results-content tr:hover {
-    border-left: 1px solid var(--green);
-    transform: translateY(-0.5px);
-}
-
-.results-content td:first-child {
-    font-family: var(--mono);
-    white-space: nowrap;
-    width: 70px;
-}
-
-.results-content .match-word {
-    color: #FFFFFF;
-    font-weight: 700;
-}
-
-/* JSON view */
 .json-box {
-    flex: 1;
-    background: var(--black);
-    border: 1px solid var(--green-border);
-    border-radius: 12px;
-    padding: 12px;
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.5;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    min-height: 0;
+    flex:1; background:var(--black); border:1px solid var(--green-border);
+    border-radius:12px; padding:12px; font-family:var(--mono); font-size:13px;
+    line-height:1.5; overflow-y:auto; white-space:pre-wrap; min-height:0;
 }
 
 /* Export bar */
-.export-bar {
-    display: none;
-    gap: 8px;
-    padding: 8px 0;
-    align-items: center;
-}
-
-.export-bar.visible {
-    display: flex;
-}
-
-.export-bar span {
-    font-size: 12px;
-    font-weight: 600;
-    margin-right: 4px;
-}
-
+.export-bar { display:none; gap:8px; padding:8px 0; align-items:center; }
+.export-bar.visible { display:flex; }
+.export-bar span { font-size:12px; font-weight:600; margin-right:4px; }
 .export-btn {
-    padding: 5px 14px;
+    padding:5px 14px; background:var(--black); color:var(--green);
+    border:1px solid var(--green-border); font-family:var(--mono); font-size:12px;
+    cursor:pointer; border-radius:8px;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.export-btn:hover { border-color:var(--green-border-hover); background:var(--green-hover); box-shadow:0 4px 14px rgba(0,240,96,0.1); }
+
+/* ======== MEMORY VIEW ======== */
+.memory-view {
+    flex-direction: column;
+    height: 100%;
+}
+
+.memory-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--green-border);
+}
+.memory-toolbar input {
+    flex: 1;
+    max-width: 500px;
+}
+.memory-toolbar .stats {
+    font-size: 12px;
+    color: var(--green-dim);
+    margin-left: auto;
+}
+
+.memory-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Memory list (left panel) */
+.memory-list-panel {
+    width: 380px;
+    min-width: 380px;
+    border-right: 1px solid var(--green-border);
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.memory-card {
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 4px;
+}
+.memory-card:hover { border-color: var(--green-border); background: var(--green-hover); }
+.memory-card.active { border-color: var(--green-border-hover); background: var(--green-hover); border-left: 3px solid var(--green); }
+
+.memory-card .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+.memory-card .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--green-dim);
+}
+.memory-card .card-meta .pill {
+    background: rgba(0,240,96,0.08);
+    border: 1px solid var(--green-border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--green);
+}
+.memory-card .card-meta .yt-icon {
+    color: #FF0000;
+    font-weight: 700;
+    font-size: 10px;
+}
+
+.memory-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--green-dim);
+    font-size: 14px;
+}
+
+/* Memory detail (right panel) */
+.memory-detail-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.detail-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--green-hint);
+    font-size: 14px;
+}
+
+.detail-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--green-border);
+}
+.detail-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.3px;
+}
+.detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--green-dim);
+    flex-wrap: wrap;
+}
+.detail-meta a {
+    color: var(--green);
+    text-decoration: none;
+}
+.detail-meta a:hover { text-decoration: underline; }
+
+.detail-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+.detail-actions button {
+    padding: 6px 16px;
     background: var(--black);
     color: var(--green);
     border: 1px solid var(--green-border);
-    font-family: var(--mono);
+    font-family: var(--sans);
     font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
     border-radius: 8px;
-    transition: border-color 0.15s ease-out, background 0.15s ease-out, box-shadow 0.15s ease-out;
+    transition: border-color 0.15s, background 0.15s;
 }
-
-.export-btn:hover {
+.detail-actions button:hover {
     border-color: var(--green-border-hover);
     background: var(--green-hover);
-    box-shadow: 0 4px 14px rgba(0, 240, 96, 0.1);
+}
+
+.detail-transcript {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+}
+.detail-transcript .seg-row {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--green-border);
+    transition: background 0.1s;
+}
+.detail-transcript .seg-row:hover {
+    background: var(--green-hover);
+}
+.detail-transcript .seg-ts {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green-dim);
+    white-space: nowrap;
+    min-width: 50px;
+    padding-top: 2px;
+}
+.detail-transcript .seg-ts a {
+    color: var(--green);
+    text-decoration: none;
+}
+.detail-transcript .seg-ts a:hover {
+    text-decoration: underline;
+}
+.detail-transcript .seg-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--green);
+}
+
+/* Memory search results in detail panel */
+.memory-search-results .sr-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--green-border);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.memory-search-results .sr-item:hover {
+    background: var(--green-hover);
+}
+.memory-search-results .sr-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.memory-search-results .sr-text {
+    font-size: 13px;
+    line-height: 1.5;
+}
+.memory-search-results .sr-text .hl {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+.memory-search-results .sr-ts {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green-dim);
+    margin-top: 4px;
 }
 </style>
 </head>
 <body>
 
-<div class="layout">
-    <div class="sidebar">
-        <h1>Augent</h1>
+<!-- Top Navigation -->
+<div class="top-nav">
+    <span class="brand">Augent</span>
+    <button class="nav-btn active" onclick="switchView('search', this)">Search</button>
+    <button class="nav-btn" onclick="switchView('memory', this)">Memory</button>
+</div>
 
+<!-- ============ SEARCH VIEW ============ -->
+<div class="view search-view active" id="view-search">
+    <div class="sidebar">
         <div>
             <label>Audio File</label>
             <div class="upload-zone" id="uploadZone">
                 <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.ogg,.flac,.m4a,.webm,.mp4,.aac,.wma,.opus">
                 <div class="icon">&#x2B06;</div>
                 <div class="label" id="uploadLabel">Drop audio file or click to upload</div>
+            </div>
+            <div class="url-section">
+                <div class="or-divider">or paste a URL</div>
+                <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
             </div>
             <div class="waveform-wrap" id="waveformWrap">
                 <div id="waveform"></div>
@@ -529,8 +591,8 @@ select option {
 
         <div class="tips">
             <strong>Tips:</strong><br>
-            &#183; Larger models = more accurate<br>
-            &#183; Results stored in memory for repeat searches
+            &#183; Paste a YouTube or video URL to download audio directly<br>
+            &#183; Results stored in memory for instant re-search
         </div>
     </div>
 
@@ -563,11 +625,38 @@ select option {
     </div>
 </div>
 
+<!-- ============ MEMORY VIEW ============ -->
+<div class="view memory-view" id="view-memory">
+    <div class="memory-toolbar">
+        <input type="text" id="memoryQuery" placeholder="Search across all memories...">
+        <div class="stats" id="memoryStats"></div>
+    </div>
+    <div class="memory-body">
+        <div class="memory-list-panel" id="memoryListPanel">
+            <div class="memory-empty" id="memoryEmpty">Loading...</div>
+        </div>
+        <div class="memory-detail-panel" id="memoryDetailPanel">
+            <div class="detail-placeholder">Select a transcription to view</div>
+        </div>
+    </div>
+</div>
+
 <script>
+/* ============ GLOBALS ============ */
 let uploadedFile = null;
 let wavesurfer = null;
+let currentCacheKey = null;
 
-// File upload handling
+/* ============ VIEW SWITCHING ============ */
+function switchView(name, btn) {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (name === 'memory') loadMemoryList();
+}
+
+/* ============ SEARCH VIEW ============ */
 const fileInput = document.getElementById('fileInput');
 const uploadZone = document.getElementById('uploadZone');
 const uploadLabel = document.getElementById('uploadLabel');
@@ -578,15 +667,8 @@ fileInput.addEventListener('change', (e) => {
     if (file) setFile(file);
 });
 
-uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.classList.add('dragover');
-});
-
-uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('dragover');
-});
-
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('dragover'); });
 uploadZone.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadZone.classList.remove('dragover');
@@ -604,27 +686,17 @@ function setFile(file) {
     uploadedFile = file;
     uploadLabel.textContent = file.name;
     uploadZone.classList.add('has-file');
+    document.getElementById('audioUrl').value = '';
 
-    // Destroy previous wavesurfer
-    if (wavesurfer) {
-        wavesurfer.destroy();
-        wavesurfer = null;
-    }
-
+    if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; }
     waveformWrap.classList.add('visible');
 
     wavesurfer = WaveSurfer.create({
-        container: '#waveform',
-        height: 48,
-        waveColor: '#1a1a1a',
-        progressColor: '#00F060',
-        cursorColor: '#00F060',
-        cursorWidth: 2,
-        barWidth: 2,
-        barGap: 1,
-        barRadius: 2,
-        normalize: true,
-        backend: 'WebAudio',
+        container: '#waveform', height: 48,
+        waveColor: '#1a1a1a', progressColor: '#00F060',
+        cursorColor: '#00F060', cursorWidth: 2,
+        barWidth: 2, barGap: 1, barRadius: 2,
+        normalize: true, backend: 'WebAudio',
     });
 
     const url = URL.createObjectURL(file);
@@ -634,32 +706,21 @@ function setFile(file) {
     const playBtn = document.getElementById('playBtn');
 
     wavesurfer.on('ready', () => {
-        const dur = wavesurfer.getDuration();
-        timeEl.textContent = '0:00 / ' + fmtTime(dur);
+        timeEl.textContent = '0:00 / ' + fmtTime(wavesurfer.getDuration());
     });
-
     wavesurfer.on('audioprocess', () => {
-        const cur = wavesurfer.getCurrentTime();
-        const dur = wavesurfer.getDuration();
-        timeEl.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+        timeEl.textContent = fmtTime(wavesurfer.getCurrentTime()) + ' / ' + fmtTime(wavesurfer.getDuration());
     });
-
     wavesurfer.on('seeking', () => {
-        const cur = wavesurfer.getCurrentTime();
-        const dur = wavesurfer.getDuration();
-        timeEl.textContent = fmtTime(cur) + ' / ' + fmtTime(dur);
+        timeEl.textContent = fmtTime(wavesurfer.getCurrentTime()) + ' / ' + fmtTime(wavesurfer.getDuration());
     });
-
     wavesurfer.on('play', () => { playBtn.innerHTML = '&#9646;&#9646;'; });
     wavesurfer.on('pause', () => { playBtn.innerHTML = '&#9654;'; });
     wavesurfer.on('finish', () => { playBtn.innerHTML = '&#9654;'; });
 }
 
-function togglePlay() {
-    if (wavesurfer) wavesurfer.playPause();
-}
+function togglePlay() { if (wavesurfer) wavesurfer.playPause(); }
 
-// Tab switching
 function switchTab(name, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -667,10 +728,13 @@ function switchTab(name, btn) {
     btn.classList.add('active');
 }
 
-// Search
 async function startSearch() {
-    if (!uploadedFile) {
-        appendLog('Upload an audio file to begin');
+    const audioUrl = document.getElementById('audioUrl').value.trim();
+    const hasFile = !!uploadedFile;
+    const hasUrl = !!audioUrl;
+
+    if (!hasFile && !hasUrl) {
+        appendLog('Upload an audio file or paste a URL');
         return;
     }
 
@@ -688,44 +752,77 @@ async function startSearch() {
     const exportBar = document.getElementById('exportBar');
 
     btn.disabled = true;
-    btn.textContent = 'SEARCHING...';
     logBox.textContent = '';
     resultsContent.innerHTML = '<p>Starting...</p>';
     jsonBox.textContent = '{}';
     exportBar.classList.remove('visible');
 
+    // URL mode: download first
+    if (hasUrl && !hasFile) {
+        btn.textContent = 'DOWNLOADING...';
+        appendLog('Downloading audio from URL...');
+        try {
+            const resp = await fetch('/api/download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: audioUrl, model_size: model, keywords: keywords})
+            });
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, {stream: true});
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.type === 'log') appendLog(data.text);
+                        else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                        else if (data.type === 'results') {
+                            renderResults(data.grouped, data.total);
+                            jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
+                            exportBar.classList.add('visible');
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            appendLog('Error: ' + err.message);
+            resultsContent.innerHTML = '<p>Error: ' + err.message + '</p>';
+        }
+        btn.disabled = false;
+        btn.textContent = 'SEARCH';
+        return;
+    }
+
+    // File upload mode
+    btn.textContent = 'SEARCHING...';
     const formData = new FormData();
     formData.append('file', uploadedFile);
     formData.append('keywords', keywords);
     formData.append('model_size', model);
 
     try {
-        const response = await fetch('/api/search', {
-            method: 'POST',
-            body: formData
-        });
-
+        const response = await fetch('/api/search', { method: 'POST', body: formData });
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
 
         while (true) {
-            const { done, value } = await reader.read();
+            const {done, value} = await reader.read();
             if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\\n');
+            buffer += decoder.decode(value, {stream: true});
+            const lines = buffer.split('\n');
             buffer = lines.pop();
-
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const data = JSON.parse(line.slice(6));
-
-                    if (data.type === 'log') {
-                        appendLog(data.text);
-                    } else if (data.type === 'status') {
-                        resultsContent.innerHTML = '<p>' + data.text + '</p>';
-                    } else if (data.type === 'results') {
+                    if (data.type === 'log') appendLog(data.text);
+                    else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                    else if (data.type === 'results') {
                         renderResults(data.grouped, data.total);
                         jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
                         exportBar.classList.add('visible');
@@ -744,54 +841,195 @@ async function startSearch() {
 
 function appendLog(text) {
     const logBox = document.getElementById('logBox');
-    logBox.textContent += text + '\\n';
+    logBox.textContent += text + '\n';
     logBox.scrollTop = logBox.scrollHeight;
 }
 
 function renderResults(grouped, total) {
     const el = document.getElementById('resultsContent');
-    if (total === 0) {
-        el.innerHTML = '<h3>No matches found.</h3>';
-        return;
-    }
-
+    if (total === 0) { el.innerHTML = '<h3>No matches found.</h3>'; return; }
     let html = '<h3>Found ' + total + ' matches</h3>';
-
     for (const [kw, matches] of Object.entries(grouped)) {
         html += '<h4>' + escHtml(kw) + ' (' + matches.length + ')</h4>';
         html += '<table><tr><th>Time</th><th>Context</th></tr>';
-
         for (const m of matches) {
             const snippet = highlightKeyword(escHtml(m.snippet), kw);
             html += '<tr><td>' + escHtml(m.timestamp) + '</td><td>' + snippet + '</td></tr>';
         }
-
         html += '</table>';
     }
-
     el.innerHTML = html;
 }
 
-function escHtml(s) {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function highlightKeyword(snippet, keyword) {
-    const clean = snippet.replace(/\\.\\.\\./g, '').trim();
-    const re = new RegExp('(' + keyword.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + ')', 'gi');
+    const clean = snippet.replace(/\.\.\./g, '').trim();
+    const re = new RegExp('(' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
     return clean.replace(re, '<span class="match-word">$1</span>');
 }
 
-// Export
 function exportAs(format) {
     const keywords = document.getElementById('keywords').value.trim();
     window.location.href = '/api/export?format=' + format + '&keywords=' + encodeURIComponent(keywords);
 }
+
+/* ============ MEMORY VIEW ============ */
+let memoryDebounce = null;
+document.getElementById('memoryQuery').addEventListener('input', (e) => {
+    clearTimeout(memoryDebounce);
+    memoryDebounce = setTimeout(() => {
+        const q = e.target.value.trim();
+        if (q.length >= 2) searchMemory(q);
+        else loadMemoryList();
+    }, 300);
+});
+
+async function loadMemoryList() {
+    const panel = document.getElementById('memoryListPanel');
+    const statsEl = document.getElementById('memoryStats');
+    try {
+        const resp = await fetch('/api/memory/list');
+        const data = await resp.json();
+        const items = data.items || [];
+        statsEl.textContent = items.length + ' transcription' + (items.length !== 1 ? 's' : '') + ' in memory';
+
+        if (items.length === 0) {
+            panel.innerHTML = '<div class="memory-empty">No transcriptions in memory yet.<br>Transcribe audio to build your library.</div>';
+            return;
+        }
+
+        let html = '';
+        for (const item of items) {
+            const isYt = item.source_url && item.source_url.includes('youtu');
+            const ytBadge = isYt ? '<span class="yt-icon">YT</span>' : '';
+            html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
+            html += '<div class="card-title">' + escHtml(item.title) + '</div>';
+            html += '<div class="card-meta">';
+            html += '<span>' + escHtml(item.duration_formatted) + '</span>';
+            html += '<span class="pill">' + escHtml(item.model_size) + '</span>';
+            html += ytBadge;
+            html += '<span>' + escHtml(item.date) + '</span>';
+            html += '</div></div>';
+        }
+        panel.innerHTML = html;
+    } catch (err) {
+        panel.innerHTML = '<div class="memory-empty">Error loading memories</div>';
+    }
+}
+
+async function loadMemoryDetail(cacheKey, cardEl) {
+    currentCacheKey = cacheKey;
+
+    // Highlight active card
+    document.querySelectorAll('.memory-card').forEach(c => c.classList.remove('active'));
+    if (cardEl) cardEl.classList.add('active');
+
+    const panel = document.getElementById('memoryDetailPanel');
+    panel.innerHTML = '<div class="detail-placeholder">Loading...</div>';
+
+    try {
+        const resp = await fetch('/api/memory/detail/' + encodeURIComponent(cacheKey));
+        if (!resp.ok) throw new Error('Not found');
+        const d = await resp.json();
+
+        let metaParts = [
+            escHtml(d.duration_formatted),
+            escHtml(d.language || ''),
+            escHtml(d.model_size),
+            escHtml(d.date),
+        ].filter(Boolean);
+
+        let sourceHtml = '';
+        if (d.source_url) {
+            sourceHtml = ' &middot; <a href="' + escHtml(d.source_url) + '" target="_blank" rel="noopener">Source</a>';
+        }
+
+        let segsHtml = '';
+        for (const seg of (d.segments || [])) {
+            const ts = seg.timestamp || '';
+            let tsHtml;
+            if (seg.youtube_link) {
+                tsHtml = '<a href="' + escHtml(seg.youtube_link) + '" target="_blank" rel="noopener">' + escHtml(ts) + '</a>';
+            } else {
+                tsHtml = escHtml(ts);
+            }
+            segsHtml += '<div class="seg-row"><div class="seg-ts">' + tsHtml + '</div><div class="seg-text">' + escHtml(seg.text) + '</div></div>';
+        }
+
+        if (!segsHtml && d.text) {
+            segsHtml = '<div style="padding:12px 0;font-size:14px;line-height:1.8;">' + escHtml(d.text) + '</div>';
+        }
+
+        panel.innerHTML = '<div class="detail-header">' +
+            '<h2>' + escHtml(d.title) + '</h2>' +
+            '<div class="detail-meta">' + metaParts.join(' &middot; ') + sourceHtml + '</div>' +
+            '<div class="detail-actions">' +
+            '<button onclick="shareTranscript()">Share as HTML</button>' +
+            (d.file_path ? '<button onclick="showInFinder()">Show in Finder</button>' : '') +
+            '</div>' +
+            '</div>' +
+            '<div class="detail-transcript">' + segsHtml + '</div>';
+    } catch (err) {
+        panel.innerHTML = '<div class="detail-placeholder">Error loading transcript</div>';
+    }
+}
+
+async function searchMemory(query) {
+    const panel = document.getElementById('memoryListPanel');
+    const detailPanel = document.getElementById('memoryDetailPanel');
+
+    try {
+        const resp = await fetch('/api/memory/search?q=' + encodeURIComponent(query) + '&limit=50');
+        const data = await resp.json();
+        const results = data.results || [];
+
+        if (results.length === 0) {
+            panel.innerHTML = '<div class="memory-empty">No matches for "' + escHtml(query) + '"</div>';
+            return;
+        }
+
+        document.getElementById('memoryStats').textContent = results.length + ' match' + (results.length !== 1 ? 'es' : '');
+
+        let html = '<div class="memory-search-results">';
+        for (const r of results) {
+            const text = highlightInText(r.text, query);
+            html += '<div class="sr-item" onclick="loadMemoryDetail(\'' + escHtml(r.cache_key) + '\', null)">';
+            html += '<div class="sr-title">' + escHtml(r.title) + '</div>';
+            html += '<div class="sr-text">' + text + '</div>';
+            html += '<div class="sr-ts">' + escHtml(r.timestamp) + '</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+        panel.innerHTML = html;
+    } catch (err) {
+        panel.innerHTML = '<div class="memory-empty">Search error</div>';
+    }
+}
+
+function highlightInText(text, query) {
+    const safe = escHtml(text);
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return safe.replace(re, '<span class="hl">$1</span>');
+}
+
+function shareTranscript() {
+    if (!currentCacheKey) return;
+    window.location.href = '/api/memory/share/' + encodeURIComponent(currentCacheKey);
+}
+
+function showInFinder() {
+    if (!currentCacheKey) return;
+    fetch('/api/memory/reveal/' + encodeURIComponent(currentCacheKey), {method: 'POST'});
+}
 </script>
 </body>
 </html>"""
+
+
+# ---------------------------------------------------------------------------
+# API Routes — Search (existing)
+# ---------------------------------------------------------------------------
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -805,12 +1043,11 @@ async def search_audio(
     keywords: str = Form(""),  # noqa: B008
     model_size: str = Form("tiny"),  # noqa: B008
 ):
-    """Stream search results via SSE."""
+    """Stream search results via SSE (file upload mode)."""
 
     async def event_stream():
         global _latest_results
 
-        # Save uploaded file to temp
         suffix = Path(file.filename).suffix or ".tmp"
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=suffix, dir="/tmp"
@@ -837,7 +1074,6 @@ async def search_audio(
             yield send("log", text="─" * 45)
             yield send("status", text="Starting...")
 
-            # Check memory
             memory = get_transcription_memory()
             stored = memory.get(tmp_path, model_size)
 
@@ -901,7 +1137,7 @@ async def search_audio(
                                         text=f"         >> match: '{kw}' @ {format_time(word.start)}",
                                     )
 
-                    await asyncio.sleep(0)  # Yield control for streaming
+                    await asyncio.sleep(0)
 
                 memory.set(
                     tmp_path,
@@ -913,6 +1149,207 @@ async def search_audio(
                         "segments": segments,
                         "words": all_words,
                     },
+                )
+
+            yield send("log", text="")
+            yield send("log", text="  [search] finding matches...")
+            yield send("status", text="Searching...")
+
+            searcher = KeywordSearcher(context_words=11)
+            matches = searcher.search(all_words, keyword_list)
+
+            grouped = {}
+            for m in matches:
+                kw = m.keyword
+                if kw not in grouped:
+                    grouped[kw] = []
+                grouped[kw].append(
+                    {
+                        "timestamp": m.timestamp,
+                        "timestamp_seconds": m.timestamp_seconds,
+                        "snippet": m.snippet,
+                    }
+                )
+
+            yield send("log", text="")
+            yield send("log", text="─" * 45)
+            yield send("log", text=f"  [done] {len(matches)} matches found")
+            for kw in grouped:
+                yield send("log", text=f"         {kw}: {len(grouped[kw])}")
+            yield send("log", text="─" * 45)
+
+            async with _latest_results_lock:
+                _latest_results = {"grouped": grouped, "total": len(matches)}
+
+            yield send("results", grouped=grouped, total=len(matches))
+
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.post("/api/download")
+async def download_and_search(request: Request):
+    """Download audio from URL, transcribe, and search — all streamed via SSE."""
+    body = await request.json()
+    url = body.get("url", "")
+    model_size = body.get("model_size", "tiny")
+    keywords_str = body.get("keywords", "")
+
+    async def event_stream():
+        global _latest_results
+
+        def send(type_, **kwargs):
+            return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
+
+        keyword_list = [k.strip().lower() for k in keywords_str.split(",") if k.strip()]
+        if not keyword_list:
+            yield send("log", text="No keywords provided")
+            return
+
+        if not url:
+            yield send("log", text="No URL provided")
+            return
+
+        yield send("log", text="─" * 45)
+        yield send("log", text=f"  [augent] url: {url}")
+        yield send("log", text=f"  [augent] keywords: {', '.join(keyword_list)}")
+        yield send("log", text=f"  [augent] model: {model_size}")
+        yield send("log", text="─" * 45)
+        yield send("status", text="Downloading audio...")
+        yield send("log", text="  [download] starting...")
+
+        # Download audio using yt-dlp
+        download_dir = tempfile.mkdtemp(prefix="augent_dl_")
+        try:
+            if not shutil.which("yt-dlp"):
+                yield send("log", text="  [error] yt-dlp not found")
+                return
+
+            cmd = [
+                "yt-dlp",
+                "-f",
+                "bestaudio",
+                "--concurrent-fragments",
+                "4",
+                "--no-playlist",
+                "-o",
+                f"{download_dir}/%(title)s.%(ext)s",
+                "--print",
+                "after_move:filepath",
+            ]
+            if shutil.which("aria2c"):
+                cmd.extend(
+                    [
+                        "--downloader",
+                        "aria2c",
+                        "--downloader-args",
+                        "aria2c:-x 16 -s 16 -k 1M",
+                    ]
+                )
+            cmd.append(url)
+
+            proc = await asyncio.to_thread(
+                subprocess.run, cmd, capture_output=True, text=True
+            )
+
+            if proc.returncode != 0:
+                yield send(
+                    "log",
+                    text=f"  [error] download failed: {proc.stderr.strip()[:200]}",
+                )
+                return
+
+            output_lines = proc.stdout.strip().split("\n")
+            audio_path = output_lines[-1] if output_lines else None
+
+            if not audio_path or not os.path.exists(audio_path):
+                yield send("log", text="  [error] downloaded file not found")
+                return
+
+            yield send(
+                "log", text=f"  [download] complete: {os.path.basename(audio_path)}"
+            )
+            yield send("log", text="")
+
+            # Transcribe
+            memory = get_transcription_memory()
+            stored = memory.get(audio_path, model_size)
+
+            if stored:
+                yield send("log", text="  [memory] loaded from memory")
+                yield send(
+                    "log", text=f"  [info] duration: {format_time(stored.duration)}"
+                )
+                yield send("log", text="")
+                all_words = stored.words
+            else:
+                yield send("log", text=f"  [model] loading {model_size}...")
+                yield send("status", text="Transcribing...")
+
+                model_cache = get_model_cache()
+                model = model_cache.get(model_size)
+
+                yield send("log", text="  [model] ready")
+                yield send("log", text="")
+
+                segments_gen, info = model.transcribe(
+                    audio_path, word_timestamps=True, vad_filter=True
+                )
+
+                duration = info.duration
+                all_words = []
+                segments = []
+
+                yield send("log", text=f"  [info] duration: {format_time(duration)}")
+                yield send("log", text=f"  [info] language: {info.language}")
+                yield send("log", text="")
+
+                for segment in segments_gen:
+                    segments.append(
+                        {
+                            "start": segment.start,
+                            "end": segment.end,
+                            "text": segment.text,
+                        }
+                    )
+                    ts = format_time(segment.start)
+                    yield send("log", text=f"  [{ts}] {segment.text.strip()}")
+
+                    if segment.words:
+                        for word in segment.words:
+                            all_words.append(
+                                {
+                                    "word": word.word.strip(),
+                                    "start": word.start,
+                                    "end": word.end,
+                                }
+                            )
+                            clean = word.word.lower().strip(".,!?;:'\"")
+                            for kw in keyword_list:
+                                if kw in clean:
+                                    yield send(
+                                        "log",
+                                        text=f"         >> match: '{kw}' @ {format_time(word.start)}",
+                                    )
+
+                    await asyncio.sleep(0)
+
+                memory.set(
+                    audio_path,
+                    model_size,
+                    {
+                        "text": " ".join(s["text"].strip() for s in segments),
+                        "language": info.language,
+                        "duration": duration,
+                        "segments": segments,
+                        "words": all_words,
+                    },
+                    source_url=url,
                 )
 
             # Search
@@ -943,18 +1380,13 @@ async def search_audio(
                 yield send("log", text=f"         {kw}: {len(grouped[kw])}")
             yield send("log", text="─" * 45)
 
-            # Store for export
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
 
             yield send("results", grouped=grouped, total=len(matches))
 
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
+        except Exception as e:
+            yield send("log", text=f"  [error] {str(e)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -1065,10 +1497,252 @@ async def export_results(
     return JSONResponse({"error": f"Unknown format: {format}"}, status_code=400)
 
 
+# ---------------------------------------------------------------------------
+# API Routes — Memory
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/memory/list")
+async def api_memory_list():
+    """List all stored transcriptions."""
+    memory = get_transcription_memory()
+    items = memory.list_all()
+    return JSONResponse({"items": items})
+
+
+@app.get("/api/memory/detail/{cache_key:path}")
+async def api_memory_detail(cache_key: str):
+    """Get full transcript for a single entry."""
+    memory = get_transcription_memory()
+    entry = memory.get_by_cache_key(cache_key)
+    if not entry:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    from datetime import datetime
+
+    date_str = (
+        datetime.fromtimestamp(entry.created_at).strftime("%Y-%m-%d %H:%M")
+        if entry.created_at
+        else ""
+    )
+
+    mins = int(entry.duration // 60)
+    secs = int(entry.duration % 60)
+
+    segments = []
+    for seg in entry.segments:
+        start = seg.get("start", 0)
+        m = int(start // 60)
+        s = int(start % 60)
+        seg_dict = {
+            "start": start,
+            "end": seg.get("end", 0),
+            "timestamp": f"{m}:{s:02d}",
+            "text": seg.get("text", "").strip(),
+        }
+        if entry.source_url:
+            yt_link = _youtube_timestamp_link(entry.source_url, start)
+            if yt_link:
+                seg_dict["youtube_link"] = yt_link
+        segments.append(seg_dict)
+
+    return JSONResponse(
+        {
+            "title": entry.title,
+            "duration": entry.duration,
+            "duration_formatted": f"{mins}:{secs:02d}",
+            "language": entry.language,
+            "model_size": entry.model_size,
+            "date": date_str,
+            "source_url": entry.source_url,
+            "file_path": entry.file_path,
+            "text": entry.text,
+            "segments": segments,
+        }
+    )
+
+
+@app.get("/api/memory/search")
+async def api_memory_search(
+    q: str = Query(""),  # noqa: B008
+    limit: int = Query(50),  # noqa: B008
+):
+    """Keyword search across all stored transcriptions."""
+    if not q or len(q) < 2:
+        return JSONResponse({"results": [], "match_count": 0})
+
+    memory = get_transcription_memory()
+    entries = memory.get_all_with_segments()
+    query_lower = q.lower()
+    results = []
+
+    # Build file_path -> cache_key lookup once
+    cache_key_map = {
+        e["file_path"]: e["cache_key"] for e in memory.list_all() if e.get("file_path")
+    }
+
+    for entry in entries:
+        segs = entry.get("segments", [])
+        for seg in segs:
+            text = seg.get("text", "")
+            if query_lower in text.lower():
+                start = seg.get("start", 0)
+                m = int(start // 60)
+                s = int(start % 60)
+
+                results.append(
+                    {
+                        "title": entry.get("title", ""),
+                        "cache_key": cache_key_map.get(entry.get("file_path", ""), ""),
+                        "start": start,
+                        "timestamp": f"{m}:{s:02d}",
+                        "text": text.strip(),
+                        "source_url": entry.get("source_url", ""),
+                    }
+                )
+                if len(results) >= limit:
+                    break
+        if len(results) >= limit:
+            break
+
+    return JSONResponse(
+        {
+            "results": results,
+            "match_count": len(results),
+            "query": q,
+        }
+    )
+
+
+@app.post("/api/memory/reveal/{cache_key:path}")
+async def api_memory_reveal(cache_key: str):
+    """Reveal file in Finder (macOS) or file manager."""
+    import platform
+
+    memory = get_transcription_memory()
+    entry = memory.get_by_cache_key(cache_key)
+    if not entry or not entry.file_path:
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    file_path = entry.file_path
+    if not os.path.exists(file_path):
+        return JSONResponse(
+            {"error": f"File no longer exists: {file_path}"}, status_code=404
+        )
+
+    try:
+        if platform.system() == "Darwin":
+            subprocess.Popen(["open", "-R", file_path])
+        elif platform.system() == "Linux":
+            subprocess.Popen(["xdg-open", os.path.dirname(file_path)])
+        else:
+            subprocess.Popen(["explorer", "/select,", file_path])
+    except Exception:
+        pass
+
+    return JSONResponse({"ok": True, "file_path": file_path})
+
+
+@app.get("/api/memory/share/{cache_key:path}")
+async def api_memory_share(cache_key: str):
+    """Generate and download a self-contained HTML page for a transcript."""
+    memory = get_transcription_memory()
+    entry = memory.get_by_cache_key(cache_key)
+    if not entry:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    html_content = _generate_share_html(entry)
+    safe_title = re.sub(r"[^\w\s\-]", "", entry.title or "transcript")
+    safe_title = re.sub(r"\s+", "_", safe_title).strip("_")[:60] or "transcript"
+
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={"Content-Disposition": f"attachment; filename={safe_title}.html"},
+    )
+
+
+def _generate_share_html(entry) -> str:
+    """Generate a self-contained HTML page for a transcript."""
+    from datetime import datetime
+
+    title = html_mod.escape(entry.title or "Untitled")
+    language = html_mod.escape(entry.language or "")
+    model = html_mod.escape(entry.model_size or "")
+    mins = int(entry.duration // 60)
+    secs = int(entry.duration % 60)
+    duration_fmt = f"{mins}:{secs:02d}"
+    date_str = (
+        datetime.fromtimestamp(entry.created_at).strftime("%Y-%m-%d %H:%M")
+        if entry.created_at
+        else ""
+    )
+    source_url = entry.source_url or ""
+
+    source_html = ""
+    if source_url:
+        escaped_url = html_mod.escape(source_url)
+        source_html = f' &middot; <a href="{escaped_url}" style="color:#00F060;">{escaped_url[:80]}</a>'
+
+    segments_html = ""
+    for seg in entry.segments:
+        start = seg.get("start", 0)
+        m = int(start // 60)
+        s = int(start % 60)
+        ts = f"{m}:{s:02d}"
+        text = html_mod.escape(seg.get("text", "").strip())
+
+        yt_link = _youtube_timestamp_link(source_url, start) if source_url else ""
+        if yt_link:
+            ts_html = f'<a href="{html_mod.escape(yt_link)}" style="color:#00F060;text-decoration:none;">{ts}</a>'
+        else:
+            ts_html = ts
+
+        segments_html += f"""<div style="display:flex;gap:16px;padding:8px 0;border-bottom:1px solid rgba(0,240,96,0.1);">
+<div style="font-family:Monaco,Menlo,monospace;font-size:12px;color:rgba(0,240,96,0.6);min-width:50px;">{ts_html}</div>
+<div style="font-size:14px;line-height:1.7;color:#00F060;">{text}</div>
+</div>"""
+
+    if not segments_html and entry.text:
+        segments_html = f'<div style="padding:16px 0;font-size:14px;line-height:1.8;color:#00F060;">{html_mod.escape(entry.text)}</div>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} — Augent</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#000;color:#00F060;font-family:'Montserrat',sans-serif;padding:40px 24px;max-width:900px;margin:0 auto;}}
+::selection{{background:#00F060;color:#000}}
+a{{color:#00F060}}
+h1{{font-size:24px;font-weight:700;margin-bottom:12px;letter-spacing:-0.3px}}
+.meta{{font-size:12px;color:rgba(0,240,96,0.6);margin-bottom:24px}}
+.divider{{border:none;border-top:1px solid rgba(0,240,96,0.15);margin:24px 0}}
+.footer{{font-size:11px;color:rgba(0,240,96,0.4);margin-top:40px;text-align:center}}
+</style>
+</head>
+<body>
+<h1>{title}</h1>
+<div class="meta">{duration_fmt} &middot; {language} &middot; {model} &middot; {date_str}{source_html}</div>
+<hr class="divider">
+{segments_html}
+<hr class="divider">
+<div class="footer">Generated by Augent &middot; {date_str}</div>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# Server startup
+# ---------------------------------------------------------------------------
+
+
 def _kill_port(port: int):
     """Kill any process using the specified port."""
     import signal
-    import subprocess
 
     try:
         result = subprocess.run(

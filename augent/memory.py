@@ -486,7 +486,8 @@ class TranscriptionMemory:
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.execute(
-                    "SELECT title, duration, created_at, model_size, md_path, file_path, source_url "
+                    "SELECT cache_key, title, duration, created_at, model_size, "
+                    "md_path, file_path, source_url, language "
                     "FROM transcriptions ORDER BY created_at DESC"
                 )
                 for row in cursor.fetchall():
@@ -503,6 +504,7 @@ class TranscriptionMemory:
 
                     entries.append(
                         {
+                            "cache_key": row["cache_key"],
                             "title": row["title"]
                             or os.path.basename(row["file_path"] or ""),
                             "duration": duration,
@@ -512,11 +514,43 @@ class TranscriptionMemory:
                             "md_path": row["md_path"] or "",
                             "file_path": row["file_path"] or "",
                             "source_url": row["source_url"] or "",
+                            "language": row["language"] or "",
                         }
                     )
         except Exception:
             pass
         return entries
+
+    def get_by_cache_key(self, cache_key: str) -> Optional[MemorizedTranscription]:
+        """Retrieve a transcription by its cache_key (audio_hash:model_size)."""
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.execute(
+                        "SELECT * FROM transcriptions WHERE cache_key = ?",
+                        (cache_key,),
+                    )
+                    row = cursor.fetchone()
+                    if row is None:
+                        return None
+                    return MemorizedTranscription(
+                        audio_hash=row["audio_hash"],
+                        model_size=row["model_size"],
+                        language=row["language"],
+                        duration=row["duration"],
+                        text=row["text"],
+                        words=json.loads(row["words"]),
+                        segments=json.loads(row["segments"]),
+                        created_at=row["created_at"],
+                        file_path=row["file_path"],
+                        title=row["title"] if "title" in row.keys() else "",
+                        source_url=(
+                            row["source_url"] if "source_url" in row.keys() else ""
+                        ),
+                    )
+        except Exception:
+            return None
 
     # --- Embeddings memory methods ---
 
