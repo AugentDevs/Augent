@@ -174,7 +174,7 @@ html, body {
 }
 
 label { font-size:13px; font-weight:600; display:block; margin-bottom:6px; }
-.hint { font-size:11px; color:var(--green-dim); margin-top:4px; }
+.hint { font-size:11px; color:var(--green); margin-top:4px; }
 
 input[type="text"], select {
     width: 100%;
@@ -219,7 +219,7 @@ select option { background:var(--black); color:var(--green); }
 }
 .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
 .upload-zone .icon { font-size:28px; margin-bottom:8px; }
-.upload-zone .label { font-size:13px; color:var(--green-dim); }
+.upload-zone .label { font-size:13px; color:var(--green); }
 .upload-zone.has-file { border-style:solid; border-color:var(--green-border-hover); }
 .upload-zone.has-file .label { color:var(--green); font-weight:500; }
 
@@ -232,7 +232,7 @@ select option { background:var(--black); color:var(--green); }
 .url-section .or-divider {
     text-align: center;
     font-size: 11px;
-    color: var(--green-hint);
+    color: var(--green);
     padding: 4px 0;
 }
 
@@ -241,7 +241,7 @@ select option { background:var(--black); color:var(--green); }
 .waveform-wrap.visible { display:block; }
 #waveform { width:100%; height:48px; }
 .wave-controls { display:flex; align-items:center; gap:10px; margin-top:6px; padding:0 2px; }
-.wave-time { font-family:var(--mono); font-size:11px; color:var(--green-dim); }
+.wave-time { font-family:var(--mono); font-size:11px; color:var(--green); }
 .play-btn {
     background:none; border:1px solid var(--green-border); color:var(--green);
     width:28px; height:28px; border-radius:50%; cursor:pointer;
@@ -262,7 +262,7 @@ select option { background:var(--black); color:var(--green); }
 .search-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
 
 .tips {
-    font-size:12px; color:var(--green-dim); line-height:1.6;
+    font-size:12px; color:var(--green); line-height:1.6;
     border-top:1px solid var(--green-border); padding-top:12px; margin-top:auto;
 }
 .tips strong { color:var(--green); }
@@ -647,6 +647,22 @@ let uploadedFile = null;
 let wavesurfer = null;
 let currentCacheKey = null;
 
+const AUGENT_BANNER =
+' █████╗ ██╗   ██╗ ██████╗ ███████╗███╗   ██╗████████╗\n' +
+'██╔══██╗██║   ██║██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝\n' +
+'███████║██║   ██║██║  ███╗█████╗  ██╔██╗ ██║   ██║   \n' +
+'██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \n' +
+'██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \n' +
+'╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \n' +
+'\n' +
+'      The Audio Layer for Agents\n' +
+'\n' +
+'─────────────────────────────────────────────\n' +
+'  Upload audio or paste a URL, then search.\n' +
+'─────────────────────────────────────────────\n';
+
+document.getElementById('logBox').textContent = AUGENT_BANNER;
+
 /* ============ VIEW SWITCHING ============ */
 function switchView(name, btn) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -752,7 +768,7 @@ async function startSearch() {
     const exportBar = document.getElementById('exportBar');
 
     btn.disabled = true;
-    logBox.textContent = '';
+    logBox.textContent = AUGENT_BANNER + '\n';
     resultsContent.innerHTML = '<p>Starting...</p>';
     jsonBox.textContent = '{}';
     exportBar.classList.remove('visible');
