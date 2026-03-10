@@ -9,11 +9,9 @@ New: export buttons (CSV, JSON, SRT).
 import asyncio
 import json
 import os
-import re
 import tempfile
 import time
 from pathlib import Path
-from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, File, Form, Query, UploadFile
@@ -803,9 +801,9 @@ async def index():
 
 @app.post("/api/search")
 async def search_audio(
-    file: UploadFile = File(...),
-    keywords: str = Form(""),
-    model_size: str = Form("tiny"),
+    file: UploadFile = File(...),  # noqa: B008
+    keywords: str = Form(""),  # noqa: B008
+    model_size: str = Form("tiny"),  # noqa: B008
 ):
     """Stream search results via SSE."""
 
@@ -1045,7 +1043,7 @@ async def export_results(
         )
 
     elif format == "markdown":
-        lines = [f"# Augent Search Results", f"**{results['total']} matches**", ""]
+        lines = ["# Augent Search Results", f"**{results['total']} matches**", ""]
         for kw, matches in grouped.items():
             lines.append(f"## {kw} ({len(matches)})")
             lines.append("")

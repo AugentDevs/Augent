@@ -143,6 +143,7 @@ ignore = [
 "augent/clips.py" = ["F401"]    # availability check (pydub)
 "augent/separator.py" = ["F401"]  # availability check (demucs)
 "augent/speakers.py" = ["F401"]   # lazy import (pyannote)
+"augent/web.py" = ["B008"]        # FastAPI File/Form defaults
 
 [tool.ruff.lint.isort]
 known-first-party = ["augent"]
