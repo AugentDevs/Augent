@@ -377,8 +377,8 @@ select option { background:var(--black); color:var(--green); }
     max-width: 500px;
 }
 .memory-toolbar .stats {
-    font-size: 12px;
-    color: var(--green-dim);
+    font-size: 14px;
+    color: var(--green);
     margin-left: auto;
 }
 
@@ -394,7 +394,7 @@ select option { background:var(--black); color:var(--green); }
     min-width: 380px;
     border-right: 1px solid var(--green-border);
     overflow-y: auto;
-    padding: 8px;
+    padding: 8px 8px 24px;
 }
 
 .memory-card {
@@ -470,8 +470,8 @@ select option { background:var(--black); color:var(--green); }
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--green-hint);
-    font-size: 14px;
+    color: var(--green-dim);
+    font-size: 16px;
 }
 
 .detail-header {
@@ -623,7 +623,7 @@ select option { background:var(--black); color:var(--green); }
 
         <div>
             <label>Keywords</label>
-            <textarea id="keywords" placeholder="wormhole, hourglass, CLI"></textarea>
+            <textarea id="keywords" placeholder="wormhole, open source, workflow"></textarea>
             <div class="hint">Comma-separated</div>
         </div>
 
