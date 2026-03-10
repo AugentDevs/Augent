@@ -106,6 +106,9 @@ Documentation = "https://github.com/AugentDevs/Augent#readme"
 Repository = "https://github.com/AugentDevs/Augent"
 Issues = "https://github.com/AugentDevs/Augent/issues"
 
+[tool.setuptools.package-data]
+augent = ["augentbanner.png", "favicon.png"]
+
 [tool.setuptools.packages.find]
 include = ["augent*"]
 

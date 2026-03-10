@@ -922,6 +922,16 @@ def handle_download_audio(arguments: dict) -> dict:
     # Register source URL so transcription can attach it to memory
     if output_file and os.path.exists(output_file):
         _downloaded_urls[os.path.abspath(output_file)] = url
+        # Persist YouTube URLs permanently (survives restarts)
+        if _extract_youtube_id(url):
+            try:
+                from .memory import get_transcription_memory
+
+                get_transcription_memory().save_source_url(
+                    os.path.abspath(output_file), url
+                )
+            except Exception:
+                pass
 
     return {
         "success": True,
@@ -960,7 +970,10 @@ def handle_search_audio(arguments: dict) -> dict:
     if not source_url:
         from .memory import get_transcription_memory
 
-        source_url = get_transcription_memory().get_source_url(audio_path, model_size)
+        mem = get_transcription_memory()
+        source_url = mem.get_source_url(audio_path, model_size)
+        if not source_url:
+            source_url = mem.get_source_url_by_hash(audio_path)
 
     # Add YouTube links to keyword matches
     if source_url and _extract_youtube_id(source_url):
@@ -1042,6 +1055,13 @@ def handle_transcribe_audio(arguments: dict) -> dict:
 
     # Attach source URL to memory if this file was downloaded via download_audio
     source_url = _downloaded_urls.get(os.path.abspath(original_audio_path), "")
+    if not source_url:
+        # Check persisted source URLs (survives restarts)
+        from .memory import get_transcription_memory
+
+        source_url = get_transcription_memory().get_source_url_by_hash(
+            original_audio_path
+        )
     if source_url:
         from .memory import get_transcription_memory
 
@@ -1146,7 +1166,10 @@ def handle_search_proximity(arguments: dict) -> dict:
     if not source_url:
         from .memory import get_transcription_memory
 
-        source_url = get_transcription_memory().get_source_url(audio_path, model_size)
+        mem = get_transcription_memory()
+        source_url = mem.get_source_url(audio_path, model_size)
+        if not source_url:
+            source_url = mem.get_source_url_by_hash(audio_path)
 
     if source_url and _extract_youtube_id(source_url):
         for m in matches:
@@ -1727,7 +1750,10 @@ def handle_deep_search(arguments: dict) -> dict:
     if not source_url:
         from .memory import get_transcription_memory
 
-        source_url = get_transcription_memory().get_source_url(audio_path, model_size)
+        mem = get_transcription_memory()
+        source_url = mem.get_source_url(audio_path, model_size)
+        if not source_url:
+            source_url = mem.get_source_url_by_hash(audio_path)
 
     if source_url and _extract_youtube_id(source_url):
         for r in result.get("results", []):

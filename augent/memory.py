@@ -112,6 +112,15 @@ class TranscriptionMemory:
                 ON embeddings(audio_hash)
             """)
 
+            # Source URL table — maps audio_hash to source URL (persists across sessions)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS source_urls (
+                    audio_hash TEXT PRIMARY KEY,
+                    source_url TEXT NOT NULL,
+                    created_at REAL
+                )
+            """)
+
             # Speaker diarization cache table
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS diarization (
@@ -175,7 +184,11 @@ class TranscriptionMemory:
         return sanitized[:200] if sanitized else "untitled"
 
     def _write_markdown(
-        self, title: str, transcription: Dict[str, Any], file_path: str
+        self,
+        title: str,
+        transcription: Dict[str, Any],
+        file_path: str,
+        source_url: str = "",
     ) -> Optional[Path]:
         """Write a markdown transcription file. Returns the path or None on error."""
         try:
@@ -192,12 +205,18 @@ class TranscriptionMemory:
                 f"**Source:** `{os.path.basename(file_path)}`  ",
                 f"**Duration:** {mins}:{secs:02d}  ",
                 f"**Language:** {transcription.get('language', 'unknown')}  ",
-                "",
-                "---",
-                "",
-                "## Transcription",
-                "",
             ]
+            if source_url:
+                lines.append(f"**URL:** {source_url}  ")
+            lines.extend(
+                [
+                    "",
+                    "---",
+                    "",
+                    "## Transcription",
+                    "",
+                ]
+            )
 
             segments = transcription.get("segments", [])
             for seg in segments:
@@ -283,7 +302,7 @@ class TranscriptionMemory:
             title = self._title_from_path(file_path)
 
             # Write markdown file
-            md_path = self._write_markdown(title, transcription, file_path)
+            md_path = self._write_markdown(title, transcription, file_path, source_url)
 
             with self._lock:
                 with sqlite3.connect(self.db_path) as conn:
@@ -348,6 +367,45 @@ class TranscriptionMemory:
         except Exception:
             return ""
 
+    def save_source_url(self, file_path: str, source_url: str) -> None:
+        """Persist a source URL for an audio file (by hash). Survives restarts."""
+        if not source_url:
+            return
+        try:
+            audio_hash = self.hash_audio_file(file_path)
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.execute(
+                        """INSERT OR REPLACE INTO source_urls
+                           (audio_hash, source_url, created_at)
+                           VALUES (?, ?, ?)""",
+                        (audio_hash, source_url, time.time()),
+                    )
+                    conn.commit()
+                    # Also backfill any existing transcriptions of this file
+                    conn.execute(
+                        """UPDATE transcriptions SET source_url = ?
+                           WHERE audio_hash = ? AND (source_url IS NULL OR source_url = '')""",
+                        (source_url, audio_hash),
+                    )
+                    conn.commit()
+        except Exception:
+            pass
+
+    def get_source_url_by_hash(self, file_path: str) -> str:
+        """Look up a persisted source URL by audio file hash. No model_size needed."""
+        try:
+            audio_hash = self.hash_audio_file(file_path)
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute(
+                    "SELECT source_url FROM source_urls WHERE audio_hash = ?",
+                    (audio_hash,),
+                )
+                row = cursor.fetchone()
+                return row[0] if row and row[0] else ""
+        except Exception:
+            return ""
+
     def clear(self) -> int:
         """
         Clear all stored transcriptions and markdown files.
@@ -369,6 +427,7 @@ class TranscriptionMemory:
                 conn.execute("DELETE FROM transcriptions")
                 conn.execute("DELETE FROM embeddings")
                 conn.execute("DELETE FROM diarization")
+                conn.execute("DELETE FROM source_urls")
                 conn.commit()
 
             # Delete markdown files outside the DB transaction
@@ -551,6 +610,44 @@ class TranscriptionMemory:
                     )
         except Exception:
             return None
+
+    def delete_by_cache_key(self, cache_key: str) -> bool:
+        """Delete a single transcription by cache_key. Returns True if deleted."""
+        try:
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    # Get md_path before deleting
+                    cursor = conn.execute(
+                        "SELECT md_path FROM transcriptions WHERE cache_key = ?",
+                        (cache_key,),
+                    )
+                    row = cursor.fetchone()
+                    if not row:
+                        return False
+
+                    md_path = row[0] if row[0] else ""
+
+                    conn.execute(
+                        "DELETE FROM transcriptions WHERE cache_key = ?",
+                        (cache_key,),
+                    )
+                    conn.execute(
+                        "DELETE FROM embeddings WHERE cache_key = ?",
+                        (cache_key,),
+                    )
+                    conn.commit()
+
+                # Delete markdown file outside transaction
+                if md_path:
+                    try:
+                        if os.path.exists(md_path):
+                            os.remove(md_path)
+                    except OSError:
+                        pass
+
+                return True
+        except Exception:
+            return False
 
     # --- Embeddings memory methods ---
 

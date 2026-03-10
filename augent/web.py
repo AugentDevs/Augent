@@ -77,7 +77,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Augent</title>
+<title>Augent Web UI</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAMZlWElmTU0AKgAAAAgABgESAAMAAAABAAEAAAEaAAUAAAABAAAAVgEbAAUAAAABAAAAXgEoAAMAAAABAAIAAAExAAIAAAAVAAAAZodpAAQAAAABAAAAfAAAAAAAAABIAAAAAQAAAEgAAAABUGl4ZWxtYXRvciBQcm8gMy43LjEAAAAEkAQAAgAAABQAAACyoAEAAwAAAAEAAQAAoAIABAAAAAEAAAAgoAMABAAAAAEAAAAgAAAAADIwMjY6MDM6MTAgMDg6NTI6NDIAVmGTLAAAAAlwSFlzAAALEwAACxMBAJqcGAAAA7BpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDYuMC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iPgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+MzI8L2V4aWY6UGl4ZWxZRGltZW5zaW9uPgogICAgICAgICA8ZXhpZjpQaXhlbFhEaW1lbnNpb24+MzI8L2V4aWY6UGl4ZWxYRGltZW5zaW9uPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgUHJvIDMuNy4xPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgICAgIDx4bXA6Q3JlYXRlRGF0ZT4yMDI2LTAzLTEwVDA4OjUyOjQyKzAxOjAwPC94bXA6Q3JlYXRlRGF0ZT4KICAgICAgICAgPHhtcDpNZXRhZGF0YURhdGU+MjAyNi0wMy0xMFQwODo1MzozMCswMTowMDwveG1wOk1ldGFkYXRhRGF0ZT4KICAgICAgICAgPHRpZmY6WFJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8dGlmZjpZUmVzb2x1dGlvbj43MjAwMDAvMTAwMDA8L3RpZmY6WVJlc29sdXRpb24+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgplFKxaAAAFNklEQVRYCZXXX6zXdR3HcU4hFmqIIUYqoDuGWcLcnDVWcINtbW7Oqy5zzZvSG7utNp1zttbWRd20tnTTuVYX6a3h3CCcWs7WEBQLgY6AgiIVVqIcn4+z3/d0EA7nx3t77vP9fX7fz+f9ev/5fH7nTCz6mE1PTy9takV8JjxfGWtH4+WNn45PxkR8avT8YeN/g30Q/4w3Yyr2j57/03gsjk5MTJxsnDGbzFiOL+7hm/Gl4PjaWB6H4mCwT8SFQYRxcdhjOmz6v3hv9GzOO6tjWbwRB8I7W+P5hHwwV8AvmtwUR+IL8VxQ7flfsTveDxsTwrlMMHOyMETm+8tCMNb+Lewjmy/EV+PbCdjhxcE293BpSL1RKjfES8GR71fFBcHhELGRMO97b0lcHzeH9O+JO4IQmZC9q2IyZtJnXFQJLLgnKNUDb8WJuCL+ElJ5SciKzTgUwFCCHmdSzon5d4IYmTkVK0OfELw9flYGjswtgUWc3xlbghNNJyp18/lw6BVCzA82iPDe8eDk6tCkEIh5ZXssfp9zAf4/Az6wUTN+vcefhEXvho2pF81FoUxSqRyci1AZNODwPmdDw8ri/vhR7NF8jTM2m4FhYhgTckPP94V+EIGySKONOTJHGFHmREqcUZkOjsaljfrop0PUPc/avAK8kYh1DT+IjSGyw/F2cCxqzYihmY1EDGJ990SotxKeYecU4O1E6NgH48o4EiLWAxwNJeBoaE7ZkQXZ+k08nHPlOastKMCqRHD421DLVcHJsdEoE0rgnc+Gz4fiD/FQzpVqXhtLgNWJuK3hgfh7KAdH1hulXhacDAJl5+6c72w8p1E+rr3Qi8/EdaE3dPhcI0C0fgd2xK5Y0IbmWfDFXlD/A3FNqKku/0fsi6nwPVFfiaeKXmYWtLEz0IZVYXpPOz4bwy3IoT3+HU4GIeYcu7FsbAGj3VxMk+FkOAGcErNk9JmQk4k1N5adrwBN5rhtC8+uZaOrl3PHb32MbecrYHk7O263hGaTEfeCtLsxnYoTjm1ZOOvF0/en2dgC2tTmN4ZudydoYHMwp+lk4BtB4NOxoI0toJ0+N8IJuCGWhtoToub6QXn+GlsSvL0szHsD9s6MjSVgFP3XWrEx3IDSPxWcil4f+HVUHmwOvfDnOKdJ34KWAD+/T8bBcNlcG1eHugvCT7V7YF8Q9vnR+MOyQOy8tqCAnK9s9c9DZKvi8tgfxGhC6Vd7vwOrwzsvh57QK48kQqbOavMKGKV9Xau+G5tClByLaFm474dfQ8448R1Ra0J28Mt4PBHvNJ5h5xKg3veGzTjm5PrQeJy8F5pMBpRBFmRpecjOvnA8if91/CoRextPszMEFLmNvh+3h+Zyrd4auv2P8VZoPGaEfXw/zMvczfFKPB9+SY/G/YnY2jhrswJyTP2WELV0rY7DsTaIcLG4+aApHcOPl8BtqAwaFZOxJl4NPSI7gng0/GNycq4Af3ptDhnghMNjYVNipN6tJ+2cOPOeRS166dYX1socrJ8K64l1l+wOf119LwEvzRWwq0ncGH8K9/uGWByvxbuh7uatGy4iz6eCoKHbifH9qrguDsTeWBlfDCJ2JODHcwXc1eR34sVYH5OxLQ4FEaJz9m0qldZqQBkYIibg7XgjrPOZuC8HITtCeQUmAzvnCrDJTfGtUGPRXhHOvePke5vb4HiImAB7EKFERC6LFaEU3lEGjWuNeXfE73IuIzOLjbNWM6onx2tCtJy7ZmFzn6UShHqfEMJETSRnesjdQcTRmIrXc6x/Zu0jpHyg2acKr1sAAAAASUVORK5CYII=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/wavesurfer.js@7"></script>
@@ -176,7 +177,7 @@ html, body {
 label { font-size:13px; font-weight:600; display:block; margin-bottom:6px; }
 .hint { font-size:11px; color:var(--green); margin-top:4px; }
 
-input[type="text"], select {
+input[type="text"], textarea, select {
     width: 100%;
     background: var(--black);
     color: var(--green);
@@ -189,8 +190,16 @@ input[type="text"], select {
     caret-color: var(--green);
     transition: border-color 0.15s ease-out;
 }
-input[type="text"]::placeholder { color: var(--green-hint); }
-input[type="text"]:focus, select:focus { border-color: var(--green-border-hover); }
+textarea {
+    min-height: 44px;
+    height: 44px;
+    resize: vertical;
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+input[type="text"]::placeholder, textarea::placeholder { color: var(--green-hint); }
+input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--green-border-hover); }
 
 select {
     cursor: pointer;
@@ -225,15 +234,7 @@ select option { background:var(--black); color:var(--green); }
 
 /* URL input section */
 .url-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.url-section .or-divider {
-    text-align: center;
-    font-size: 11px;
-    color: var(--green);
-    padding: 4px 0;
+    margin-top: 12px;
 }
 
 /* WaveSurfer */
@@ -262,10 +263,11 @@ select option { background:var(--black); color:var(--green); }
 .search-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
 
 .tips {
-    font-size:12px; color:var(--green); line-height:1.6;
+    font-size:11px; color:var(--green); line-height:1.7;
     border-top:1px solid var(--green-border); padding-top:12px; margin-top:auto;
 }
-.tips strong { color:var(--green); }
+.tips strong { color:var(--green); font-size:11px; }
+.tips .tip-line { display:block; padding-left:10px; text-indent:-10px; }
 
 /* Tabs */
 .tabs { display:flex; gap:0; }
@@ -280,8 +282,25 @@ select option { background:var(--black); color:var(--green); }
 /* Log */
 .log-box {
     flex:1; background:var(--black); border:1px solid var(--green-border);
-    border-radius:12px; padding:12px; font-family:var(--mono); font-size:13px;
-    line-height:1.5; overflow-y:auto; white-space:pre-wrap; word-break:break-word; min-height:0;
+    border-radius:12px; font-family:var(--mono); font-size:13px;
+    line-height:1.5; overflow-y:auto; min-height:0; color:var(--green);
+    display:flex; flex-direction:column;
+}
+.log-banner {
+    flex-shrink:0; padding:20px 16px 12px 16px;
+    pointer-events:none; user-select:none; -webkit-user-select:none;
+}
+.log-banner-img {
+    display:block; width:320px; height:auto;
+    image-rendering: -webkit-optimize-contrast;
+    pointer-events:none; -webkit-user-drag:none;
+}
+.log-tagline {
+    font-family: var(--sans); font-size:11px; font-weight:600;
+    letter-spacing:1px; color:var(--green-dim); margin-top:8px;
+}
+.log-text {
+    flex:1; padding:0 16px 12px; white-space:pre-wrap; word-break:break-word;
 }
 
 .tab-panel { display:none; flex:1; min-height:0; overflow-y:auto; }
@@ -297,10 +316,30 @@ select option { background:var(--black); color:var(--green); }
 .results-content table { width:100%; border-collapse:collapse; }
 .results-content th { text-align:left; padding:8px; border-bottom:1px solid var(--green-border-hover); font-size:12px; font-weight:600; }
 .results-content td { padding:8px; border-bottom:1px solid var(--green-border); font-size:13px; }
-.results-content tr { transition: border-color 0.15s, transform 0.15s; }
-.results-content tr:hover { border-left:1px solid var(--green); transform:translateY(-0.5px); }
+.results-content tbody tr { transition: transform 0.12s ease-out; }
+.results-content tbody tr:hover { transform:translateY(-1px); }
 .results-content td:first-child { font-family:var(--mono); white-space:nowrap; width:70px; }
 .results-content .match-word { color:#FFFFFF; font-weight:700; }
+.results-content a { color:var(--green); text-decoration:none; }
+.results-content a:hover { text-decoration:underline; }
+.yt-hint {
+    font-size:12px; color:var(--green-dim); margin-bottom:12px; padding:10px 12px;
+    border:1px solid var(--green-border); border-radius:8px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.yt-hint input {
+    flex:1; min-width:200px; background:var(--black); color:var(--green);
+    border:1px solid var(--green-border); border-radius:6px; padding:6px 10px;
+    font-family:var(--sans); font-size:12px; outline:none;
+}
+.yt-hint input::placeholder { color:var(--green-hint); }
+.yt-hint input:focus { border-color:var(--green-border-hover); }
+.yt-hint button {
+    background:none; border:1px solid var(--green-border); color:var(--green);
+    padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;
+    font-family:var(--sans); font-weight:600; transition:background 0.15s;
+}
+.yt-hint button:hover { background:var(--green-hover); }
 
 .json-box {
     flex:1; background:var(--black); border:1px solid var(--green-border);
@@ -398,6 +437,16 @@ select option { background:var(--black); color:var(--green); }
     font-weight: 700;
     font-size: 10px;
 }
+.memory-card { position: relative; }
+.memory-card .card-delete {
+    position:absolute; top:12px; right:12px;
+    background:none; border:none; cursor:pointer;
+    padding:4px; line-height:1; opacity:0.5; transition:opacity 0.15s;
+    display:flex; align-items:center; justify-content:center;
+}
+.memory-card:hover .card-delete { opacity:0.7; }
+.memory-card .card-delete:hover { opacity:1; }
+.memory-card .card-delete svg { width:14px; height:14px; }
 
 .memory-empty {
     padding: 40px 20px;
@@ -556,10 +605,12 @@ select option { background:var(--black); color:var(--green); }
                 <div class="icon">&#x2B06;</div>
                 <div class="label" id="uploadLabel">Drop audio file or click to upload</div>
             </div>
-            <div class="url-section">
-                <div class="or-divider">or paste a URL</div>
-                <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
-            </div>
+        </div>
+
+        <div>
+            <label>URL</label>
+            <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
+            <div class="hint">Or paste a video/audio URL instead of uploading</div>
             <div class="waveform-wrap" id="waveformWrap">
                 <div id="waveform"></div>
                 <div class="wave-controls">
@@ -571,7 +622,7 @@ select option { background:var(--black); color:var(--green); }
 
         <div>
             <label>Keywords</label>
-            <input type="text" id="keywords" placeholder="wormhole, hourglass, CLI">
+            <textarea id="keywords" placeholder="wormhole, hourglass, CLI"></textarea>
             <div class="hint">Comma-separated</div>
         </div>
 
@@ -590,14 +641,20 @@ select option { background:var(--black); color:var(--green); }
         <button class="search-btn" id="searchBtn" onclick="startSearch()">SEARCH</button>
 
         <div class="tips">
-            <strong>Tips:</strong><br>
-            &#183; Paste a YouTube or video URL to download audio directly<br>
-            &#183; Results stored in memory for instant re-search
+            <strong>Tips:</strong>
+            <span class="tip-line">&#183; Paste a YouTube or video URL to download audio directly</span>
+            <span class="tip-line">&#183; Results stored in memory for instant re-search</span>
         </div>
     </div>
 
     <div class="main">
-        <div class="log-box" id="logBox"></div>
+        <div class="log-box">
+            <div class="log-banner">
+                <img src="/static/banner.png" alt="AUGENT" class="log-banner-img">
+                <div class="log-tagline">Web UI v{{AUGENT_VERSION}}</div>
+            </div>
+            <div class="log-text" id="logBox"></div>
+        </div>
 
         <div class="export-bar" id="exportBar">
             <span>Export:</span>
@@ -646,22 +703,8 @@ select option { background:var(--black); color:var(--green); }
 let uploadedFile = null;
 let wavesurfer = null;
 let currentCacheKey = null;
-
-const AUGENT_BANNER =
-' █████╗ ██╗   ██╗ ██████╗ ███████╗███╗   ██╗████████╗\n' +
-'██╔══██╗██║   ██║██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝\n' +
-'███████║██║   ██║██║  ███╗█████╗  ██╔██╗ ██║   ██║   \n' +
-'██╔══██║██║   ██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   \n' +
-'██║  ██║╚██████╔╝╚██████╔╝███████╗██║ ╚████║   ██║   \n' +
-'╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   \n' +
-'\n' +
-'      The Audio Layer for Agents\n' +
-'\n' +
-'─────────────────────────────────────────────\n' +
-'  Upload audio or paste a URL, then search.\n' +
-'─────────────────────────────────────────────\n';
-
-document.getElementById('logBox').textContent = AUGENT_BANNER;
+let lastGrouped = null;
+let lastSourceUrl = '';
 
 /* ============ VIEW SWITCHING ============ */
 function switchView(name, btn) {
@@ -768,7 +811,7 @@ async function startSearch() {
     const exportBar = document.getElementById('exportBar');
 
     btn.disabled = true;
-    logBox.textContent = AUGENT_BANNER + '\n';
+    logBox.textContent = '';
     resultsContent.innerHTML = '<p>Starting...</p>';
     jsonBox.textContent = '{}';
     exportBar.classList.remove('visible');
@@ -798,7 +841,9 @@ async function startSearch() {
                         if (data.type === 'log') appendLog(data.text);
                         else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                         else if (data.type === 'results') {
-                            renderResults(data.grouped, data.total);
+                            lastGrouped = data.grouped;
+                            lastSourceUrl = data.source_url || '';
+                            renderResults(data.grouped, data.total, lastSourceUrl);
                             jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
                             exportBar.classList.add('visible');
                         }
@@ -839,7 +884,9 @@ async function startSearch() {
                     if (data.type === 'log') appendLog(data.text);
                     else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                     else if (data.type === 'results') {
-                        renderResults(data.grouped, data.total);
+                        lastGrouped = data.grouped;
+                        lastSourceUrl = data.source_url || '';
+                        renderResults(data.grouped, data.total, lastSourceUrl);
                         jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
                         exportBar.classList.add('visible');
                     }
@@ -858,29 +905,62 @@ async function startSearch() {
 function appendLog(text) {
     const logBox = document.getElementById('logBox');
     logBox.textContent += text + '\n';
-    logBox.scrollTop = logBox.scrollHeight;
+    logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
 }
 
-function renderResults(grouped, total) {
+function renderResults(grouped, total, sourceUrl) {
     const el = document.getElementById('resultsContent');
     if (total === 0) { el.innerHTML = '<h3>No matches found.</h3>'; return; }
+    const hasYt = sourceUrl && sourceUrl.includes('youtu');
     let html = '<h3>Found ' + total + ' matches</h3>';
+    if (!hasYt && total > 0) {
+        html += '<div class="yt-hint">' +
+            '<span>Know the YouTube URL?</span>' +
+            '<input type="text" id="ytLinkInput" placeholder="https://youtube.com/watch?v=...">' +
+            '<button onclick="relinkTimestamps()">Link timestamps</button>' +
+            '</div>';
+    }
     for (const [kw, matches] of Object.entries(grouped)) {
         html += '<h4>' + escHtml(kw) + ' (' + matches.length + ')</h4>';
-        html += '<table><tr><th>Time</th><th>Context</th></tr>';
+        html += '<table><thead><tr><th>Time</th><th>Context</th></tr></thead><tbody>';
         for (const m of matches) {
             const snippet = highlightKeyword(escHtml(m.snippet), kw);
-            html += '<tr><td>' + escHtml(m.timestamp) + '</td><td>' + snippet + '</td></tr>';
+            let tsCell;
+            if (m.youtube_link) {
+                tsCell = '<a href="' + escHtml(m.youtube_link) + '" target="_blank" rel="noopener">' + escHtml(m.timestamp) + '</a>';
+            } else {
+                tsCell = escHtml(m.timestamp);
+            }
+            html += '<tr><td>' + tsCell + '</td><td>' + snippet + '</td></tr>';
         }
-        html += '</table>';
+        html += '</tbody></table>';
     }
     el.innerHTML = html;
+}
+
+function relinkTimestamps() {
+    const input = document.getElementById('ytLinkInput');
+    if (!input) return;
+    const url = input.value.trim();
+    if (!url) { input.focus(); return; }
+    const re = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(re);
+    if (!match) { alert('Not a valid YouTube URL'); input.focus(); return; }
+    const videoId = match[1];
+    for (const [kw, matches] of Object.entries(lastGrouped)) {
+        for (const m of matches) {
+            m.youtube_link = 'https://youtube.com/watch?v=' + videoId + '&t=' + Math.floor(m.timestamp_seconds);
+        }
+    }
+    lastSourceUrl = url;
+    renderResults(lastGrouped, Object.values(lastGrouped).reduce((a, b) => a + b.length, 0), url);
+    appendLog('  [info] YouTube timestamps linked');
 }
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function highlightKeyword(snippet, keyword) {
-    const clean = snippet.replace(/\.\.\./g, '').trim();
+    const clean = snippet.replace(/\.\.\./g, '').replace(/\*\*/g, '').trim();
     const re = new RegExp('(' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
     return clean.replace(re, '<span class="match-word">$1</span>');
 }
@@ -920,6 +1000,7 @@ async function loadMemoryList() {
             const isYt = item.source_url && item.source_url.includes('youtu');
             const ytBadge = isYt ? '<span class="yt-icon">YT</span>' : '';
             html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
+            html += '<button class="card-delete" onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
             html += '<div class="card-title">' + escHtml(item.title) + '</div>';
             html += '<div class="card-meta">';
             html += '<span>' + escHtml(item.duration_formatted) + '</span>';
@@ -1034,9 +1115,42 @@ function shareTranscript() {
     window.location.href = '/api/memory/share/' + encodeURIComponent(currentCacheKey);
 }
 
-function showInFinder() {
+async function showInFinder() {
     if (!currentCacheKey) return;
-    fetch('/api/memory/reveal/' + encodeURIComponent(currentCacheKey), {method: 'POST'});
+    try {
+        const resp = await fetch('/api/memory/reveal/' + encodeURIComponent(currentCacheKey), {method: 'POST'});
+        if (!resp.ok) {
+            const data = await resp.json();
+            alert(data.error || 'Could not reveal file');
+        }
+    } catch (err) {
+        alert('Could not connect to server');
+    }
+}
+
+async function deleteMemory(cacheKey, btnEl) {
+    if (!confirm('Delete this transcription from memory? This cannot be undone.')) return;
+    try {
+        const resp = await fetch('/api/memory/' + encodeURIComponent(cacheKey), {method: 'DELETE'});
+        if (resp.ok) {
+            const card = btnEl.closest('.memory-card');
+            if (card) card.remove();
+            // Clear detail panel if we just deleted the active one
+            if (currentCacheKey === cacheKey) {
+                currentCacheKey = null;
+                document.getElementById('memoryDetailPanel').innerHTML =
+                    '<div class="detail-placeholder">Select a transcription to view</div>';
+            }
+            // Update stats count
+            const remaining = document.querySelectorAll('.memory-card').length;
+            document.getElementById('memoryStats').textContent =
+                remaining + ' transcription' + (remaining !== 1 ? 's' : '') + ' in memory';
+        } else {
+            alert('Failed to delete');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
 }
 </script>
 </body>
@@ -1048,9 +1162,18 @@ function showInFinder() {
 # ---------------------------------------------------------------------------
 
 
+@app.get("/static/banner.png")
+async def serve_banner():
+    banner_path = os.path.join(os.path.dirname(__file__), "augentbanner.png")
+    with open(banner_path, "rb") as f:
+        return Response(content=f.read(), media_type="image/png")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTML_PAGE
+    from . import __version__
+
+    return HTML_PAGE.replace("{{AUGENT_VERSION}}", __version__)
 
 
 @app.post("/api/search")
@@ -1064,13 +1187,12 @@ async def search_audio(
     async def event_stream():
         global _latest_results
 
-        suffix = Path(file.filename).suffix or ".tmp"
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=suffix, dir="/tmp"
-        ) as tmp:
-            content = await file.read()
+        # Use original filename so memory stores a readable title
+        safe_name = Path(file.filename).name if file.filename else "upload.tmp"
+        tmp_path = os.path.join("/tmp", safe_name)
+        content = await file.read()
+        with open(tmp_path, "wb") as tmp:
             tmp.write(content)
-            tmp_path = tmp.name
 
         try:
             keyword_list = [k.strip().lower() for k in keywords.split(",") if k.strip()]
@@ -1197,7 +1319,7 @@ async def search_audio(
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
 
-            yield send("results", grouped=grouped, total=len(matches))
+            yield send("results", grouped=grouped, total=len(matches), source_url="")
 
         finally:
             try:
@@ -1367,6 +1489,9 @@ async def download_and_search(request: Request):
                     },
                     source_url=url,
                 )
+                # Persist YouTube URL by hash (survives restarts)
+                if _extract_youtube_id(url):
+                    memory.save_source_url(audio_path, url)
 
             # Search
             yield send("log", text="")
@@ -1381,13 +1506,15 @@ async def download_and_search(request: Request):
                 kw = m.keyword
                 if kw not in grouped:
                     grouped[kw] = []
-                grouped[kw].append(
-                    {
-                        "timestamp": m.timestamp,
-                        "timestamp_seconds": m.timestamp_seconds,
-                        "snippet": m.snippet,
-                    }
-                )
+                entry = {
+                    "timestamp": m.timestamp,
+                    "timestamp_seconds": m.timestamp_seconds,
+                    "snippet": m.snippet,
+                }
+                yt_link = _youtube_timestamp_link(url, m.timestamp_seconds)
+                if yt_link:
+                    entry["youtube_link"] = yt_link
+                grouped[kw].append(entry)
 
             yield send("log", text="")
             yield send("log", text="─" * 45)
@@ -1399,7 +1526,12 @@ async def download_and_search(request: Request):
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
 
-            yield send("results", grouped=grouped, total=len(matches))
+            yield send(
+                "results",
+                grouped=grouped,
+                total=len(matches),
+                source_url=url,
+            )
 
         except Exception as e:
             yield send("log", text=f"  [error] {str(e)}")
@@ -1630,6 +1762,16 @@ async def api_memory_search(
     )
 
 
+@app.delete("/api/memory/{cache_key:path}")
+async def api_memory_delete(cache_key: str):
+    """Delete a single transcription from memory."""
+    memory = get_transcription_memory()
+    deleted = memory.delete_by_cache_key(cache_key)
+    if not deleted:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return JSONResponse({"ok": True})
+
+
 @app.post("/api/memory/reveal/{cache_key:path}")
 async def api_memory_reveal(cache_key: str):
     """Reveal file in Finder (macOS) or file manager."""
@@ -1638,23 +1780,50 @@ async def api_memory_reveal(cache_key: str):
     memory = get_transcription_memory()
     entry = memory.get_by_cache_key(cache_key)
     if not entry or not entry.file_path:
-        return JSONResponse({"error": "File not found"}, status_code=404)
+        return JSONResponse({"error": "No file path stored"}, status_code=404)
 
-    file_path = entry.file_path
+    # Resolve to absolute path
+    file_path = os.path.realpath(os.path.expanduser(entry.file_path))
+
     if not os.path.exists(file_path):
+        # File deleted/moved — try to open its parent directory instead
+        parent = os.path.dirname(file_path)
+        if os.path.isdir(parent):
+            try:
+                if platform.system() == "Darwin":
+                    subprocess.Popen(["open", parent])
+                elif platform.system() == "Linux":
+                    subprocess.Popen(["xdg-open", parent])
+                else:
+                    subprocess.Popen(["explorer", parent])
+            except Exception:
+                pass
+            return JSONResponse(
+                {"error": f"File no longer exists — opened folder instead: {parent}"},
+                status_code=404,
+            )
         return JSONResponse(
             {"error": f"File no longer exists: {file_path}"}, status_code=404
         )
 
     try:
         if platform.system() == "Darwin":
-            subprocess.Popen(["open", "-R", file_path])
+            # AppleScript is more reliable than open -R for special characters
+            subprocess.Popen(
+                [
+                    "osascript",
+                    "-e",
+                    f'tell application "Finder" to reveal POSIX file "{file_path}"',
+                    "-e",
+                    'tell application "Finder" to activate',
+                ]
+            )
         elif platform.system() == "Linux":
             subprocess.Popen(["xdg-open", os.path.dirname(file_path)])
         else:
             subprocess.Popen(["explorer", "/select,", file_path])
-    except Exception:
-        pass
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
     return JSONResponse({"ok": True, "file_path": file_path})
 
