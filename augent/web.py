@@ -232,6 +232,18 @@ select option { background:var(--black); color:var(--green); }
 .upload-zone .label { font-size:13px; color:var(--green); }
 .upload-zone.has-file { border-style:solid; border-color:var(--green-border-hover); }
 .upload-zone.has-file .label { color:var(--green); font-weight:500; }
+.clear-btn {
+    position:absolute; top:6px; right:6px; z-index:2;
+    width:22px; height:22px; border-radius:50%;
+    background:rgba(0,240,96,0.12); border:1px solid var(--green-border);
+    color:var(--green); font-size:14px; line-height:20px;
+    text-align:center; cursor:pointer; display:none; padding:0;
+}
+.clear-btn:hover { background:rgba(0,240,96,0.25); }
+.upload-zone.has-file .clear-btn { display:block; }
+.url-wrap { position:relative; }
+.url-wrap .clear-btn { top:50%; right:8px; transform:translateY(-50%); display:none; }
+.url-wrap.has-url .clear-btn { display:block; }
 
 /* URL input section */
 .url-section {
@@ -675,6 +687,7 @@ select option { background:var(--black); color:var(--green); }
             <label>Audio File</label>
             <div class="upload-zone" id="uploadZone">
                 <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.ogg,.flac,.m4a,.webm,.mp4,.aac,.wma,.opus">
+                <button class="clear-btn" id="clearFileBtn" onclick="event.stopPropagation(); clearFile()" title="Clear file">&times;</button>
                 <div class="icon">&#x2B06;</div>
                 <div class="label" id="uploadLabel">Drop audio file or click to upload</div>
             </div>
@@ -682,7 +695,10 @@ select option { background:var(--black); color:var(--green); }
 
         <div>
             <label>URL</label>
-            <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
+            <div class="url-wrap" id="urlWrap">
+                <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
+                <button class="clear-btn" onclick="clearUrl()" title="Clear URL">&times;</button>
+            </div>
             <div class="hint">Or paste a video/audio URL instead of uploading</div>
             <div class="waveform-wrap" id="waveformWrap">
                 <div id="waveform"></div>
@@ -841,7 +857,57 @@ function setFile(file) {
     uploadLabel.textContent = file.name;
     uploadZone.classList.add('has-file');
     document.getElementById('audioUrl').value = '';
+    document.getElementById('urlWrap').classList.remove('has-url');
     loadWaveform(URL.createObjectURL(file));
+    saveState();
+}
+
+function clearFile() {
+    uploadedFile = null;
+    fileInput.value = '';
+    uploadLabel.textContent = 'Drop audio file or click to upload';
+    uploadZone.classList.remove('has-file');
+    if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; }
+    waveformWrap.classList.remove('visible');
+    saveState();
+}
+
+function clearUrl() {
+    document.getElementById('audioUrl').value = '';
+    document.getElementById('urlWrap').classList.remove('has-url');
+    if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; }
+    waveformWrap.classList.remove('visible');
+    saveState();
+}
+
+// Track URL input changes for clear button visibility
+document.getElementById('audioUrl').addEventListener('input', function() {
+    document.getElementById('urlWrap').classList.toggle('has-url', !!this.value.trim());
+    saveState();
+});
+
+function searchFromMemory(cardEl) {
+    const sourceUrl = cardEl.dataset.sourceUrl;
+    const filePath = cardEl.dataset.filePath;
+    const title = cardEl.dataset.title;
+
+    // Switch to search view
+    switchView('search', document.querySelector('.nav-btn'));
+
+    // Clear existing file
+    clearFile();
+
+    if (sourceUrl) {
+        document.getElementById('audioUrl').value = sourceUrl;
+        document.getElementById('urlWrap').classList.add('has-url');
+    } else if (filePath) {
+        document.getElementById('audioUrl').value = 'file://' + filePath;
+        document.getElementById('urlWrap').classList.add('has-url');
+    }
+
+    // Focus keywords
+    document.getElementById('keywords').focus();
+    saveState();
 }
 
 function loadWaveform(url) {
@@ -941,7 +1007,7 @@ async function startSearch() {
                     if (line.startsWith('data: ')) {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === 'log') appendLog(data.text);
-                        else if (data.type === 'banner') appendBanner();
+                        else if (data.type === 'box') appendBox(data.lines, data.banner || false);
                         else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                         else if (data.type === 'progress') showProgress(data.pct, data.label);
                         else if (data.type === 'spinner') showSpinner(data.label);
@@ -991,7 +1057,7 @@ async function startSearch() {
                 if (line.startsWith('data: ')) {
                     const data = JSON.parse(line.slice(6));
                     if (data.type === 'log') appendLog(data.text);
-                    else if (data.type === 'banner') appendBanner();
+                    else if (data.type === 'box') appendBox(data.lines, data.banner || false);
                     else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                     else if (data.type === 'progress') showProgress(data.pct, data.label);
                     else if (data.type === 'spinner') showSpinner(data.label);
@@ -1023,13 +1089,25 @@ function appendLog(text) {
     logBox.appendChild(line);
     logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
 }
-function appendBanner() {
+function appendBox(lines, showBanner) {
     const logBox = document.getElementById('logBox');
-    const img = document.createElement('img');
-    img.src = '/static/banner.png';
-    img.alt = 'AUGENT';
-    img.style.cssText = 'display:block;width:200px;height:auto;margin:12px 0 4px;image-rendering:-webkit-optimize-contrast;pointer-events:none;-webkit-user-drag:none;';
-    logBox.appendChild(img);
+    const container = document.createElement('div');
+    container.style.cssText = 'margin:8px 0;';
+    if (showBanner) {
+        const bannerWrap = document.createElement('div');
+        bannerWrap.style.cssText = 'text-align:center;margin-bottom:6px;';
+        const img = document.createElement('img');
+        img.src = '/static/banner.png';
+        img.alt = 'AUGENT';
+        img.style.cssText = 'width:180px;height:auto;image-rendering:-webkit-optimize-contrast;pointer-events:none;-webkit-user-drag:none;';
+        bannerWrap.appendChild(img);
+        container.appendChild(bannerWrap);
+    }
+    const box = document.createElement('div');
+    box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;display:inline-block;min-width:20ch;';
+    box.textContent = lines.join('\n');
+    container.appendChild(box);
+    logBox.appendChild(container);
     logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
 }
 
@@ -1153,8 +1231,9 @@ async function loadMemoryList() {
         for (const item of items) {
             const isYt = item.source_url && item.source_url.includes('youtu');
             const ytBadge = isYt ? '<span class="yt-icon">YT</span>' : '';
-            html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
+            html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" data-source-url="' + escHtml(item.source_url || '') + '" data-file-path="' + escHtml(item.file_path || '') + '" data-title="' + escHtml(item.title) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
             html += '<div class="card-actions">';
+            html += '<button onclick="event.stopPropagation(); searchFromMemory(this.closest(\'.memory-card\'))" title="Search this audio"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>';
             html += '<button onclick="event.stopPropagation(); revealMemory(\'' + escHtml(item.cache_key) + '\')" title="Show in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
             html += '<button onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
             html += '</div>';
@@ -1313,6 +1392,38 @@ async function deleteMemory(cacheKey, btnEl) {
         alert('Error: ' + err.message);
     }
 }
+
+/* ============ STATE PERSISTENCE ============ */
+function saveState() {
+    try {
+        sessionStorage.setItem('augent_state', JSON.stringify({
+            keywords: document.getElementById('keywords').value,
+            audioUrl: document.getElementById('audioUrl').value,
+            model: document.getElementById('model').value,
+        }));
+    } catch(e) {}
+}
+
+function restoreState() {
+    try {
+        const raw = sessionStorage.getItem('augent_state');
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.keywords) document.getElementById('keywords').value = s.keywords;
+        if (s.audioUrl) {
+            document.getElementById('audioUrl').value = s.audioUrl;
+            document.getElementById('urlWrap').classList.toggle('has-url', !!s.audioUrl);
+        }
+        if (s.model) document.getElementById('model').value = s.model;
+    } catch(e) {}
+}
+
+// Save on input changes
+document.getElementById('keywords').addEventListener('input', saveState);
+document.getElementById('model').addEventListener('change', saveState);
+
+// Restore on page load
+restoreState();
 </script>
 </body>
 </html>"""
@@ -1390,11 +1501,12 @@ async def search_audio(
             def send(type_, **kwargs):
                 return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
 
-            yield send("log", text="─" * 45)
-            yield send("log", text=f"  [augent] file: {filename}")
-            yield send("log", text=f"  [augent] keywords: {', '.join(keyword_list)}")
-            yield send("log", text=f"  [augent] model: {model_size}")
-            yield send("log", text="─" * 45)
+
+            yield send("box", lines=[
+                f"[augent] file: {filename}",
+                f"[augent] keywords: {', '.join(keyword_list)}",
+                f"[augent] model: {model_size}",
+            ], banner=False)
             yield send("status", text="Starting...")
 
             memory = get_transcription_memory()
@@ -1509,12 +1621,10 @@ async def search_audio(
                 )
 
             yield send("log", text="")
-            yield send("banner")
-            yield send("log", text="─" * 45)
-            yield send("log", text=f"  [done] {len(matches)} matches found")
+            _lines = [f"[done] {len(matches)} matches found"]
             for kw in grouped:
-                yield send("log", text=f"         {kw}: {len(grouped[kw])}")
-            yield send("log", text="─" * 45)
+                _lines.append(f"       {kw}: {len(grouped[kw])}")
+            yield send("box", lines=_lines, banner=True)
 
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
@@ -1544,6 +1654,7 @@ async def download_and_search(request: Request):
         def send(type_, **kwargs):
             return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
 
+
         keyword_list = [k.strip().lower() for k in keywords_str.split(",") if k.strip()]
         if not keyword_list:
             yield send("log", text="No keywords provided")
@@ -1553,15 +1664,28 @@ async def download_and_search(request: Request):
             yield send("log", text="No URL provided")
             return
 
-        yield send("log", text="─" * 45)
-        yield send("log", text=f"  [augent] url: {url}")
-        yield send("log", text=f"  [augent] keywords: {', '.join(keyword_list)}")
-        yield send("log", text=f"  [augent] model: {model_size}")
-        yield send("log", text="─" * 45)
+        # Handle file:// paths — search local audio directly
+        local_path = None
+        if url.startswith("file://"):
+            local_path = url[7:]  # strip file://
+            if not os.path.isfile(local_path):
+                yield send("log", text=f"  [error] file not found: {local_path}")
+                return
 
-        # Check if we already have this URL in memory
+        display_url = os.path.basename(local_path) if local_path else url
+        yield send("box", lines=[
+            f"[augent] {'file' if local_path else 'url'}: {display_url}",
+            f"[augent] keywords: {', '.join(keyword_list)}",
+            f"[augent] model: {model_size}",
+        ], banner=False)
+
+        # Check if we already have this in memory
         memory = get_transcription_memory()
-        stored_by_url = memory.get_by_source_url(url, model_size)
+        stored_by_url = None
+        if local_path:
+            stored_by_url = memory.get(local_path, model_size)
+        else:
+            stored_by_url = memory.get_by_source_url(url, model_size)
         if stored_by_url:
             yield send("log", text="  [memory] loaded from memory")
             yield send(
@@ -1590,12 +1714,10 @@ async def download_and_search(request: Request):
                     entry["youtube_link"] = yt_link
                 grouped[kw].append(entry)
 
-            yield send("banner")
-            yield send("log", text="─" * 45)
-            yield send("log", text=f"  [done] {len(matches)} matches found")
+            _lines = [f"[done] {len(matches)} matches found"]
             for kw in grouped:
-                yield send("log", text=f"         {kw}: {len(grouped[kw])}")
-            yield send("log", text="─" * 45)
+                _lines.append(f"       {kw}: {len(grouped[kw])}")
+            yield send("box", lines=_lines, banner=True)
 
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
@@ -1606,6 +1728,93 @@ async def download_and_search(request: Request):
                 total=len(matches),
                 source_url=url,
             )
+            return
+
+        # Local file path — skip download, go straight to transcribe
+        if local_path:
+            audio_path = local_path
+            yield send("log", text=f"  [file] {os.path.basename(audio_path)}")
+            audio_token = _register_audio(audio_path)
+            yield send("audio_url", url=f"/api/audio?token={audio_token}")
+            yield send("log", text="")
+
+            memory = get_transcription_memory()
+            stored = memory.get(audio_path, model_size)
+
+            if stored:
+                yield send("log", text="  [memory] loaded from memory")
+                yield send("log", text=f"  [info] duration: {format_time(stored.duration)}")
+                yield send("log", text="")
+                all_words = stored.words
+            else:
+                yield send("log", text=f"  [model] loading {model_size}...")
+                yield send("spinner", label="Loading model...")
+                model_cache = get_model_cache()
+                model = model_cache.get(model_size)
+                yield send("log", text="  [model] ready")
+                yield send("log", text="")
+                yield send("progress", pct=0, label="Transcribing — 0%")
+
+                segments_gen, info = model.transcribe(audio_path, word_timestamps=True, vad_filter=True)
+                duration = info.duration
+                all_words = []
+                segments = []
+
+                yield send("log", text=f"  [info] duration: {format_time(duration)}")
+                yield send("log", text=f"  [info] language: {info.language}")
+                yield send("log", text="")
+
+                for segment in segments_gen:
+                    segments.append({"start": segment.start, "end": segment.end, "text": segment.text})
+                    ts = format_time(segment.start)
+                    yield send("log", text=f"  [{ts}] {segment.text.strip()}")
+                    if duration > 0:
+                        pct = min(int(segment.end / duration * 100), 100)
+                        yield send("progress", pct=pct, label=f"Transcribing — {pct}%")
+                    if segment.words:
+                        for word in segment.words:
+                            all_words.append({"word": word.word.strip(), "start": word.start, "end": word.end})
+                            clean = word.word.lower().strip(".,!?;:'\"")
+                            for kw in keyword_list:
+                                if kw in clean:
+                                    yield send("log", text=f"         >> match: '{kw}' @ {format_time(word.start)}")
+                    await asyncio.sleep(0)
+
+                yield send("progress", pct=100, label="Transcription complete")
+                try:
+                    memory.set(audio_path, model_size, {
+                        "text": " ".join(s["text"].strip() for s in segments),
+                        "language": info.language, "duration": duration,
+                        "segments": segments, "words": all_words,
+                    })
+                    yield send("log", text="  [memory] saved to memory")
+                except Exception as mem_err:
+                    yield send("log", text=f"  [memory] save failed: {mem_err}")
+
+            yield send("log", text="")
+            yield send("log", text="  [search] finding matches...")
+            yield send("status", text="Searching...")
+
+            searcher = KeywordSearcher(context_words=11)
+            matches = searcher.search(all_words, keyword_list)
+
+            grouped = {}
+            for m in matches:
+                kw = m.keyword
+                if kw not in grouped:
+                    grouped[kw] = []
+                grouped[kw].append({"timestamp": m.timestamp, "timestamp_seconds": m.timestamp_seconds, "snippet": m.snippet})
+
+            yield send("log", text="")
+            _lines = [f"[done] {len(matches)} matches found"]
+            for kw in grouped:
+                _lines.append(f"       {kw}: {len(grouped[kw])}")
+            yield send("box", lines=_lines, banner=True)
+
+            async with _latest_results_lock:
+                _latest_results = {"grouped": grouped, "total": len(matches)}
+
+            yield send("results", grouped=grouped, total=len(matches), source_url="")
             return
 
         yield send("status", text="Downloading audio...")
@@ -1792,12 +2001,10 @@ async def download_and_search(request: Request):
                 grouped[kw].append(entry)
 
             yield send("log", text="")
-            yield send("banner")
-            yield send("log", text="─" * 45)
-            yield send("log", text=f"  [done] {len(matches)} matches found")
+            _lines = [f"[done] {len(matches)} matches found"]
             for kw in grouped:
-                yield send("log", text=f"         {kw}: {len(grouped[kw])}")
-            yield send("log", text="─" * 45)
+                _lines.append(f"       {kw}: {len(grouped[kw])}")
+            yield send("box", lines=_lines, banner=True)
 
             async with _latest_results_lock:
                 _latest_results = {"grouped": grouped, "total": len(matches)}
