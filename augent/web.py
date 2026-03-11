@@ -912,7 +912,7 @@ async function startSearch() {
     const exportBar = document.getElementById('exportBar');
 
     btn.disabled = true;
-    logBox.textContent = '';
+    logBox.innerHTML = '';
     resultsContent.innerHTML = '<p>Starting...</p>';
     jsonBox.textContent = '{}';
     exportBar.classList.remove('visible');
@@ -941,6 +941,7 @@ async function startSearch() {
                     if (line.startsWith('data: ')) {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === 'log') appendLog(data.text);
+                        else if (data.type === 'banner') appendBanner();
                         else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                         else if (data.type === 'progress') showProgress(data.pct, data.label);
                         else if (data.type === 'spinner') showSpinner(data.label);
@@ -990,6 +991,7 @@ async function startSearch() {
                 if (line.startsWith('data: ')) {
                     const data = JSON.parse(line.slice(6));
                     if (data.type === 'log') appendLog(data.text);
+                    else if (data.type === 'banner') appendBanner();
                     else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
                     else if (data.type === 'progress') showProgress(data.pct, data.label);
                     else if (data.type === 'spinner') showSpinner(data.label);
@@ -1017,7 +1019,17 @@ async function startSearch() {
 
 function appendLog(text) {
     const logBox = document.getElementById('logBox');
-    logBox.textContent += text + '\n';
+    const line = document.createTextNode(text + '\n');
+    logBox.appendChild(line);
+    logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
+}
+function appendBanner() {
+    const logBox = document.getElementById('logBox');
+    const img = document.createElement('img');
+    img.src = '/static/banner.png';
+    img.alt = 'AUGENT';
+    img.style.cssText = 'display:block;width:200px;height:auto;margin:12px 0 4px;image-rendering:-webkit-optimize-contrast;pointer-events:none;-webkit-user-drag:none;';
+    logBox.appendChild(img);
     logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
 }
 
@@ -1497,6 +1509,7 @@ async def search_audio(
                 )
 
             yield send("log", text="")
+            yield send("banner")
             yield send("log", text="─" * 45)
             yield send("log", text=f"  [done] {len(matches)} matches found")
             for kw in grouped:
@@ -1577,6 +1590,7 @@ async def download_and_search(request: Request):
                     entry["youtube_link"] = yt_link
                 grouped[kw].append(entry)
 
+            yield send("banner")
             yield send("log", text="─" * 45)
             yield send("log", text=f"  [done] {len(matches)} matches found")
             for kw in grouped:
@@ -1778,6 +1792,7 @@ async def download_and_search(request: Request):
                 grouped[kw].append(entry)
 
             yield send("log", text="")
+            yield send("banner")
             yield send("log", text="─" * 45)
             yield send("log", text=f"  [done] {len(matches)} matches found")
             for kw in grouped:
