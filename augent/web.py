@@ -303,8 +303,8 @@ select option { background:var(--black); color:var(--green); }
     flex:1; padding:0 16px 12px; white-space:pre-wrap; word-break:break-word;
 }
 
-.tab-panel { display:none; flex:1; min-height:0; overflow-y:auto; }
-.tab-panel.active { display:flex; flex-direction:column; overflow-y:auto; }
+.tab-panel { display:none; flex:1; min-height:0; overflow:hidden; }
+.tab-panel.active { display:flex; flex-direction:column; overflow:hidden; }
 
 /* Results table */
 .results-content {
@@ -320,6 +320,62 @@ select option { background:var(--black); color:var(--green); }
 .results-content tbody tr:hover { transform:translateY(-1px); }
 .results-content td:first-child { font-family:var(--mono); white-space:nowrap; width:70px; }
 .results-content .match-word { color:#FFFFFF; font-weight:700; }
+
+/* Progress bar */
+.progress-bar-wrap {
+    padding: 12px;
+    flex-shrink: 0;
+}
+.progress-bar-wrap.hidden { display: none; }
+.progress-bar-track {
+    height: 4px;
+    background: var(--green-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.3s ease-out;
+}
+.progress-bar-label {
+    font-size: 13px;
+    color: var(--green);
+    margin-top: 6px;
+    font-family: var(--mono);
+}
+
+/* Spinner */
+.spinner-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    flex-shrink: 0;
+}
+.spinner-wrap.hidden { display: none; }
+.spinner-label {
+    font-size: 13px;
+    color: var(--green);
+    font-family: var(--mono);
+}
+.wormhole-spinner {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    animation: wormhole-spin 1.8s linear infinite;
+}
+.wormhole-spinner circle {
+    fill: none;
+    stroke: var(--green);
+    stroke-linecap: round;
+}
+@keyframes wormhole-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 .results-content a { color:var(--green); text-decoration:none; }
 .results-content a:hover { text-decoration:underline; }
 .yt-hint {
@@ -362,7 +418,7 @@ select option { background:var(--black); color:var(--green); }
 /* ======== MEMORY VIEW ======== */
 .memory-view {
     flex-direction: column;
-    height: 100%;
+    overflow: hidden;
 }
 
 .memory-toolbar {
@@ -394,7 +450,7 @@ select option { background:var(--black); color:var(--green); }
     min-width: 380px;
     border-right: 1px solid var(--green-border);
     overflow-y: auto;
-    padding: 8px 8px 24px;
+    padding: 8px 8px 48px;
 }
 
 .memory-card {
@@ -439,15 +495,19 @@ select option { background:var(--black); color:var(--green); }
     font-size: 10px;
 }
 .memory-card { position: relative; }
-.memory-card .card-delete {
-    position:absolute; top:12px; right:12px;
+.memory-card .card-actions {
+    position:absolute; top:8px; right:8px;
+    display:flex; flex-direction:column; gap:4px;
+    opacity:0; transition:opacity 0.15s;
+}
+.memory-card:hover .card-actions { opacity:0.7; }
+.memory-card .card-actions button {
     background:none; border:none; cursor:pointer;
-    padding:4px; line-height:1; opacity:0.5; transition:opacity 0.15s;
+    padding:4px; line-height:1;
     display:flex; align-items:center; justify-content:center;
 }
-.memory-card:hover .card-delete { opacity:0.7; }
-.memory-card .card-delete:hover { opacity:1; }
-.memory-card .card-delete svg { width:14px; height:14px; }
+.memory-card .card-actions button:hover { opacity:1; }
+.memory-card .card-actions svg { width:14px; height:14px; }
 
 .memory-empty {
     padding: 40px 20px;
@@ -675,6 +735,18 @@ select option { background:var(--black); color:var(--green); }
             <div class="results-content" id="resultsContent">
                 <p style="color: var(--green-dim)">Upload audio and enter keywords</p>
             </div>
+            <div class="spinner-wrap hidden" id="spinnerWrap">
+                <svg class="wormhole-spinner" viewBox="0 0 28 28">
+                    <circle cx="14" cy="14" r="12" stroke-width="2" stroke-dasharray="20 48" opacity="0.3"/>
+                    <circle cx="14" cy="14" r="8" stroke-width="1.5" stroke-dasharray="12 38" opacity="0.5" style="animation-direction:reverse"/>
+                    <circle cx="14" cy="14" r="4" stroke-width="1" stroke-dasharray="6 20" opacity="0.8"/>
+                </svg>
+                <span class="spinner-label" id="spinnerLabel"></span>
+            </div>
+            <div class="progress-bar-wrap hidden" id="progressWrap">
+                <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+                <div class="progress-bar-label" id="progressLabel"></div>
+            </div>
         </div>
 
         <div class="tab-panel" id="panel-json">
@@ -816,6 +888,7 @@ async function startSearch() {
     resultsContent.innerHTML = '<p>Starting...</p>';
     jsonBox.textContent = '{}';
     exportBar.classList.remove('visible');
+    hideProgress(); hideSpinner();
 
     // URL mode: download first
     if (hasUrl && !hasFile) {
@@ -841,12 +914,16 @@ async function startSearch() {
                         const data = JSON.parse(line.slice(6));
                         if (data.type === 'log') appendLog(data.text);
                         else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                        else if (data.type === 'progress') showProgress(data.pct, data.label);
+                        else if (data.type === 'spinner') showSpinner(data.label);
                         else if (data.type === 'results') {
+                            hideProgress(); hideSpinner();
                             lastGrouped = data.grouped;
                             lastSourceUrl = data.source_url || '';
                             renderResults(data.grouped, data.total, lastSourceUrl);
                             jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
                             exportBar.classList.add('visible');
+                            loadMemoryList();
                         }
                     }
                 }
@@ -855,6 +932,7 @@ async function startSearch() {
             appendLog('Error: ' + err.message);
             resultsContent.innerHTML = '<p>Error: ' + err.message + '</p>';
         }
+        hideProgress(); hideSpinner();
         btn.disabled = false;
         btn.textContent = 'SEARCH';
         return;
@@ -884,12 +962,16 @@ async function startSearch() {
                     const data = JSON.parse(line.slice(6));
                     if (data.type === 'log') appendLog(data.text);
                     else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                    else if (data.type === 'progress') showProgress(data.pct, data.label);
+                    else if (data.type === 'spinner') showSpinner(data.label);
                     else if (data.type === 'results') {
+                        hideProgress(); hideSpinner();
                         lastGrouped = data.grouped;
                         lastSourceUrl = data.source_url || '';
                         renderResults(data.grouped, data.total, lastSourceUrl);
                         jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
                         exportBar.classList.add('visible');
+                        loadMemoryList();
                     }
                 }
             }
@@ -899,6 +981,7 @@ async function startSearch() {
         resultsContent.innerHTML = '<p>Error: ' + err.message + '</p>';
     }
 
+    hideProgress(); hideSpinner();
     btn.disabled = false;
     btn.textContent = 'SEARCH';
 }
@@ -907,6 +990,35 @@ function appendLog(text) {
     const logBox = document.getElementById('logBox');
     logBox.textContent += text + '\n';
     logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
+}
+
+function showProgress(pct, label) {
+    hideSpinner();
+    const wrap = document.getElementById('progressWrap');
+    const fill = document.getElementById('progressFill');
+    const lbl = document.getElementById('progressLabel');
+    wrap.classList.remove('hidden');
+    fill.style.width = pct + '%';
+    lbl.textContent = label || '';
+}
+
+function hideProgress() {
+    const wrap = document.getElementById('progressWrap');
+    const fill = document.getElementById('progressFill');
+    wrap.classList.add('hidden');
+    fill.style.width = '0%';
+}
+
+function showSpinner(label) {
+    hideProgress();
+    const wrap = document.getElementById('spinnerWrap');
+    const lbl = document.getElementById('spinnerLabel');
+    wrap.classList.remove('hidden');
+    lbl.textContent = label || '';
+}
+
+function hideSpinner() {
+    document.getElementById('spinnerWrap').classList.add('hidden');
 }
 
 function renderResults(grouped, total, sourceUrl) {
@@ -1001,7 +1113,10 @@ async function loadMemoryList() {
             const isYt = item.source_url && item.source_url.includes('youtu');
             const ytBadge = isYt ? '<span class="yt-icon">YT</span>' : '';
             html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
-            html += '<button class="card-delete" onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
+            html += '<div class="card-actions">';
+            html += '<button onclick="event.stopPropagation(); revealMemory(\'' + escHtml(item.cache_key) + '\')" title="Show in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
+            html += '<button onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
+            html += '</div>';
             html += '<div class="card-title">' + escHtml(item.title) + '</div>';
             html += '<div class="card-meta">';
             html += '<span>' + escHtml(item.duration_formatted) + '</span>';
@@ -1118,8 +1233,12 @@ function shareTranscript() {
 
 async function showInFinder() {
     if (!currentCacheKey) return;
+    await revealMemory(currentCacheKey);
+}
+
+async function revealMemory(cacheKey) {
     try {
-        const resp = await fetch('/api/memory/reveal/' + encodeURIComponent(currentCacheKey), {method: 'POST'});
+        const resp = await fetch('/api/memory/reveal/' + encodeURIComponent(cacheKey), {method: 'POST'});
         if (!resp.ok) {
             const data = await resp.json();
             alert(data.error || 'Could not reveal file');
@@ -1226,14 +1345,14 @@ async def search_audio(
                 all_words = stored.words
             else:
                 yield send("log", text=f"  [model] loading {model_size}...")
-                yield send("status", text="Loading model...")
+                yield send("spinner", label="Loading model...")
 
                 model_cache = get_model_cache()
                 model = model_cache.get(model_size)
 
                 yield send("log", text="  [model] ready")
                 yield send("log", text="")
-                yield send("status", text="Transcribing...")
+                yield send("progress", pct=0, label="Transcribing — 0%")
 
                 segments_gen, info = model.transcribe(
                     tmp_path, word_timestamps=True, vad_filter=True
@@ -1259,6 +1378,14 @@ async def search_audio(
                     ts = format_time(segment.start)
                     yield send("log", text=f"  [{ts}] {segment.text.strip()}")
 
+                    if duration > 0:
+                        pct = min(int(segment.end / duration * 100), 100)
+                        yield send(
+                            "progress",
+                            pct=pct,
+                            label=f"Transcribing — {pct}%",
+                        )
+
                     if segment.words:
                         for word in segment.words:
                             all_words.append(
@@ -1278,17 +1405,23 @@ async def search_audio(
 
                     await asyncio.sleep(0)
 
-                memory.set(
-                    tmp_path,
-                    model_size,
-                    {
-                        "text": " ".join(s["text"].strip() for s in segments),
-                        "language": info.language,
-                        "duration": duration,
-                        "segments": segments,
-                        "words": all_words,
-                    },
-                )
+                yield send("progress", pct=100, label="Transcription complete")
+
+                try:
+                    memory.set(
+                        tmp_path,
+                        model_size,
+                        {
+                            "text": " ".join(s["text"].strip() for s in segments),
+                            "language": info.language,
+                            "duration": duration,
+                            "segments": segments,
+                            "words": all_words,
+                        },
+                    )
+                    yield send("log", text="  [memory] saved to memory")
+                except Exception as mem_err:
+                    yield send("log", text=f"  [memory] save failed: {mem_err}")
 
             yield send("log", text="")
             yield send("log", text="  [search] finding matches...")
@@ -1359,11 +1492,60 @@ async def download_and_search(request: Request):
         yield send("log", text=f"  [augent] keywords: {', '.join(keyword_list)}")
         yield send("log", text=f"  [augent] model: {model_size}")
         yield send("log", text="─" * 45)
+
+        # Check if we already have this URL in memory
+        memory = get_transcription_memory()
+        stored_by_url = memory.get_by_source_url(url, model_size)
+        if stored_by_url:
+            yield send("log", text="  [memory] loaded from memory")
+            yield send(
+                "log",
+                text=f"  [info] duration: {format_time(stored_by_url.duration)}",
+            )
+            yield send("log", text="")
+            yield send("status", text="Loaded from memory")
+
+            all_words = stored_by_url.words
+            searcher = KeywordSearcher(context_words=11)
+            matches = searcher.search(all_words, keyword_list)
+
+            grouped = {}
+            for m in matches:
+                kw = m.keyword
+                if kw not in grouped:
+                    grouped[kw] = []
+                entry = {
+                    "timestamp": m.timestamp,
+                    "timestamp_seconds": m.timestamp_seconds,
+                    "snippet": m.snippet,
+                }
+                yt_link = _youtube_timestamp_link(url, m.timestamp_seconds)
+                if yt_link:
+                    entry["youtube_link"] = yt_link
+                grouped[kw].append(entry)
+
+            yield send("log", text="─" * 45)
+            yield send("log", text=f"  [done] {len(matches)} matches found")
+            for kw in grouped:
+                yield send("log", text=f"         {kw}: {len(grouped[kw])}")
+            yield send("log", text="─" * 45)
+
+            async with _latest_results_lock:
+                _latest_results = {"grouped": grouped, "total": len(matches)}
+
+            yield send(
+                "results",
+                grouped=grouped,
+                total=len(matches),
+                source_url=url,
+            )
+            return
+
         yield send("status", text="Downloading audio...")
         yield send("log", text="  [download] starting...")
 
         # Download audio using yt-dlp
-        download_dir = tempfile.mkdtemp(prefix="augent_dl_")
+        download_dir = tempfile.mkdtemp(prefix="augent_dl_", dir="/tmp")
         try:
             ytdlp = shutil.which(
                 "yt-dlp", path="/opt/homebrew/bin:/usr/local/bin"
@@ -1394,6 +1576,8 @@ async def download_and_search(request: Request):
                     ]
                 )
             cmd.append(url)
+
+            yield send("spinner", label="Downloading audio...")
 
             proc = await asyncio.to_thread(
                 subprocess.run, cmd, capture_output=True, text=True
@@ -1431,13 +1615,14 @@ async def download_and_search(request: Request):
                 all_words = stored.words
             else:
                 yield send("log", text=f"  [model] loading {model_size}...")
-                yield send("status", text="Transcribing...")
+                yield send("spinner", label="Loading model...")
 
                 model_cache = get_model_cache()
                 model = model_cache.get(model_size)
 
                 yield send("log", text="  [model] ready")
                 yield send("log", text="")
+                yield send("progress", pct=0, label="Transcribing — 0%")
 
                 segments_gen, info = model.transcribe(
                     audio_path, word_timestamps=True, vad_filter=True
@@ -1462,6 +1647,14 @@ async def download_and_search(request: Request):
                     ts = format_time(segment.start)
                     yield send("log", text=f"  [{ts}] {segment.text.strip()}")
 
+                    if duration > 0:
+                        pct = min(int(segment.end / duration * 100), 100)
+                        yield send(
+                            "progress",
+                            pct=pct,
+                            label=f"Transcribing — {pct}%",
+                        )
+
                     if segment.words:
                         for word in segment.words:
                             all_words.append(
@@ -1481,18 +1674,24 @@ async def download_and_search(request: Request):
 
                     await asyncio.sleep(0)
 
-                memory.set(
-                    audio_path,
-                    model_size,
-                    {
-                        "text": " ".join(s["text"].strip() for s in segments),
-                        "language": info.language,
-                        "duration": duration,
-                        "segments": segments,
-                        "words": all_words,
-                    },
-                    source_url=url,
-                )
+                yield send("progress", pct=100, label="Transcription complete")
+
+                try:
+                    memory.set(
+                        audio_path,
+                        model_size,
+                        {
+                            "text": " ".join(s["text"].strip() for s in segments),
+                            "language": info.language,
+                            "duration": duration,
+                            "segments": segments,
+                            "words": all_words,
+                        },
+                        source_url=url,
+                    )
+                    yield send("log", text="  [memory] saved to memory")
+                except Exception as mem_err:
+                    yield send("log", text=f"  [memory] save failed: {mem_err}")
                 # Persist YouTube URL by hash (survives restarts)
                 if _extract_youtube_id(url):
                     memory.save_source_url(audio_path, url)
@@ -1790,25 +1989,42 @@ async def api_memory_reveal(cache_key: str):
     file_path = os.path.realpath(os.path.expanduser(entry.file_path))
 
     if not os.path.exists(file_path):
-        # File deleted/moved — try to open its parent directory instead
-        parent = os.path.dirname(file_path)
-        if os.path.isdir(parent):
-            try:
-                if platform.system() == "Darwin":
-                    subprocess.Popen(["open", parent])
-                elif platform.system() == "Linux":
-                    subprocess.Popen(["xdg-open", parent])
-                else:
-                    subprocess.Popen(["explorer", parent])
-            except Exception:
-                pass
+        # Try the markdown file instead
+        import sqlite3 as _sq
+
+        _md = ""
+        try:
+            with _sq.connect(memory.db_path) as _c:
+                _r = _c.execute(
+                    "SELECT md_path FROM transcriptions WHERE cache_key = ?",
+                    (cache_key,),
+                ).fetchone()
+                if _r:
+                    _md = _r[0] or ""
+        except Exception:
+            pass
+        if _md and os.path.exists(_md):
+            file_path = _md
+        else:
+            # File deleted/moved — try to open its parent directory instead
+            parent = os.path.dirname(file_path)
+            if os.path.isdir(parent):
+                try:
+                    if platform.system() == "Darwin":
+                        subprocess.Popen(["open", parent])
+                    elif platform.system() == "Linux":
+                        subprocess.Popen(["xdg-open", parent])
+                    else:
+                        subprocess.Popen(["explorer", parent])
+                except Exception:
+                    pass
+                return JSONResponse(
+                    {"error": f"File no longer exists — opened folder instead: {parent}"},
+                    status_code=404,
+                )
             return JSONResponse(
-                {"error": f"File no longer exists — opened folder instead: {parent}"},
-                status_code=404,
+                {"error": f"File no longer exists: {file_path}"}, status_code=404
             )
-        return JSONResponse(
-            {"error": f"File no longer exists: {file_path}"}, status_code=404
-        )
 
     try:
         if platform.system() == "Darwin":

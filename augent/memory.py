@@ -392,6 +392,36 @@ class TranscriptionMemory:
         except Exception:
             pass
 
+    def get_by_source_url(
+        self, source_url: str, model_size: str
+    ) -> Optional["MemorizedTranscription"]:
+        """Look up a transcription by its source URL and model size."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute(
+                    "SELECT * FROM transcriptions WHERE source_url = ? AND model_size = ?",
+                    (source_url, model_size),
+                )
+                row = cursor.fetchone()
+                if row:
+                    return MemorizedTranscription(
+                        audio_hash=row["audio_hash"],
+                        model_size=row["model_size"],
+                        language=row["language"],
+                        duration=row["duration"],
+                        text=row["text"],
+                        words=json.loads(row["words"]) if row["words"] else [],
+                        segments=json.loads(row["segments"]) if row["segments"] else [],
+                        created_at=row["created_at"],
+                        file_path=row["file_path"] or "",
+                        title=row["title"] or "",
+                        source_url=row["source_url"] or "",
+                    )
+        except Exception:
+            pass
+        return None
+
     def get_source_url_by_hash(self, file_path: str) -> str:
         """Look up a persisted source URL by audio file hash. No model_size needed."""
         try:
