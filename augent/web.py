@@ -1313,10 +1313,10 @@ async function deleteMemory(cacheKey, btnEl) {
 @app.get("/api/audio")
 async def serve_audio(path: str = Query("")):
     """Serve a downloaded audio file for waveform playback."""
-    if not path or not os.path.isfile(path):
+    resolved = os.path.realpath(path) if path else ""
+    if not resolved or not os.path.isfile(resolved):
         return JSONResponse({"error": "File not found"}, status_code=404)
-    resolved = os.path.realpath(path)
-    if not resolved.startswith("/tmp/"):
+    if not resolved.startswith("/tmp/") and not resolved.startswith("/private/tmp/"):
         return JSONResponse({"error": "Access denied"}, status_code=403)
     import mimetypes
 
@@ -1643,9 +1643,11 @@ async def download_and_search(request: Request):
             yield send(
                 "log", text=f"  [download] complete: {os.path.basename(audio_path)}"
             )
+            from urllib.parse import quote
+
             yield send(
                 "audio_url",
-                url=f"/api/audio?path={audio_path}",
+                url=f"/api/audio?path={quote(audio_path, safe='')}",
             )
             yield send("log", text="")
 
