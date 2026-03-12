@@ -33,6 +33,89 @@ _latest_results: dict = {}
 _latest_results_lock = asyncio.Lock()
 
 
+def _google_translate_raw(text: str, src: str = "zh-CN", target: str = "en") -> str:
+    """Direct Google Translate via urllib POST — no library dependencies."""
+    import urllib.parse
+    import urllib.request
+
+    url = "https://translate.googleapis.com/translate_a/single"
+    data = urllib.parse.urlencode({
+        "client": "gtx", "sl": src, "tl": target, "dt": "t", "q": text,
+    }).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST")
+    req.add_header("User-Agent", "Mozilla/5.0")
+    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        result = json.loads(resp.read().decode())
+        return "".join(part[0] for part in result[0] if part[0])
+
+
+async def _translate_segments(segments: list, words: list, source_lang: str) -> tuple:
+    """Translate segments to English using Google Translate."""
+    lang_map = {"zh": "zh-CN", "ja": "ja", "ko": "ko"}
+    src = lang_map.get(source_lang, source_lang)
+
+    seg_texts = [s["text"].strip() for s in segments]
+
+    # Batch translate using numbered lines via raw urllib
+    all_translated = list(seg_texts)
+    chunk_start = 0
+    while chunk_start < len(seg_texts):
+        chunk = []
+        chunk_chars = 0
+        chunk_end = chunk_start
+        while chunk_end < len(seg_texts):
+            line = f"{len(chunk) + 1}. {seg_texts[chunk_end]}"
+            if chunk_chars + len(line) > 2000 and chunk:
+                break
+            chunk.append(seg_texts[chunk_end])
+            chunk_chars += len(line)
+            chunk_end += 1
+
+        numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(chunk))
+        result = await asyncio.to_thread(_google_translate_raw, numbered, src, "en")
+        for j, line in enumerate(result.strip().split("\n")):
+            idx = chunk_start + j
+            if idx < len(all_translated):
+                stripped = line.split(". ", 1)[1] if ". " in line else line
+                all_translated[idx] = stripped
+
+        chunk_start = chunk_end
+
+    # Rebuild segments with translated text
+    translated_segs = []
+    for i, seg in enumerate(segments):
+        new_seg = dict(seg)
+        new_seg["text"] = all_translated[i] if i < len(all_translated) else seg["text"]
+        translated_segs.append(new_seg)
+
+    # Rebuild words from translated segments by distributing timestamps proportionally
+    translated_words = _rebuild_words_from_segments(translated_segs)
+
+    return translated_segs, translated_words
+
+
+def _rebuild_words_from_segments(segments: list) -> list:
+    """Rebuild word-level timestamps from segments by distributing proportionally."""
+    words = []
+    for seg in segments:
+        seg_words = seg["text"].strip().split()
+        if not seg_words:
+            continue
+        seg_start = seg["start"]
+        seg_end = seg["end"]
+        seg_duration = seg_end - seg_start
+        for j, w in enumerate(seg_words):
+            w_start = seg_start + (j / len(seg_words)) * seg_duration
+            w_end = seg_start + ((j + 1) / len(seg_words)) * seg_duration
+            words.append({
+                "word": w,
+                "start": round(w_start, 3),
+                "end": round(w_end, 3),
+            })
+    return words
+
+
 def format_time(seconds: float) -> str:
     mins = int(seconds // 60)
     secs = int(seconds % 60)
@@ -236,14 +319,22 @@ select option { background:var(--black); color:var(--green); }
     position:absolute; top:6px; right:6px; z-index:2;
     width:22px; height:22px; border-radius:50%;
     background:rgba(0,240,96,0.12); border:1px solid var(--green-border);
-    color:var(--green); font-size:14px; line-height:20px;
-    text-align:center; cursor:pointer; display:none; padding:0;
+    color:var(--green); font-size:0;
+    display:none; padding:0; cursor:pointer;
 }
+.clear-btn::before, .clear-btn::after {
+    content:''; position:absolute; top:50%; left:50%;
+    width:10px; height:1.5px; background:var(--green);
+    border-radius:1px;
+}
+.clear-btn::before { transform:translate(-50%,-50%) rotate(45deg); }
+.clear-btn::after { transform:translate(-50%,-50%) rotate(-45deg); }
 .clear-btn:hover { background:rgba(0,240,96,0.25); }
-.upload-zone.has-file .clear-btn { display:block; }
+.upload-zone.has-file .clear-btn { display:flex; }
 .url-wrap { position:relative; }
+.url-wrap input { padding-right:32px; }
 .url-wrap .clear-btn { top:50%; right:8px; transform:translateY(-50%); display:none; }
-.url-wrap.has-url .clear-btn { display:block; }
+.url-wrap.has-url .clear-btn { display:flex; }
 
 /* URL input section */
 .url-section {
@@ -439,6 +530,50 @@ select option { background:var(--black); color:var(--green); }
 }
 .export-btn:hover { border-color:var(--green-border-hover); background:var(--green-hover); box-shadow:0 4px 14px rgba(0,240,96,0.1); }
 
+/* Clip export */
+.clip-btn {
+    background:none; border:none; cursor:pointer; padding:2px 4px;
+    color:var(--green-dim); opacity:0.5; transition:opacity 0.15s;
+    vertical-align:middle; margin-left:6px;
+}
+.clip-btn:hover { opacity:1; }
+.clip-btn svg { width:14px; height:14px; vertical-align:middle; }
+.clip-modal {
+    position:fixed; inset:0; z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+}
+.clip-modal-box {
+    background:var(--black); border:1px solid var(--green-border-hover);
+    border-radius:16px; padding:24px 28px; min-width:360px; max-width:440px;
+    box-shadow:0 20px 60px rgba(0,240,96,0.1);
+}
+.clip-modal-box h3 { margin:0 0 16px; font-size:15px; }
+.clip-modal-box label { display:block; font-size:12px; font-weight:600; margin:10px 0 4px; }
+.clip-modal-box input[type="text"] {
+    width:100%; box-sizing:border-box;
+    background:var(--input-bg); border:1px solid var(--green-border);
+    color:var(--green); padding:8px 10px; border-radius:8px; font-family:var(--mono); font-size:13px;
+}
+.clip-modal-box .clip-actions {
+    display:flex; gap:8px; margin-top:18px; justify-content:flex-end;
+}
+.clip-modal-box .clip-actions button {
+    padding:8px 18px; border-radius:8px; font-family:var(--mono); font-size:12px;
+    cursor:pointer; transition:all 0.15s;
+}
+.clip-modal-box .clip-cancel {
+    background:none; border:1px solid var(--green-border); color:var(--green);
+}
+.clip-modal-box .clip-cancel:hover { border-color:var(--green-border-hover); }
+.clip-modal-box .clip-go {
+    background:var(--green); border:1px solid var(--green); color:var(--black); font-weight:700;
+}
+.clip-modal-box .clip-go:hover { box-shadow:0 4px 14px rgba(0,240,96,0.2); }
+.clip-modal-box .clip-status {
+    margin-top:12px; font-size:12px; color:var(--green-dim);
+}
+
 /* ======== MEMORY VIEW ======== */
 .memory-view {
     flex-direction: column;
@@ -495,7 +630,7 @@ select option { background:var(--black); color:var(--green); }
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 6px;
-    padding-right: 28px;
+    padding-right: 80px;
 }
 .memory-card .card-meta {
     display: flex;
@@ -520,8 +655,8 @@ select option { background:var(--black); color:var(--green); }
 }
 .memory-card { position: relative; }
 .memory-card .card-actions {
-    position:absolute; top:8px; right:8px;
-    display:flex; flex-direction:column; gap:4px;
+    position:absolute; top:10px; right:8px;
+    display:flex; flex-direction:row; align-items:center; gap:2px;
     opacity:0; transition:opacity 0.15s;
 }
 .memory-card:hover .card-actions { opacity:0.7; }
@@ -687,7 +822,7 @@ select option { background:var(--black); color:var(--green); }
             <label>Audio File</label>
             <div class="upload-zone" id="uploadZone">
                 <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.ogg,.flac,.m4a,.webm,.mp4,.aac,.wma,.opus">
-                <button class="clear-btn" id="clearFileBtn" onclick="event.stopPropagation(); clearFile()" title="Clear file">&times;</button>
+                <button class="clear-btn" id="clearFileBtn" onclick="event.stopPropagation(); clearFile()" title="Clear file"></button>
                 <div class="icon">&#x2B06;</div>
                 <div class="label" id="uploadLabel">Drop audio file or click to upload</div>
             </div>
@@ -697,7 +832,7 @@ select option { background:var(--black); color:var(--green); }
             <label>URL</label>
             <div class="url-wrap" id="urlWrap">
                 <input type="text" id="audioUrl" placeholder="https://youtube.com/watch?v=...">
-                <button class="clear-btn" onclick="clearUrl()" title="Clear URL">&times;</button>
+                <button class="clear-btn" onclick="clearUrl()" title="Clear URL"></button>
             </div>
             <div class="hint">Or paste a video/audio URL instead of uploading</div>
             <div class="waveform-wrap" id="waveformWrap">
@@ -737,12 +872,21 @@ select option { background:var(--black); color:var(--green); }
             <div class="hint">Larger = slower but more accurate</div>
         </div>
 
+        <div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="translate" style="accent-color:var(--green);width:16px;height:16px;">
+                Translate to English
+            </label>
+            <div class="hint">Translates non-English audio to English for keyword search</div>
+        </div>
+
         <button class="search-btn" id="searchBtn" onclick="startSearch()">SEARCH</button>
 
         <div class="tips">
             <strong>Tips:</strong>
             <span class="tip-line">&#183; Paste a YouTube or video URL to download audio directly</span>
             <span class="tip-line">&#183; Results stored in memory for instant re-search</span>
+            <span class="tip-line">&#183; Open multiple tabs for parallel processing</span>
         </div>
     </div>
 
@@ -864,6 +1008,7 @@ function setFile(file) {
 
 function clearFile() {
     uploadedFile = null;
+    memoryCacheKey = null;
     fileInput.value = '';
     uploadLabel.textContent = 'Drop audio file or click to upload';
     uploadZone.classList.remove('has-file');
@@ -886,28 +1031,24 @@ document.getElementById('audioUrl').addEventListener('input', function() {
     saveState();
 });
 
+let memoryCacheKey = null;
+
 function searchFromMemory(cardEl) {
-    const sourceUrl = cardEl.dataset.sourceUrl;
-    const filePath = cardEl.dataset.filePath;
+    const cacheKey = cardEl.dataset.key;
     const title = cardEl.dataset.title;
 
     // Switch to search view
     switchView('search', document.querySelector('.nav-btn'));
 
-    // Clear existing file
+    // Set memory search mode
     clearFile();
-
-    if (sourceUrl) {
-        document.getElementById('audioUrl').value = sourceUrl;
-        document.getElementById('urlWrap').classList.add('has-url');
-    } else if (filePath) {
-        document.getElementById('audioUrl').value = 'file://' + filePath;
-        document.getElementById('urlWrap').classList.add('has-url');
-    }
+    clearUrl();
+    memoryCacheKey = cacheKey;
+    uploadLabel.textContent = '📁 ' + title;
+    uploadZone.classList.add('has-file');
 
     // Focus keywords
     document.getElementById('keywords').focus();
-    saveState();
 }
 
 function loadWaveform(url) {
@@ -958,8 +1099,9 @@ async function startSearch() {
     const audioUrl = document.getElementById('audioUrl').value.trim();
     const hasFile = !!uploadedFile;
     const hasUrl = !!audioUrl;
+    const hasMemory = !!memoryCacheKey;
 
-    if (!hasFile && !hasUrl) {
+    if (!hasFile && !hasUrl && !hasMemory) {
         appendLog('Upload an audio file or paste a URL');
         return;
     }
@@ -971,6 +1113,7 @@ async function startSearch() {
     }
 
     const model = document.getElementById('model').value;
+    const translate = document.getElementById('translate').checked;
     const btn = document.getElementById('searchBtn');
     const logBox = document.getElementById('logBox');
     const resultsContent = document.getElementById('resultsContent');
@@ -984,15 +1127,14 @@ async function startSearch() {
     exportBar.classList.remove('visible');
     hideProgress(); hideSpinner();
 
-    // URL mode: download first
-    if (hasUrl && !hasFile) {
-        btn.textContent = 'DOWNLOADING...';
-        appendLog('Downloading audio from URL...');
+    // Memory mode: search stored transcription directly
+    if (hasMemory && !hasFile && !hasUrl) {
+        btn.textContent = 'SEARCHING...';
         try {
-            const resp = await fetch('/api/download', {
+            const resp = await fetch('/api/search-memory', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: audioUrl, model_size: model, keywords: keywords})
+                body: JSON.stringify({cache_key: memoryCacheKey, keywords: keywords})
             });
             const reader = resp.body.getReader();
             const decoder = new TextDecoder();
@@ -1009,6 +1151,56 @@ async function startSearch() {
                         if (data.type === 'log') appendLog(data.text);
                         else if (data.type === 'box') appendBox(data.lines, data.banner || false);
                         else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                        else if (data.type === 'btn_text') btn.textContent = data.text;
+                        else if (data.type === 'audio_url') loadWaveform(data.url);
+                        else if (data.type === 'results') {
+                            hideProgress(); hideSpinner();
+                            lastGrouped = data.grouped;
+                            lastSourceUrl = data.source_url || '';
+                            renderResults(data.grouped, data.total, lastSourceUrl);
+                            jsonBox.textContent = JSON.stringify(data.grouped, null, 2);
+                            exportBar.classList.add('visible');
+                            loadMemoryList();
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            appendLog('Error: ' + err.message);
+            resultsContent.innerHTML = '<p>Error: ' + err.message + '</p>';
+        }
+        hideProgress(); hideSpinner();
+        btn.disabled = false;
+        btn.textContent = 'SEARCH';
+        return;
+    }
+
+    // URL mode: download first
+    if (hasUrl && !hasFile) {
+        btn.textContent = 'DOWNLOADING...';
+        appendLog('Downloading audio from URL...');
+        try {
+            const resp = await fetch('/api/download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: audioUrl, model_size: model, keywords: keywords, translate: translate})
+            });
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, {stream: true});
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.type === 'log') appendLog(data.text);
+                        else if (data.type === 'box') appendBox(data.lines, data.banner || false);
+                        else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                        else if (data.type === 'btn_text') btn.textContent = data.text;
                         else if (data.type === 'progress') showProgress(data.pct, data.label);
                         else if (data.type === 'spinner') showSpinner(data.label);
                         else if (data.type === 'audio_url') loadWaveform(data.url);
@@ -1040,6 +1232,7 @@ async function startSearch() {
     formData.append('file', uploadedFile);
     formData.append('keywords', keywords);
     formData.append('model_size', model);
+    formData.append('translate', translate ? '1' : '');
 
     try {
         const response = await fetch('/api/search', { method: 'POST', body: formData });
@@ -1059,6 +1252,7 @@ async function startSearch() {
                     if (data.type === 'log') appendLog(data.text);
                     else if (data.type === 'box') appendBox(data.lines, data.banner || false);
                     else if (data.type === 'status') resultsContent.innerHTML = '<p>' + data.text + '</p>';
+                    else if (data.type === 'btn_text') btn.textContent = data.text;
                     else if (data.type === 'progress') showProgress(data.pct, data.label);
                     else if (data.type === 'spinner') showSpinner(data.label);
                     else if (data.type === 'results') {
@@ -1092,7 +1286,10 @@ function appendLog(text) {
 function appendBox(lines, showBanner) {
     const logBox = document.getElementById('logBox');
     const container = document.createElement('div');
-    container.style.cssText = 'margin:8px 0;';
+    container.style.cssText = 'margin:8px 0;display:inline-block;';
+    const box = document.createElement('div');
+    box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;white-space:pre;';
+    box.textContent = lines.join('\n');
     if (showBanner) {
         const bannerWrap = document.createElement('div');
         bannerWrap.style.cssText = 'text-align:center;margin-bottom:6px;';
@@ -1103,11 +1300,9 @@ function appendBox(lines, showBanner) {
         bannerWrap.appendChild(img);
         container.appendChild(bannerWrap);
     }
-    const box = document.createElement('div');
-    box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;display:inline-block;min-width:20ch;';
-    box.textContent = lines.join('\n');
     container.appendChild(box);
     logBox.appendChild(container);
+    logBox.appendChild(document.createTextNode('\n'));
     logBox.parentElement.scrollTop = logBox.parentElement.scrollHeight;
 }
 
@@ -1163,7 +1358,10 @@ function renderResults(grouped, total, sourceUrl) {
             } else {
                 tsCell = escHtml(m.timestamp);
             }
-            html += '<tr><td>' + tsCell + '</td><td>' + snippet + '</td></tr>';
+            // Clip export button
+            const clipBtn = sourceUrl ?
+                '<button class="clip-btn" onclick="openClipModal(\'' + escHtml(sourceUrl) + '\',' + (m.timestamp_seconds || 0) + ',\'' + escHtml(kw) + '\')" title="Export video clip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg></button>' : '';
+            html += '<tr><td>' + tsCell + clipBtn + '</td><td>' + snippet + '</td></tr>';
         }
         html += '</tbody></table>';
     }
@@ -1202,6 +1400,84 @@ function exportAs(format) {
     window.location.href = '/api/export?format=' + format + '&keywords=' + encodeURIComponent(keywords);
 }
 
+/* ============ CLIP EXPORT ============ */
+function fmtSec(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m + ':' + String(sec).padStart(2, '0');
+}
+
+function parseMmSs(str) {
+    const parts = str.trim().split(':');
+    if (parts.length === 2) return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    if (parts.length === 3) return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+    return parseFloat(str) || 0;
+}
+
+function openClipModal(url, timestampSec, keyword) {
+    const padding = 10;
+    const start = Math.max(0, timestampSec - padding);
+    const end = timestampSec + padding;
+
+    const modal = document.createElement('div');
+    modal.className = 'clip-modal';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML =
+        '<div class="clip-modal-box">' +
+        '<h3>Export Video Clip</h3>' +
+        '<label>Source</label>' +
+        '<input type="text" id="clipUrl" value="' + escHtml(url) + '" readonly style="opacity:0.6;">' +
+        '<label>Keyword match at ' + fmtSec(timestampSec) + ' (' + escHtml(keyword) + ')</label>' +
+        '<div style="display:flex;gap:12px;">' +
+        '<div style="flex:1;"><label>Start</label><input type="text" id="clipStart" value="' + fmtSec(start) + '"></div>' +
+        '<div style="flex:1;"><label>End</label><input type="text" id="clipEnd" value="' + fmtSec(end) + '"></div>' +
+        '</div>' +
+        '<div class="clip-actions">' +
+        '<button class="clip-cancel" onclick="this.closest(\'.clip-modal\').remove()">Cancel</button>' +
+        '<button class="clip-go" onclick="doClipExport(this.closest(\'.clip-modal\'))">Export MP4</button>' +
+        '</div>' +
+        '<div class="clip-status" id="clipStatus"></div>' +
+        '</div>';
+    document.body.appendChild(modal);
+    document.getElementById('clipStart').focus();
+}
+
+async function doClipExport(modal) {
+    const url = document.getElementById('clipUrl').value;
+    const start = parseMmSs(document.getElementById('clipStart').value);
+    const end = parseMmSs(document.getElementById('clipEnd').value);
+    const status = document.getElementById('clipStatus');
+    const goBtn = modal.querySelector('.clip-go');
+
+    if (end <= start) { status.textContent = 'End must be after start'; return; }
+
+    goBtn.disabled = true;
+    goBtn.textContent = 'Exporting...';
+    status.textContent = 'Downloading clip (' + fmtSec(start) + ' → ' + fmtSec(end) + ')...';
+
+    try {
+        const resp = await fetch('/api/clip-export', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({url, start, end})
+        });
+        const data = await resp.json();
+        if (data.error) {
+            status.textContent = 'Error: ' + data.error;
+            goBtn.disabled = false;
+            goBtn.textContent = 'Export MP4';
+        } else {
+            status.innerHTML = 'Saved: <strong>' + escHtml(data.filename) + '</strong> (' + data.file_size_mb + ' MB, ' + data.duration_formatted + ')';
+            goBtn.textContent = 'Done!';
+            setTimeout(() => modal.remove(), 3000);
+        }
+    } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+        goBtn.disabled = false;
+        goBtn.textContent = 'Export MP4';
+    }
+}
+
 /* ============ MEMORY VIEW ============ */
 let memoryDebounce = null;
 document.getElementById('memoryQuery').addEventListener('input', (e) => {
@@ -1233,7 +1509,7 @@ async function loadMemoryList() {
             const ytBadge = isYt ? '<span class="yt-icon">YT</span>' : '';
             html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" data-source-url="' + escHtml(item.source_url || '') + '" data-file-path="' + escHtml(item.file_path || '') + '" data-title="' + escHtml(item.title) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
             html += '<div class="card-actions">';
-            html += '<button onclick="event.stopPropagation(); searchFromMemory(this.closest(\'.memory-card\'))" title="Search this audio"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>';
+            html += '<button class="search-action" onclick="event.stopPropagation(); searchFromMemory(this.closest(\'.memory-card\'))" title="Search this audio"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>';
             html += '<button onclick="event.stopPropagation(); revealMemory(\'' + escHtml(item.cache_key) + '\')" title="Show in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
             html += '<button onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
             html += '</div>';
@@ -1400,6 +1676,7 @@ function saveState() {
             keywords: document.getElementById('keywords').value,
             audioUrl: document.getElementById('audioUrl').value,
             model: document.getElementById('model').value,
+            translate: document.getElementById('translate').checked,
         }));
     } catch(e) {}
 }
@@ -1415,12 +1692,14 @@ function restoreState() {
             document.getElementById('urlWrap').classList.toggle('has-url', !!s.audioUrl);
         }
         if (s.model) document.getElementById('model').value = s.model;
+        if (s.translate) document.getElementById('translate').checked = s.translate;
     } catch(e) {}
 }
 
 // Save on input changes
 document.getElementById('keywords').addEventListener('input', saveState);
 document.getElementById('model').addEventListener('change', saveState);
+document.getElementById('translate').addEventListener('change', saveState);
 
 // Restore on page load
 restoreState();
@@ -1477,6 +1756,7 @@ async def search_audio(
     file: UploadFile = File(...),  # noqa: B008
     keywords: str = Form(""),  # noqa: B008
     model_size: str = Form("tiny"),  # noqa: B008
+    translate: str = Form(""),  # noqa: B008
 ):
     """Stream search results via SSE (file upload mode)."""
 
@@ -1497,20 +1777,24 @@ async def search_audio(
                 return
 
             filename = file.filename or "uploaded"
+            do_translate = bool(translate)
+            cache_model = f"{model_size}:en" if do_translate else model_size
 
             def send(type_, **kwargs):
                 return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
 
-
-            yield send("box", lines=[
+            box_lines = [
                 f"[augent] file: {filename}",
                 f"[augent] keywords: {', '.join(keyword_list)}",
                 f"[augent] model: {model_size}",
-            ], banner=False)
+            ]
+            if do_translate:
+                box_lines.append("[augent] translate: English")
+            yield send("box", lines=box_lines, banner=False)
             yield send("status", text="Starting...")
 
             memory = get_transcription_memory()
-            stored = memory.get(tmp_path, model_size)
+            stored = memory.get(tmp_path, cache_model)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -1530,10 +1814,11 @@ async def search_audio(
                 yield send("log", text="  [model] ready")
                 yield send("log", text="")
                 yield send("progress", pct=0, label="Transcribing — 0%")
+                yield send("btn_text", text="TRANSCRIBING...")
+                yield send("status", text="Transcribing audio...")
 
-                segments_gen, info = model.transcribe(
-                    tmp_path, word_timestamps=True, vad_filter=True
-                )
+                transcribe_kwargs = dict(word_timestamps=True, vad_filter=True)
+                segments_gen, info = model.transcribe(tmp_path, **transcribe_kwargs)
 
                 duration = info.duration
                 all_words = []
@@ -1584,13 +1869,29 @@ async def search_audio(
 
                 yield send("progress", pct=100, label="Transcription complete")
 
+                translated_ok = False
+                if do_translate and info.language != "en":
+                    yield send("log", text="")
+                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
+                    yield send("spinner", label="Translating...")
+                    yield send("btn_text", text="TRANSLATING...")
+                    yield send("status", text="Translating to English...")
+                    try:
+                        segments, all_words = await _translate_segments(segments, all_words, info.language)
+                        yield send("log", text="  [translate] done")
+                        translated_ok = True
+                    except Exception as tr_err:
+                        yield send("log", text=f"  [translate] failed: {tr_err}")
+                        yield send("log", text="  [translate] falling back to original language")
+
+                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
                     memory.set(
                         tmp_path,
-                        model_size,
+                        save_model,
                         {
                             "text": " ".join(s["text"].strip() for s in segments),
-                            "language": info.language,
+                            "language": "en" if translated_ok else info.language,
                             "duration": duration,
                             "segments": segments,
                             "words": all_words,
@@ -1602,6 +1903,7 @@ async def search_audio(
 
             yield send("log", text="")
             yield send("log", text="  [search] finding matches...")
+            yield send("btn_text", text="SEARCHING...")
             yield send("status", text="Searching...")
 
             searcher = KeywordSearcher(context_words=11)
@@ -1640,6 +1942,81 @@ async def search_audio(
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+@app.post("/api/search-memory")
+async def search_from_memory(request: Request):
+    """Search a stored transcription by cache_key — no audio file needed."""
+    body = await request.json()
+    cache_key = body.get("cache_key", "")
+    keywords_str = body.get("keywords", "")
+
+    async def event_stream():
+        global _latest_results
+
+        def send(type_, **kwargs):
+            return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
+
+        keyword_list = [k.strip().lower() for k in keywords_str.split(",") if k.strip()]
+        if not keyword_list:
+            yield send("log", text="No keywords provided")
+            return
+        if not cache_key:
+            yield send("log", text="No cache key provided")
+            return
+
+        memory = get_transcription_memory()
+        entry = memory.get_by_cache_key(cache_key)
+        if not entry:
+            yield send("log", text="  [error] transcription not found in memory")
+            return
+
+        yield send("box", lines=[
+            f"[augent] title: {entry.title}",
+            f"[augent] keywords: {', '.join(keyword_list)}",
+            f"[augent] model: {entry.model_size}",
+        ], banner=False)
+
+        yield send("log", text="  [memory] loaded from memory")
+        yield send("log", text=f"  [info] duration: {format_time(entry.duration)}")
+        yield send("log", text=f"  [info] language: {entry.language}")
+        yield send("log", text="")
+
+        # Load waveform if file still exists
+        if entry.file_path and os.path.isfile(entry.file_path):
+            audio_token = _register_audio(entry.file_path)
+            yield send("audio_url", url=f"/api/audio?token={audio_token}")
+
+        yield send("log", text="  [search] finding matches...")
+        yield send("status", text="Searching...")
+
+        searcher = KeywordSearcher(context_words=11)
+        matches = searcher.search(entry.words, keyword_list)
+
+        grouped = {}
+        for m in matches:
+            kw = m.keyword
+            if kw not in grouped:
+                grouped[kw] = []
+            e = {"timestamp": m.timestamp, "timestamp_seconds": m.timestamp_seconds, "snippet": m.snippet}
+            if entry.source_url:
+                yt_link = _youtube_timestamp_link(entry.source_url, m.timestamp_seconds)
+                if yt_link:
+                    e["youtube_link"] = yt_link
+            grouped[kw].append(e)
+
+        yield send("log", text="")
+        _lines = [f"[done] {len(matches)} matches found"]
+        for kw in grouped:
+            _lines.append(f"       {kw}: {len(grouped[kw])}")
+        yield send("box", lines=_lines, banner=True)
+
+        async with _latest_results_lock:
+            _latest_results = {"grouped": grouped, "total": len(matches)}
+
+        yield send("results", grouped=grouped, total=len(matches), source_url=entry.source_url or "")
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
 @app.post("/api/download")
 async def download_and_search(request: Request):
     """Download audio from URL, transcribe, and search — all streamed via SSE."""
@@ -1647,6 +2024,8 @@ async def download_and_search(request: Request):
     url = body.get("url", "")
     model_size = body.get("model_size", "tiny")
     keywords_str = body.get("keywords", "")
+    do_translate = bool(body.get("translate", False))
+    cache_model = f"{model_size}:en" if do_translate else model_size
 
     async def event_stream():
         global _latest_results
@@ -1673,19 +2052,116 @@ async def download_and_search(request: Request):
                 return
 
         display_url = os.path.basename(local_path) if local_path else url
-        yield send("box", lines=[
+        box_lines = [
             f"[augent] {'file' if local_path else 'url'}: {display_url}",
             f"[augent] keywords: {', '.join(keyword_list)}",
             f"[augent] model: {model_size}",
-        ], banner=False)
+        ]
+        if do_translate:
+            box_lines.append("[augent] translate: English")
+        yield send("box", lines=box_lines, banner=False)
 
         # Check if we already have this in memory
         memory = get_transcription_memory()
         stored_by_url = None
         if local_path:
-            stored_by_url = memory.get(local_path, model_size)
+            stored_by_url = memory.get(local_path, cache_model)
         else:
-            stored_by_url = memory.get_by_source_url(url, model_size)
+            stored_by_url = memory.get_by_source_url(url, cache_model)
+
+        # If translate requested but only original exists, reuse audio — just re-transcribe and translate
+        if not stored_by_url and do_translate:
+            original = memory.get_by_source_url(url, model_size) if not local_path else memory.get(local_path, model_size)
+            if original and original.file_path and os.path.isfile(original.file_path):
+                yield send("log", text="  [memory] original transcription found — translating")
+                yield send("log", text=f"  [info] duration: {format_time(original.duration)}")
+                yield send("log", text="")
+
+                yield send("log", text=f"  [model] loading {model_size}...")
+                yield send("spinner", label="Loading model...")
+                model_cache = get_model_cache()
+                model = model_cache.get(model_size)
+                yield send("log", text="  [model] ready")
+                yield send("log", text="")
+                yield send("progress", pct=0, label="Transcribing — 0%")
+                yield send("btn_text", text="TRANSCRIBING...")
+                yield send("status", text="Transcribing audio...")
+
+                transcribe_kwargs = dict(word_timestamps=True, vad_filter=True)
+                segments_gen, info = model.transcribe(original.file_path, **transcribe_kwargs)
+                duration = info.duration
+                all_words = []
+                segments = []
+
+                for segment in segments_gen:
+                    segments.append({"start": segment.start, "end": segment.end, "text": segment.text})
+                    ts = format_time(segment.start)
+                    yield send("log", text=f"  [{ts}] {segment.text.strip()}")
+                    if duration > 0:
+                        pct = min(int(segment.end / duration * 100), 100)
+                        yield send("progress", pct=pct, label=f"Transcribing — {pct}%")
+                    if segment.words:
+                        for word in segment.words:
+                            all_words.append({"word": word.word.strip(), "start": word.start, "end": word.end})
+                    await asyncio.sleep(0)
+
+                yield send("progress", pct=100, label="Transcription complete")
+
+                yield send("log", text="")
+                yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
+                yield send("spinner", label="Translating...")
+                yield send("btn_text", text="TRANSLATING...")
+                yield send("status", text="Translating to English...")
+                try:
+                    segments, all_words = await _translate_segments(segments, all_words, info.language)
+                    yield send("log", text="  [translate] done")
+                except Exception as tr_err:
+                    yield send("log", text=f"  [translate] failed: {tr_err}")
+
+                try:
+                    memory.set(original.file_path, cache_model, {
+                        "text": " ".join(s["text"].strip() for s in segments),
+                        "language": "en", "duration": duration,
+                        "segments": segments, "words": all_words,
+                    }, source_url=url)
+                    yield send("log", text="  [memory] saved translated version")
+                except Exception as mem_err:
+                    yield send("log", text=f"  [memory] save failed: {mem_err}")
+
+                audio_token = _register_audio(original.file_path)
+                yield send("audio_url", url=f"/api/audio?token={audio_token}")
+
+                yield send("log", text="")
+                yield send("log", text="  [search] finding matches...")
+                yield send("btn_text", text="SEARCHING...")
+                yield send("status", text="Searching...")
+
+                searcher = KeywordSearcher(context_words=11)
+                matches = searcher.search(all_words, keyword_list)
+
+                grouped = {}
+                for m in matches:
+                    kw = m.keyword
+                    if kw not in grouped:
+                        grouped[kw] = []
+                    e = {"timestamp": m.timestamp, "timestamp_seconds": m.timestamp_seconds, "snippet": m.snippet}
+                    yt_link = _youtube_timestamp_link(url, m.timestamp_seconds)
+                    if yt_link:
+                        e["youtube_link"] = yt_link
+                    grouped[kw].append(e)
+
+                yield send("log", text="")
+                _lines = [f"[done] {len(matches)} matches found"]
+                for kw in grouped:
+                    _lines.append(f"       {kw}: {len(grouped[kw])}")
+                yield send("box", lines=_lines, banner=True)
+
+                async with _latest_results_lock:
+                    _latest_results = {"grouped": grouped, "total": len(matches)}
+
+                yield send("results", grouped=grouped, total=len(matches), source_url=url)
+                return
+
         if stored_by_url:
             yield send("log", text="  [memory] loaded from memory")
             yield send(
@@ -1739,7 +2215,7 @@ async def download_and_search(request: Request):
             yield send("log", text="")
 
             memory = get_transcription_memory()
-            stored = memory.get(audio_path, model_size)
+            stored = memory.get(audio_path, cache_model)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -1754,8 +2230,11 @@ async def download_and_search(request: Request):
                 yield send("log", text="  [model] ready")
                 yield send("log", text="")
                 yield send("progress", pct=0, label="Transcribing — 0%")
+                yield send("btn_text", text="TRANSCRIBING...")
+                yield send("status", text="Transcribing audio...")
 
-                segments_gen, info = model.transcribe(audio_path, word_timestamps=True, vad_filter=True)
+                transcribe_kwargs = dict(word_timestamps=True, vad_filter=True)
+                segments_gen, info = model.transcribe(audio_path, **transcribe_kwargs)
                 duration = info.duration
                 all_words = []
                 segments = []
@@ -1781,10 +2260,28 @@ async def download_and_search(request: Request):
                     await asyncio.sleep(0)
 
                 yield send("progress", pct=100, label="Transcription complete")
+
+                translated_ok = False
+                if do_translate and info.language != "en":
+                    yield send("log", text="")
+                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
+                    yield send("spinner", label="Translating...")
+                    yield send("btn_text", text="TRANSLATING...")
+                    yield send("status", text="Translating to English...")
+                    try:
+                        segments, all_words = await _translate_segments(segments, all_words, info.language)
+                        yield send("log", text="  [translate] done")
+                        translated_ok = True
+                    except Exception as tr_err:
+                        yield send("log", text=f"  [translate] failed: {tr_err}")
+                        yield send("log", text="  [translate] falling back to original language")
+
+                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
-                    memory.set(audio_path, model_size, {
+                    memory.set(audio_path, save_model, {
                         "text": " ".join(s["text"].strip() for s in segments),
-                        "language": info.language, "duration": duration,
+                        "language": "en" if translated_ok else info.language,
+                        "duration": duration,
                         "segments": segments, "words": all_words,
                     })
                     yield send("log", text="  [memory] saved to memory")
@@ -1793,6 +2290,7 @@ async def download_and_search(request: Request):
 
             yield send("log", text="")
             yield send("log", text="  [search] finding matches...")
+            yield send("btn_text", text="SEARCHING...")
             yield send("status", text="Searching...")
 
             searcher = KeywordSearcher(context_words=11)
@@ -1834,6 +2332,7 @@ async def download_and_search(request: Request):
                 ytdlp,
                 "-f",
                 "bestaudio/best",
+                "-x",
                 "--concurrent-fragments",
                 "4",
                 "--no-playlist",
@@ -1885,7 +2384,7 @@ async def download_and_search(request: Request):
 
             # Transcribe
             memory = get_transcription_memory()
-            stored = memory.get(audio_path, model_size)
+            stored = memory.get(audio_path, cache_model)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -1904,9 +2403,12 @@ async def download_and_search(request: Request):
                 yield send("log", text="  [model] ready")
                 yield send("log", text="")
                 yield send("progress", pct=0, label="Transcribing — 0%")
+                yield send("btn_text", text="TRANSCRIBING...")
+                yield send("status", text="Transcribing audio...")
 
+                transcribe_kwargs = dict(word_timestamps=True, vad_filter=True)
                 segments_gen, info = model.transcribe(
-                    audio_path, word_timestamps=True, vad_filter=True
+                    audio_path, **transcribe_kwargs
                 )
 
                 duration = info.duration
@@ -1957,13 +2459,29 @@ async def download_and_search(request: Request):
 
                 yield send("progress", pct=100, label="Transcription complete")
 
+                translated_ok = False
+                if do_translate and info.language != "en":
+                    yield send("log", text="")
+                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
+                    yield send("spinner", label="Translating...")
+                    yield send("btn_text", text="TRANSLATING...")
+                    yield send("status", text="Translating to English...")
+                    try:
+                        segments, all_words = await _translate_segments(segments, all_words, info.language)
+                        yield send("log", text="  [translate] done")
+                        translated_ok = True
+                    except Exception as tr_err:
+                        yield send("log", text=f"  [translate] failed: {tr_err}")
+                        yield send("log", text="  [translate] falling back to original language")
+
+                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
                     memory.set(
                         audio_path,
-                        model_size,
+                        save_model,
                         {
                             "text": " ".join(s["text"].strip() for s in segments),
-                            "language": info.language,
+                            "language": "en" if translated_ok else info.language,
                             "duration": duration,
                             "segments": segments,
                             "words": all_words,
@@ -1980,6 +2498,7 @@ async def download_and_search(request: Request):
             # Search
             yield send("log", text="")
             yield send("log", text="  [search] finding matches...")
+            yield send("btn_text", text="SEARCHING...")
             yield send("status", text="Searching...")
 
             searcher = KeywordSearcher(context_words=11)
@@ -2020,6 +2539,73 @@ async def download_and_search(request: Request):
             yield send("log", text=f"  [error] {str(e)}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@app.post("/api/clip-export")
+async def clip_export(request: Request):
+    """Export a video clip from a URL for a specific time range."""
+    body = await request.json()
+    url = body.get("url", "")
+    start = body.get("start", 0)
+    end = body.get("end", 0)
+
+    if not url:
+        return JSONResponse({"error": "No URL provided"})
+    if end <= start:
+        return JSONResponse({"error": "End must be after start"})
+
+    ytdlp = shutil.which("yt-dlp", path="/opt/homebrew/bin:/usr/local/bin") or shutil.which("yt-dlp")
+    if not ytdlp:
+        return JSONResponse({"error": "yt-dlp not found"})
+
+    output_dir = os.path.expanduser("~/Desktop")
+
+    def fmt_time(s):
+        m, sec = divmod(int(s), 60)
+        h, m = divmod(m, 60)
+        return f"{h:02d}:{m:02d}:{sec:02d}"
+
+    section = f"*{fmt_time(start)}-{fmt_time(end)}"
+
+    cmd = [
+        ytdlp,
+        "--download-sections", section,
+        "--force-keyframes-at-cuts",
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "--merge-output-format", "mp4",
+        "--no-playlist",
+        "-o", os.path.join(output_dir, "%(title)s_clip.%(ext)s"),
+        "--print", "after_move:filepath",
+        url,
+    ]
+
+    try:
+        result = await asyncio.to_thread(
+            subprocess.run, cmd, capture_output=True, text=True, timeout=300
+        )
+    except subprocess.TimeoutExpired:
+        return JSONResponse({"error": "Clip export timed out (5 min limit)"})
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip()[-200:] if result.stderr else "Unknown error"
+        return JSONResponse({"error": f"yt-dlp failed: {error_msg}"})
+
+    output_lines = result.stdout.strip().split("\n")
+    clip_path = output_lines[-1] if output_lines else None
+
+    if not clip_path or not os.path.exists(clip_path):
+        return JSONResponse({"error": "Clip file not found after export"})
+
+    file_size = os.path.getsize(clip_path)
+    duration = end - start
+
+    return JSONResponse({
+        "clip_path": clip_path,
+        "filename": os.path.basename(clip_path),
+        "duration": duration,
+        "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
+        "file_size_mb": round(file_size / (1024 * 1024), 2),
+    })
 
 
 @app.get("/api/export")

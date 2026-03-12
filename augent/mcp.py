@@ -40,6 +40,8 @@ Add to Claude Code project (.mcp.json):
 
 import json
 import os
+import shutil
+import subprocess
 import sys
 from typing import Any
 
@@ -788,6 +790,36 @@ def handle_tools_list(id: Any) -> None:
                             "required": ["query"],
                         },
                     },
+                    {
+                        "name": "clip_export",
+                        "description": "Export a video clip from a URL for a specific time range. Downloads only the requested segment — not the full video. Perfect for extracting moments around keyword matches. Supports YouTube and 1000+ sites.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "Video URL to extract clip from (YouTube, Vimeo, etc.)",
+                                },
+                                "start": {
+                                    "type": "number",
+                                    "description": "Start time in seconds",
+                                },
+                                "end": {
+                                    "type": "number",
+                                    "description": "End time in seconds",
+                                },
+                                "output_dir": {
+                                    "type": "string",
+                                    "description": "Directory to save the clip. Default: ~/Desktop",
+                                },
+                                "output_filename": {
+                                    "type": "string",
+                                    "description": "Custom filename for the clip (without extension). Auto-generated if not set.",
+                                },
+                            },
+                            "required": ["url", "start", "end"],
+                        },
+                    },
                 ]
             },
         }
@@ -832,6 +864,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_search_memory(arguments)
         elif tool_name == "separate_audio":
             result = handle_separate_audio(arguments)
+        elif tool_name == "clip_export":
+            result = handle_clip_export(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -1960,6 +1994,82 @@ def handle_separate_audio(arguments: dict) -> dict:
         )
 
     return response
+
+
+def handle_clip_export(arguments: dict) -> dict:
+    """Handle clip_export tool call — download a video segment from a URL."""
+    url = arguments.get("url")
+    start = arguments.get("start")
+    end = arguments.get("end")
+    output_dir = arguments.get("output_dir", os.path.expanduser("~/Desktop"))
+    output_filename = arguments.get("output_filename")
+
+    if not url:
+        raise ValueError("Missing required parameter: url")
+    if start is None or end is None:
+        raise ValueError("Missing required parameters: start and end")
+    if end <= start:
+        raise ValueError("end must be greater than start")
+
+    output_dir = os.path.expanduser(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    ytdlp = shutil.which("yt-dlp", path="/opt/homebrew/bin:/usr/local/bin") or shutil.which("yt-dlp")
+    if not ytdlp:
+        raise FileNotFoundError("yt-dlp not found. Install with: pip install yt-dlp")
+
+    # Format times for yt-dlp --download-sections
+    def fmt_time(s):
+        m, sec = divmod(int(s), 60)
+        h, m = divmod(m, 60)
+        return f"{h:02d}:{m:02d}:{sec:02d}"
+
+    section = f"*{fmt_time(start)}-{fmt_time(end)}"
+
+    # Build output template
+    if output_filename:
+        out_template = os.path.join(output_dir, f"{output_filename}.%(ext)s")
+    else:
+        out_template = os.path.join(output_dir, "%(title)s_clip_%(section_start)s-%(section_end)s.%(ext)s")
+
+    cmd = [
+        ytdlp,
+        "--download-sections", section,
+        "--force-keyframes-at-cuts",
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "--merge-output-format", "mp4",
+        "--no-playlist",
+        "-o", out_template,
+        "--print", "after_move:filepath",
+        url,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip()[-300:] if result.stderr else "Unknown error"
+        raise RuntimeError(f"yt-dlp clip export failed: {error_msg}")
+
+    output_lines = result.stdout.strip().split("\n")
+    clip_path = output_lines[-1] if output_lines else None
+
+    if not clip_path or not os.path.exists(clip_path):
+        raise RuntimeError("Clip file not found after export")
+
+    file_size = os.path.getsize(clip_path)
+    duration = end - start
+
+    return {
+        "clip_path": clip_path,
+        "url": url,
+        "start": start,
+        "end": end,
+        "start_formatted": fmt_time(start),
+        "end_formatted": fmt_time(end),
+        "duration": duration,
+        "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
+        "file_size_mb": round(file_size / (1024 * 1024), 2),
+    }
 
 
 def handle_request(request: dict) -> None:
