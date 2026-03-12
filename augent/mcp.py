@@ -438,7 +438,7 @@ def handle_tools_list(id: Any) -> None:
                                 },
                                 "clip_padding": {
                                     "type": "integer",
-                                    "description": "Seconds of padding before and after each match for clip export. Default: 10",
+                                    "description": "Seconds of padding before and after each match for clip export. Default: 15",
                                 },
                             },
                             "required": ["audio_path", "keywords"],
@@ -491,7 +491,7 @@ def handle_tools_list(id: Any) -> None:
                                 },
                                 "clip_padding": {
                                     "type": "integer",
-                                    "description": "Seconds of padding before and after each match for clip export. Default: 10",
+                                    "description": "Seconds of padding before and after each match for clip export. Default: 15",
                                 },
                             },
                             "required": ["audio_path", "query"],
@@ -942,6 +942,7 @@ def handle_download_audio(arguments: dict) -> dict:
         "--concurrent-fragments",
         "4",
         "--no-playlist",
+        "--restrict-filenames",
         "-o",
         f"{output_dir}/%(title)s [%(id)s].%(ext)s",
         "--print",
@@ -1010,7 +1011,7 @@ def handle_search_audio(arguments: dict) -> dict:
     include_full = arguments.get("include_full_text", False)
     output = arguments.get("output")
     clip = arguments.get("clip", False)
-    clip_padding = arguments.get("clip_padding", 10)
+    clip_padding = arguments.get("clip_padding", 15)
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -1854,7 +1855,7 @@ def handle_deep_search(arguments: dict) -> dict:
     context_words = arguments.get("context_words", 25)
     dedup_seconds = arguments.get("dedup_seconds", 0)
     clip = arguments.get("clip", False)
-    clip_padding = arguments.get("clip_padding", 10)
+    clip_padding = arguments.get("clip_padding", 15)
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -2106,7 +2107,7 @@ def handle_separate_audio(arguments: dict) -> dict:
 
 
 def _export_clips_for_matches(
-    source_url: str, timestamps: list[float], padding: int = 10
+    source_url: str, timestamps: list[float], padding: int = 15
 ) -> list[dict]:
     """Export video clips around a list of match timestamps.
 
@@ -2203,6 +2204,7 @@ def handle_clip_export(arguments: dict) -> dict:
         "--download-sections",
         section,
         "--force-keyframes-at-cuts",
+        "--force-overwrites",
         "-f",
         "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "--merge-output-format",

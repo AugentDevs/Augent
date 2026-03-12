@@ -729,8 +729,8 @@ def main():
     search_parser.add_argument(
         "--clip-padding",
         type=float,
-        default=5.0,
-        help="Seconds of audio before/after each clip (default: 5)",
+        default=15.0,
+        help="Seconds of audio before/after each clip (default: 15)",
     )
     search_parser.add_argument(
         "--workers",
