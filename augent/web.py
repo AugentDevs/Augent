@@ -33,89 +33,6 @@ _latest_results: dict = {}
 _latest_results_lock = asyncio.Lock()
 
 
-def _google_translate_raw(text: str, src: str = "zh-CN", target: str = "en") -> str:
-    """Direct Google Translate via urllib POST — no library dependencies."""
-    import urllib.parse
-    import urllib.request
-
-    url = "https://translate.googleapis.com/translate_a/single"
-    data = urllib.parse.urlencode({
-        "client": "gtx", "sl": src, "tl": target, "dt": "t", "q": text,
-    }).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method="POST")
-    req.add_header("User-Agent", "Mozilla/5.0")
-    req.add_header("Content-Type", "application/x-www-form-urlencoded")
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read().decode())
-        return "".join(part[0] for part in result[0] if part[0])
-
-
-async def _translate_segments(segments: list, words: list, source_lang: str) -> tuple:
-    """Translate segments to English using Google Translate."""
-    lang_map = {"zh": "zh-CN", "ja": "ja", "ko": "ko"}
-    src = lang_map.get(source_lang, source_lang)
-
-    seg_texts = [s["text"].strip() for s in segments]
-
-    # Batch translate using numbered lines via raw urllib
-    all_translated = list(seg_texts)
-    chunk_start = 0
-    while chunk_start < len(seg_texts):
-        chunk = []
-        chunk_chars = 0
-        chunk_end = chunk_start
-        while chunk_end < len(seg_texts):
-            line = f"{len(chunk) + 1}. {seg_texts[chunk_end]}"
-            if chunk_chars + len(line) > 2000 and chunk:
-                break
-            chunk.append(seg_texts[chunk_end])
-            chunk_chars += len(line)
-            chunk_end += 1
-
-        numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(chunk))
-        result = await asyncio.to_thread(_google_translate_raw, numbered, src, "en")
-        for j, line in enumerate(result.strip().split("\n")):
-            idx = chunk_start + j
-            if idx < len(all_translated):
-                stripped = line.split(". ", 1)[1] if ". " in line else line
-                all_translated[idx] = stripped
-
-        chunk_start = chunk_end
-
-    # Rebuild segments with translated text
-    translated_segs = []
-    for i, seg in enumerate(segments):
-        new_seg = dict(seg)
-        new_seg["text"] = all_translated[i] if i < len(all_translated) else seg["text"]
-        translated_segs.append(new_seg)
-
-    # Rebuild words from translated segments by distributing timestamps proportionally
-    translated_words = _rebuild_words_from_segments(translated_segs)
-
-    return translated_segs, translated_words
-
-
-def _rebuild_words_from_segments(segments: list) -> list:
-    """Rebuild word-level timestamps from segments by distributing proportionally."""
-    words = []
-    for seg in segments:
-        seg_words = seg["text"].strip().split()
-        if not seg_words:
-            continue
-        seg_start = seg["start"]
-        seg_end = seg["end"]
-        seg_duration = seg_end - seg_start
-        for j, w in enumerate(seg_words):
-            w_start = seg_start + (j / len(seg_words)) * seg_duration
-            w_end = seg_start + ((j + 1) / len(seg_words)) * seg_duration
-            words.append({
-                "word": w,
-                "start": round(w_start, 3),
-                "end": round(w_end, 3),
-            })
-    return words
-
-
 def format_time(seconds: float) -> str:
     mins = int(seconds // 60)
     secs = int(seconds % 60)
@@ -872,14 +789,6 @@ select option { background:var(--black); color:var(--green); }
             <div class="hint">Larger = slower but more accurate</div>
         </div>
 
-        <div>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                <input type="checkbox" id="translate" style="accent-color:var(--green);width:16px;height:16px;">
-                Translate to English
-            </label>
-            <div class="hint">Translates non-English audio to English for keyword search</div>
-        </div>
-
         <button class="search-btn" id="searchBtn" onclick="startSearch()">SEARCH</button>
 
         <div class="tips">
@@ -1113,7 +1022,6 @@ async function startSearch() {
     }
 
     const model = document.getElementById('model').value;
-    const translate = document.getElementById('translate').checked;
     const btn = document.getElementById('searchBtn');
     const logBox = document.getElementById('logBox');
     const resultsContent = document.getElementById('resultsContent');
@@ -1183,7 +1091,7 @@ async function startSearch() {
             const resp = await fetch('/api/download', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: audioUrl, model_size: model, keywords: keywords, translate: translate})
+                body: JSON.stringify({url: audioUrl, model_size: model, keywords: keywords})
             });
             const reader = resp.body.getReader();
             const decoder = new TextDecoder();
@@ -1232,7 +1140,6 @@ async function startSearch() {
     formData.append('file', uploadedFile);
     formData.append('keywords', keywords);
     formData.append('model_size', model);
-    formData.append('translate', translate ? '1' : '');
 
     try {
         const response = await fetch('/api/search', { method: 'POST', body: formData });
@@ -1510,7 +1417,8 @@ async function loadMemoryList() {
             html += '<div class="memory-card" data-key="' + escHtml(item.cache_key) + '" data-source-url="' + escHtml(item.source_url || '') + '" data-file-path="' + escHtml(item.file_path || '') + '" data-title="' + escHtml(item.title) + '" onclick="loadMemoryDetail(\'' + escHtml(item.cache_key) + '\', this)">';
             html += '<div class="card-actions">';
             html += '<button class="search-action" onclick="event.stopPropagation(); searchFromMemory(this.closest(\'.memory-card\'))" title="Search this audio"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>';
-            html += '<button onclick="event.stopPropagation(); revealMemory(\'' + escHtml(item.cache_key) + '\')" title="Show in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
+            html += '<button onclick="event.stopPropagation(); revealMemory(\'' + escHtml(item.cache_key) + '\')" title="Show Audio in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
+            html += '<button onclick="event.stopPropagation(); revealTranscript(\'' + escHtml(item.cache_key) + '\')" title="Show Transcript in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>';
             html += '<button onclick="event.stopPropagation(); deleteMemory(\'' + escHtml(item.cache_key) + '\', this)" title="Delete from memory"><svg viewBox="0 0 24 24" fill="none" stroke="#00F060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>';
             html += '</div>';
             html += '<div class="card-title">' + escHtml(item.title) + '</div>';
@@ -1575,7 +1483,8 @@ async function loadMemoryDetail(cacheKey, cardEl) {
             '<div class="detail-meta">' + metaParts.join(' &middot; ') + sourceHtml + '</div>' +
             '<div class="detail-actions">' +
             '<button onclick="shareTranscript()">Share as HTML</button>' +
-            (d.file_path ? '<button onclick="showInFinder()">Show in Finder</button>' : '') +
+            (d.file_path ? '<button onclick="showInFinder()">Show Audio</button>' : '') +
+            '<button onclick="showTranscript()">Show Transcript</button>' +
             '</div>' +
             '</div>' +
             '<div class="detail-transcript">' + segsHtml + '</div>';
@@ -1644,6 +1553,23 @@ async function revealMemory(cacheKey) {
     }
 }
 
+async function revealTranscript(cacheKey) {
+    try {
+        const resp = await fetch('/api/memory/reveal/' + encodeURIComponent(cacheKey) + '?target=transcript', {method: 'POST'});
+        if (!resp.ok) {
+            const data = await resp.json();
+            alert(data.error || 'No transcript file found');
+        }
+    } catch (err) {
+        alert('Could not connect to server');
+    }
+}
+
+async function showTranscript() {
+    if (!currentCacheKey) return;
+    await revealTranscript(currentCacheKey);
+}
+
 async function deleteMemory(cacheKey, btnEl) {
     if (!confirm('Delete this transcription from memory? This cannot be undone.')) return;
     try {
@@ -1676,7 +1602,6 @@ function saveState() {
             keywords: document.getElementById('keywords').value,
             audioUrl: document.getElementById('audioUrl').value,
             model: document.getElementById('model').value,
-            translate: document.getElementById('translate').checked,
         }));
     } catch(e) {}
 }
@@ -1692,14 +1617,12 @@ function restoreState() {
             document.getElementById('urlWrap').classList.toggle('has-url', !!s.audioUrl);
         }
         if (s.model) document.getElementById('model').value = s.model;
-        if (s.translate) document.getElementById('translate').checked = s.translate;
     } catch(e) {}
 }
 
 // Save on input changes
 document.getElementById('keywords').addEventListener('input', saveState);
 document.getElementById('model').addEventListener('change', saveState);
-document.getElementById('translate').addEventListener('change', saveState);
 
 // Restore on page load
 restoreState();
@@ -1756,7 +1679,6 @@ async def search_audio(
     file: UploadFile = File(...),  # noqa: B008
     keywords: str = Form(""),  # noqa: B008
     model_size: str = Form("tiny"),  # noqa: B008
-    translate: str = Form(""),  # noqa: B008
 ):
     """Stream search results via SSE (file upload mode)."""
 
@@ -1777,8 +1699,6 @@ async def search_audio(
                 return
 
             filename = file.filename or "uploaded"
-            do_translate = bool(translate)
-            cache_model = f"{model_size}:en" if do_translate else model_size
 
             def send(type_, **kwargs):
                 return f"data: {json.dumps({'type': type_, **kwargs})}\n\n"
@@ -1788,13 +1708,11 @@ async def search_audio(
                 f"[augent] keywords: {', '.join(keyword_list)}",
                 f"[augent] model: {model_size}",
             ]
-            if do_translate:
-                box_lines.append("[augent] translate: English")
             yield send("box", lines=box_lines, banner=False)
             yield send("status", text="Starting...")
 
             memory = get_transcription_memory()
-            stored = memory.get(tmp_path, cache_model)
+            stored = memory.get(tmp_path, model_size)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -1869,29 +1787,13 @@ async def search_audio(
 
                 yield send("progress", pct=100, label="Transcription complete")
 
-                translated_ok = False
-                if do_translate and info.language != "en":
-                    yield send("log", text="")
-                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
-                    yield send("spinner", label="Translating...")
-                    yield send("btn_text", text="TRANSLATING...")
-                    yield send("status", text="Translating to English...")
-                    try:
-                        segments, all_words = await _translate_segments(segments, all_words, info.language)
-                        yield send("log", text="  [translate] done")
-                        translated_ok = True
-                    except Exception as tr_err:
-                        yield send("log", text=f"  [translate] failed: {tr_err}")
-                        yield send("log", text="  [translate] falling back to original language")
-
-                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
                     memory.set(
                         tmp_path,
-                        save_model,
+                        model_size,
                         {
                             "text": " ".join(s["text"].strip() for s in segments),
-                            "language": "en" if translated_ok else info.language,
+                            "language": info.language,
                             "duration": duration,
                             "segments": segments,
                             "words": all_words,
@@ -2024,9 +1926,6 @@ async def download_and_search(request: Request):
     url = body.get("url", "")
     model_size = body.get("model_size", "tiny")
     keywords_str = body.get("keywords", "")
-    do_translate = bool(body.get("translate", False))
-    cache_model = f"{model_size}:en" if do_translate else model_size
-
     async def event_stream():
         global _latest_results
 
@@ -2057,110 +1956,15 @@ async def download_and_search(request: Request):
             f"[augent] keywords: {', '.join(keyword_list)}",
             f"[augent] model: {model_size}",
         ]
-        if do_translate:
-            box_lines.append("[augent] translate: English")
         yield send("box", lines=box_lines, banner=False)
 
         # Check if we already have this in memory
         memory = get_transcription_memory()
         stored_by_url = None
         if local_path:
-            stored_by_url = memory.get(local_path, cache_model)
+            stored_by_url = memory.get(local_path, model_size)
         else:
-            stored_by_url = memory.get_by_source_url(url, cache_model)
-
-        # If translate requested but only original exists, reuse audio — just re-transcribe and translate
-        if not stored_by_url and do_translate:
-            original = memory.get_by_source_url(url, model_size) if not local_path else memory.get(local_path, model_size)
-            if original and original.file_path and os.path.isfile(original.file_path):
-                yield send("log", text="  [memory] original transcription found — translating")
-                yield send("log", text=f"  [info] duration: {format_time(original.duration)}")
-                yield send("log", text="")
-
-                yield send("log", text=f"  [model] loading {model_size}...")
-                yield send("spinner", label="Loading model...")
-                model_cache = get_model_cache()
-                model = model_cache.get(model_size)
-                yield send("log", text="  [model] ready")
-                yield send("log", text="")
-                yield send("progress", pct=0, label="Transcribing — 0%")
-                yield send("btn_text", text="TRANSCRIBING...")
-                yield send("status", text="Transcribing audio...")
-
-                transcribe_kwargs = dict(word_timestamps=True, vad_filter=True)
-                segments_gen, info = model.transcribe(original.file_path, **transcribe_kwargs)
-                duration = info.duration
-                all_words = []
-                segments = []
-
-                for segment in segments_gen:
-                    segments.append({"start": segment.start, "end": segment.end, "text": segment.text})
-                    ts = format_time(segment.start)
-                    yield send("log", text=f"  [{ts}] {segment.text.strip()}")
-                    if duration > 0:
-                        pct = min(int(segment.end / duration * 100), 100)
-                        yield send("progress", pct=pct, label=f"Transcribing — {pct}%")
-                    if segment.words:
-                        for word in segment.words:
-                            all_words.append({"word": word.word.strip(), "start": word.start, "end": word.end})
-                    await asyncio.sleep(0)
-
-                yield send("progress", pct=100, label="Transcription complete")
-
-                yield send("log", text="")
-                yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
-                yield send("spinner", label="Translating...")
-                yield send("btn_text", text="TRANSLATING...")
-                yield send("status", text="Translating to English...")
-                try:
-                    segments, all_words = await _translate_segments(segments, all_words, info.language)
-                    yield send("log", text="  [translate] done")
-                except Exception as tr_err:
-                    yield send("log", text=f"  [translate] failed: {tr_err}")
-
-                try:
-                    memory.set(original.file_path, cache_model, {
-                        "text": " ".join(s["text"].strip() for s in segments),
-                        "language": "en", "duration": duration,
-                        "segments": segments, "words": all_words,
-                    }, source_url=url)
-                    yield send("log", text="  [memory] saved translated version")
-                except Exception as mem_err:
-                    yield send("log", text=f"  [memory] save failed: {mem_err}")
-
-                audio_token = _register_audio(original.file_path)
-                yield send("audio_url", url=f"/api/audio?token={audio_token}")
-
-                yield send("log", text="")
-                yield send("log", text="  [search] finding matches...")
-                yield send("btn_text", text="SEARCHING...")
-                yield send("status", text="Searching...")
-
-                searcher = KeywordSearcher(context_words=11)
-                matches = searcher.search(all_words, keyword_list)
-
-                grouped = {}
-                for m in matches:
-                    kw = m.keyword
-                    if kw not in grouped:
-                        grouped[kw] = []
-                    e = {"timestamp": m.timestamp, "timestamp_seconds": m.timestamp_seconds, "snippet": m.snippet}
-                    yt_link = _youtube_timestamp_link(url, m.timestamp_seconds)
-                    if yt_link:
-                        e["youtube_link"] = yt_link
-                    grouped[kw].append(e)
-
-                yield send("log", text="")
-                _lines = [f"[done] {len(matches)} matches found"]
-                for kw in grouped:
-                    _lines.append(f"       {kw}: {len(grouped[kw])}")
-                yield send("box", lines=_lines, banner=True)
-
-                async with _latest_results_lock:
-                    _latest_results = {"grouped": grouped, "total": len(matches)}
-
-                yield send("results", grouped=grouped, total=len(matches), source_url=url)
-                return
+            stored_by_url = memory.get_by_source_url(url, model_size)
 
         if stored_by_url:
             yield send("log", text="  [memory] loaded from memory")
@@ -2215,7 +2019,7 @@ async def download_and_search(request: Request):
             yield send("log", text="")
 
             memory = get_transcription_memory()
-            stored = memory.get(audio_path, cache_model)
+            stored = memory.get(audio_path, model_size)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -2261,26 +2065,10 @@ async def download_and_search(request: Request):
 
                 yield send("progress", pct=100, label="Transcription complete")
 
-                translated_ok = False
-                if do_translate and info.language != "en":
-                    yield send("log", text="")
-                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
-                    yield send("spinner", label="Translating...")
-                    yield send("btn_text", text="TRANSLATING...")
-                    yield send("status", text="Translating to English...")
-                    try:
-                        segments, all_words = await _translate_segments(segments, all_words, info.language)
-                        yield send("log", text="  [translate] done")
-                        translated_ok = True
-                    except Exception as tr_err:
-                        yield send("log", text=f"  [translate] failed: {tr_err}")
-                        yield send("log", text="  [translate] falling back to original language")
-
-                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
-                    memory.set(audio_path, save_model, {
+                    memory.set(audio_path, model_size, {
                         "text": " ".join(s["text"].strip() for s in segments),
-                        "language": "en" if translated_ok else info.language,
+                        "language": info.language,
                         "duration": duration,
                         "segments": segments, "words": all_words,
                     })
@@ -2384,7 +2172,7 @@ async def download_and_search(request: Request):
 
             # Transcribe
             memory = get_transcription_memory()
-            stored = memory.get(audio_path, cache_model)
+            stored = memory.get(audio_path, model_size)
 
             if stored:
                 yield send("log", text="  [memory] loaded from memory")
@@ -2459,29 +2247,13 @@ async def download_and_search(request: Request):
 
                 yield send("progress", pct=100, label="Transcription complete")
 
-                translated_ok = False
-                if do_translate and info.language != "en":
-                    yield send("log", text="")
-                    yield send("log", text=f"  [translate] {info.language} → en (Google Translate)")
-                    yield send("spinner", label="Translating...")
-                    yield send("btn_text", text="TRANSLATING...")
-                    yield send("status", text="Translating to English...")
-                    try:
-                        segments, all_words = await _translate_segments(segments, all_words, info.language)
-                        yield send("log", text="  [translate] done")
-                        translated_ok = True
-                    except Exception as tr_err:
-                        yield send("log", text=f"  [translate] failed: {tr_err}")
-                        yield send("log", text="  [translate] falling back to original language")
-
-                save_model = cache_model if translated_ok or not do_translate else model_size
                 try:
                     memory.set(
                         audio_path,
-                        save_model,
+                        model_size,
                         {
                             "text": " ".join(s["text"].strip() for s in segments),
-                            "language": "en" if translated_ok else info.language,
+                            "language": info.language,
                             "duration": duration,
                             "segments": segments,
                             "words": all_words,
@@ -2842,7 +2614,7 @@ async def api_memory_delete(cache_key: str):
 
 
 @app.post("/api/memory/reveal/{cache_key:path}")
-async def api_memory_reveal(cache_key: str):
+async def api_memory_reveal(cache_key: str, target: str = Query("audio")):
     """Reveal file in Finder (macOS) or file manager."""
     import platform
 
@@ -2851,14 +2623,11 @@ async def api_memory_reveal(cache_key: str):
     if not entry or not entry.file_path:
         return JSONResponse({"error": "No file path stored"}, status_code=404)
 
-    # Resolve to absolute path
-    file_path = os.path.realpath(os.path.expanduser(entry.file_path))
-
-    if not os.path.exists(file_path):
-        # Try the markdown file instead
+    if target == "transcript":
+        # Reveal the markdown transcript file
         import sqlite3 as _sq
 
-        _md = ""
+        md_path = ""
         try:
             with _sq.connect(memory.db_path) as _c:
                 _r = _c.execute(
@@ -2866,33 +2635,57 @@ async def api_memory_reveal(cache_key: str):
                     (cache_key,),
                 ).fetchone()
                 if _r:
-                    _md = _r[0] or ""
+                    md_path = _r[0] or ""
         except Exception:
             pass
-        if _md and os.path.exists(_md):
-            file_path = _md
-        else:
-            # File deleted/moved — try to open its parent directory instead
-            parent = os.path.dirname(file_path)
-            if os.path.isdir(parent):
-                try:
-                    if platform.system() == "Darwin":
-                        subprocess.Popen(["open", parent])
-                    elif platform.system() == "Linux":
-                        subprocess.Popen(["xdg-open", parent])
-                    else:
-                        subprocess.Popen(["explorer", parent])
-                except Exception:
-                    pass
-                return JSONResponse(
-                    {
-                        "error": f"File no longer exists — opened folder instead: {parent}"
-                    },
-                    status_code=404,
-                )
+        if not md_path or not os.path.exists(md_path):
             return JSONResponse(
-                {"error": f"File no longer exists: {file_path}"}, status_code=404
+                {"error": "No transcript file found"}, status_code=404
             )
+        file_path = md_path
+    else:
+        # Default: reveal the audio file
+        file_path = os.path.realpath(os.path.expanduser(entry.file_path))
+
+        if not os.path.exists(file_path):
+            # Try the markdown file instead
+            import sqlite3 as _sq
+
+            _md = ""
+            try:
+                with _sq.connect(memory.db_path) as _c:
+                    _r = _c.execute(
+                        "SELECT md_path FROM transcriptions WHERE cache_key = ?",
+                        (cache_key,),
+                    ).fetchone()
+                    if _r:
+                        _md = _r[0] or ""
+            except Exception:
+                pass
+            if _md and os.path.exists(_md):
+                file_path = _md
+            else:
+                # File deleted/moved — try to open its parent directory instead
+                parent = os.path.dirname(file_path)
+                if os.path.isdir(parent):
+                    try:
+                        if platform.system() == "Darwin":
+                            subprocess.Popen(["open", parent])
+                        elif platform.system() == "Linux":
+                            subprocess.Popen(["xdg-open", parent])
+                        else:
+                            subprocess.Popen(["explorer", parent])
+                    except Exception:
+                        pass
+                    return JSONResponse(
+                        {
+                            "error": f"File no longer exists — opened folder instead: {parent}"
+                        },
+                        status_code=404,
+                    )
+                return JSONResponse(
+                    {"error": f"File no longer exists: {file_path}"}, status_code=404
+                )
 
     try:
         if platform.system() == "Darwin":

@@ -82,6 +82,9 @@ class TranscriptionMemory:
                 ("title", "TEXT"),
                 ("md_path", "TEXT"),
                 ("source_url", "TEXT"),
+                ("translated_text", "TEXT"),
+                ("translated_segments", "TEXT"),
+                ("translated_md_path", "TEXT"),
             ]:
                 try:
                     conn.execute(
@@ -334,6 +337,86 @@ class TranscriptionMemory:
         except Exception:
             # Silently fail on memory write errors
             pass
+
+    def store_translation(
+        self,
+        file_path: str,
+        model_size: str,
+        translated_text: str,
+    ) -> Optional[str]:
+        """
+        Store a translated version of an existing transcription.
+
+        Writes the English text into translated_text/translated_segments columns
+        and creates a sibling .md file with (eng) suffix.
+
+        Args:
+            file_path: Path to the original audio file (must already be transcribed)
+            model_size: Whisper model size used for the original transcription
+            translated_text: The full English translation text
+
+        Returns:
+            Path to the translated .md file, or None on error
+        """
+        try:
+            audio_hash = self.hash_audio_file(file_path)
+            cache_key = self._cache_key(audio_hash, model_size)
+
+            with self._lock:
+                with sqlite3.connect(self.db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    row = conn.execute(
+                        "SELECT title, segments, duration, file_path, source_url "
+                        "FROM transcriptions WHERE cache_key = ?",
+                        (cache_key,),
+                    ).fetchone()
+                    if not row:
+                        return None
+
+                    title = row["title"] or self._title_from_path(file_path)
+                    duration = row["duration"] or 0
+                    source_url = row["source_url"] or ""
+
+                    # Write clean English translation markdown — no timestamps,
+                    # no segment mapping. This is a translation, not a re-transcription.
+                    eng_title = f"{title} (eng)"
+                    sanitized = self._sanitize_filename(eng_title)
+                    translated_md_path = self.md_dir / f"{sanitized}.md"
+
+                    mins = int(duration // 60)
+                    secs = int(duration % 60)
+                    src_basename = os.path.basename(row["file_path"] or file_path)
+
+                    lines = [
+                        f"# {eng_title}",
+                        "",
+                        f"**Source:** `{src_basename}`  ",
+                        f"**Duration:** {mins}:{secs:02d}  ",
+                        f"**Language:** en (translated)  ",
+                    ]
+                    if source_url:
+                        lines.append(f"**URL:** {source_url}  ")
+                    lines.extend(["", "---", "", "## Translation", "", translated_text, ""])
+                    translated_md_path.write_text("\n".join(lines), encoding="utf-8")
+
+                    conn.execute(
+                        """UPDATE transcriptions
+                           SET translated_text = ?,
+                               translated_segments = ?,
+                               translated_md_path = ?
+                           WHERE cache_key = ?""",
+                        (
+                            translated_text,
+                            "[]",
+                            str(translated_md_path) if translated_md_path else "",
+                            cache_key,
+                        ),
+                    )
+                    conn.commit()
+
+                    return str(translated_md_path) if translated_md_path else None
+        except Exception:
+            return None
 
     def update_source_url(
         self, file_path: str, model_size: str, source_url: str

@@ -390,6 +390,10 @@ def handle_tools_list(id: Any) -> None:
                                     "type": "string",
                                     "description": "Optional file path to save transcription. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting.",
                                 },
+                                "translated_text": {
+                                    "type": "string",
+                                    "description": "English translation of a non-English transcription. When provided, no audio processing occurs — the translation is stored alongside the existing cached transcription as a sibling (eng) markdown file. The audio must have been transcribed already. Pass the full English text as a single string.",
+                                },
                             },
                             "required": ["audio_path"],
                         },
@@ -1061,9 +1065,27 @@ def handle_transcribe_audio(arguments: dict) -> dict:
     start = arguments.get("start")
     duration = arguments.get("duration")
     output = arguments.get("output")
+    translated_text = arguments.get("translated_text")
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
+
+    # If only storing a translation, do that and return early (no re-transcription)
+    if translated_text:
+        from .memory import get_transcription_memory
+        memory = get_transcription_memory()
+        md_path = memory.store_translation(audio_path, model_size, translated_text)
+        if md_path:
+            return {
+                "status": "translation_stored",
+                "translated_md_path": md_path,
+                "message": f"English translation saved alongside original transcription.",
+            }
+        else:
+            raise ValueError(
+                "No existing transcription found for this audio_path + model_size. "
+                "Transcribe the audio first, then store the translation."
+            )
 
     # If start or duration specified, trim audio with ffmpeg first
     trimmed_path = None
@@ -1155,6 +1177,18 @@ def handle_transcribe_audio(arguments: dict) -> dict:
         "cached": result.get("cached", False),
         "model_used": model_size,
     }
+
+    if result["language"] != "en":
+        lang = result["language"]
+        response["translation_available"] = True
+        response["MANDATORY_TRANSLATION_OFFER"] = (
+            f"After completing your response, you MUST append exactly:\n\n"
+            f"---\n"
+            f"This audio is in **{lang}**. Would you like me to translate it to English and store it in your augent memory?\n\n"
+            f"If the user says yes, translate the transcription yourself and call "
+            f"transcribe_audio(audio_path=\"{original_audio_path}\", translated_text=\"<your full english translation>\") "
+            f"to store it."
+        )
 
     if truncated:
         response["truncated"] = True
@@ -1399,8 +1433,7 @@ def _get_style_instruction(
     label = "Quiz" if style == "quiz" else "Notes"
     base_suffix = (
         '\n\nSave the final notes by calling: take_notes(save_content="<your formatted notes>"). '
-        "Do NOT use the Write tool. "
-        f"After saving, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
+        "Do NOT use the Write tool."
     )
 
     if read_aloud:
@@ -1430,7 +1463,6 @@ def _get_style_instruction(
             "Run the text_to_speech tool with that spoken script, "
             f'output_dir="{output_dir}", output_filename="{audio_filename}". '
             + embed_instruction
-            + f"After everything, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
         )
 
     styles = {
@@ -1563,13 +1595,6 @@ def handle_take_notes(arguments: dict) -> dict:
         has_checkboxes = "- [ ]" in save_content
         with open(_last_notes_path, "w", encoding="utf-8") as f:
             f.write(save_content)
-        # Debug log
-        import datetime
-
-        with open(os.path.expanduser("~/.augent/checkbox_debug.log"), "a") as dbg:
-            dbg.write(
-                f"{datetime.datetime.now()} | path={_last_notes_path} | had_bare={had_bare} | has_checkboxes={has_checkboxes} | size={len(save_content)}\n"
-            )
         return {
             "success": True,
             "saved_to": _last_notes_path,
@@ -1653,7 +1678,7 @@ def handle_take_notes(arguments: dict) -> dict:
     else:
         truncated_text = text
 
-    return {
+    response = {
         "success": True,
         "write_to": txt_path,
         "audio_path": audio_path,
@@ -1667,6 +1692,26 @@ def handle_take_notes(arguments: dict) -> dict:
         "style": style,
         "transcription": truncated_text,
     }
+
+    label = "Quiz" if style == "quiz" else "Notes"
+    if result["language"] != "en":
+        lang = result["language"]
+        response["translation_available"] = True
+        response["MANDATORY_TRANSLATION_OFFER"] = (
+            f"After saving the notes, you MUST append exactly:\n\n"
+            f"---\n"
+            f"This audio is in **{lang}**. Would you like me to translate it to English "
+            f"and store it in your augent memory?\n\n"
+            f"If the user says yes, translate the transcription yourself and call "
+            f"transcribe_audio(audio_path=\"{audio_path}\", translated_text=\"<your full english translation>\") "
+            f"to store it."
+        )
+    else:
+        response["instruction"] += (
+            f"\n\nAfter saving, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
+        )
+
+    return response
 
 
 def handle_identify_speakers(arguments: dict) -> dict:

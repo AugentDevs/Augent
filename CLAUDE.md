@@ -101,9 +101,11 @@ model_size: "tiny" (optional)
 start: 403 (optional, start transcription at this many seconds)
 duration: 600 (optional, only transcribe this many seconds)
 output: "~/Desktop/transcription.csv" (optional, .csv or .xlsx)
+translated_text: "The full English translation..." (optional, stores translation alongside original)
 ```
 Returns `{text, language, duration, segments: [{start, end, timestamp, text}], segment_count, cached, model_used}`
 When `output` is provided, adds `output_path` to the response. Use .xlsx for styled spreadsheets with bold headers.
+When `language` is not `en`, the response includes `translation_available: true` and a `translation_hint` — see Multilingual Workflow below.
 
 ### search_audio
 Search for keywords in audio files with timestamped results.
@@ -253,6 +255,31 @@ Clear transcription memory - no parameters needed.
 
 `tiny` handles tutorials, interviews, lectures, ads with background music, and almost everything else perfectly fine.
 
+## Multilingual Workflow
+
+Augent transcribes audio in its original language — Chinese, French, Spanish, Japanese, etc. — with full accuracy. Translation to English is handled by **you (Claude)**, not by a separate translation model. This produces far better translations than any local translator.
+
+**When `transcribe_audio` returns `language != "en"`:**
+
+1. The response includes `translation_available: true` and a `translation_hint`
+2. After completing the main task (notes saved, transcription delivered, etc.), you MUST present the translation offer **on its own line, clearly separated** from the task completion message. Use this exact format:
+
+```
+Done. Notes saved to ~/Desktop/filename.txt
+
+---
+This audio is in **Chinese**. Would you like me to translate it to English and store it in your augent memory?
+```
+
+The `---` separator and bold language name ensure the user sees this — do NOT tack it onto the end of another sentence.
+
+3. If yes: translate the transcription text yourself, then call `transcribe_audio` again with the same `audio_path` and `translated_text` containing your English translation
+4. This creates a sibling `(eng)` file in memory alongside the original — no re-transcription occurs (cache hit)
+
+**This also applies to `take_notes`:** When the transcription comes back in a non-English language, you naturally translate it while formatting notes. The original-language transcription is already in memory. If the user wants the English version stored too, call `transcribe_audio(audio_path=..., translated_text=...)` with your translation.
+
+**Web UI:** The Web UI transcribes in the original language only. For English translations of non-English audio, use the MCP workflow above — the translated version will appear in the Web UI's Memory tab automatically.
+
 ## Memory Behavior
 
 - Transcriptions are stored by file hash + model size
@@ -261,6 +288,7 @@ Clear transcription memory - no parameters needed.
 - Modified file = new transcription
 - Memory persists at `~/.augent/memory/transcriptions.db`
 - Each stored transcription also writes a `.md` file to `~/.augent/memory/transcriptions/`
+- Translated transcriptions get a sibling `(eng)` file (e.g., `My_Video.md` + `My_Video__eng_.md`)
 - Titles are derived from filenames (yt-dlp names files by video title)
 - Use `list_memories` tool or `augent memory list` to browse stored transcriptions by title
 
