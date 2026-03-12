@@ -432,6 +432,14 @@ def handle_tools_list(id: Any) -> None:
                                     "type": "string",
                                     "description": "Optional file path to save results. Use .csv for plain data or .xlsx for styled spreadsheets with bold headers and formatting.",
                                 },
+                                "clip": {
+                                    "type": "boolean",
+                                    "description": "Download actual video clips around each match. Set to true when the user asks for clips, highlights, compilations, or says they want the video itself, not just timestamps. Requires the audio to have been downloaded from a URL. Default: false",
+                                },
+                                "clip_padding": {
+                                    "type": "integer",
+                                    "description": "Seconds of padding before and after each match for clip export. Default: 10",
+                                },
                             },
                             "required": ["audio_path", "keywords"],
                         },
@@ -476,6 +484,14 @@ def handle_tools_list(id: Any) -> None:
                                 "dedup_seconds": {
                                     "type": "number",
                                     "description": "Merge matches within this many seconds of each other to avoid redundant results. Default: 0 (off). Use 60 for Q&A.",
+                                },
+                                "clip": {
+                                    "type": "boolean",
+                                    "description": "Download actual video clips around each match. Set to true when the user asks for clips, highlights, compilations, or says they want the video itself, not just timestamps. Requires the audio to have been downloaded from a URL. Default: false",
+                                },
+                                "clip_padding": {
+                                    "type": "integer",
+                                    "description": "Seconds of padding before and after each match for clip export. Default: 10",
                                 },
                             },
                             "required": ["audio_path", "query"],
@@ -993,6 +1009,8 @@ def handle_search_audio(arguments: dict) -> dict:
     model_size = arguments.get("model_size", "tiny")
     include_full = arguments.get("include_full_text", False)
     output = arguments.get("output")
+    clip = arguments.get("clip", False)
+    clip_padding = arguments.get("clip_padding", 10)
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -1051,6 +1069,29 @@ def handle_search_audio(arguments: dict) -> dict:
                 columns=cols,
                 bold_columns=["keyword", "timestamp"],
             )
+
+    # Export clips around matches if requested
+    if clip and source_url:
+        timestamps = []
+        for _kw, matches in result.items():
+            if isinstance(matches, list):
+                for m in matches:
+                    ts = m.get("timestamp_seconds", 0)
+                    if ts:
+                        timestamps.append(float(ts))
+        if timestamps:
+            result["clips"] = _export_clips_for_matches(
+                source_url, timestamps, padding=clip_padding
+            )
+        else:
+            result["clips"] = []
+            result["clip_note"] = "No matches with timestamps to clip."
+    elif clip and not source_url:
+        result["clips"] = []
+        result["clip_note"] = (
+            "No source URL found for this audio file. "
+            "Clips can only be exported when the audio was downloaded from a URL."
+        )
 
     return result
 
@@ -1812,6 +1853,8 @@ def handle_deep_search(arguments: dict) -> dict:
     output = arguments.get("output")
     context_words = arguments.get("context_words", 25)
     dedup_seconds = arguments.get("dedup_seconds", 0)
+    clip = arguments.get("clip", False)
+    clip_padding = arguments.get("clip_padding", 10)
 
     if not audio_path:
         raise ValueError("Missing required parameter: audio_path")
@@ -1854,6 +1897,27 @@ def handle_deep_search(arguments: dict) -> dict:
             result["results"],
             columns=cols,
             bold_columns=["timestamp"],
+        )
+
+    # Export clips around matches if requested
+    if clip and source_url:
+        timestamps = [
+            float(r.get("start", 0))
+            for r in result.get("results", [])
+            if r.get("start", 0)
+        ]
+        if timestamps:
+            result["clips"] = _export_clips_for_matches(
+                source_url, timestamps, padding=clip_padding
+            )
+        else:
+            result["clips"] = []
+            result["clip_note"] = "No matches with timestamps to clip."
+    elif clip and not source_url:
+        result["clips"] = []
+        result["clip_note"] = (
+            "No source URL found for this audio file. "
+            "Clips can only be exported when the audio was downloaded from a URL."
         )
 
     return result
@@ -2039,6 +2103,59 @@ def handle_separate_audio(arguments: dict) -> dict:
         )
 
     return response
+
+
+def _export_clips_for_matches(
+    source_url: str, timestamps: list[float], padding: int = 10
+) -> list[dict]:
+    """Export video clips around a list of match timestamps.
+
+    Returns a list of clip info dicts, one per exported clip.
+    Merges overlapping time ranges to avoid redundant downloads.
+    """
+    if not timestamps:
+        return []
+
+    # Build time ranges with padding, clamping start to 0
+    ranges = []
+    for ts in sorted(set(timestamps)):
+        start = max(0, ts - padding)
+        end = ts + padding
+        ranges.append((start, end, ts))
+
+    # Merge overlapping ranges
+    merged = []
+    for start, end, ts in ranges:
+        if merged and start <= merged[-1][1]:
+            # Extend the previous range, keep both original timestamps
+            prev_start, prev_end, prev_ts_list = merged[-1]
+            merged[-1] = (prev_start, max(prev_end, end), prev_ts_list + [ts])
+        else:
+            merged.append((start, end, [ts]))
+
+    clips = []
+    for start, end, ts_list in merged:
+        try:
+            clip_result = handle_clip_export(
+                {
+                    "url": source_url,
+                    "start": start,
+                    "end": end,
+                }
+            )
+            clip_result["match_timestamps"] = ts_list
+            clips.append(clip_result)
+        except Exception as e:
+            clips.append(
+                {
+                    "error": str(e),
+                    "start": start,
+                    "end": end,
+                    "match_timestamps": ts_list,
+                }
+            )
+
+    return clips
 
 
 def handle_clip_export(arguments: dict) -> dict:
