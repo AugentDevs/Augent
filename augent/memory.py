@@ -149,8 +149,8 @@ class TranscriptionMemory:
         Uses SHA256 for reliable uniqueness.
         """
         hasher = hashlib.sha256()
-        home = os.path.abspath(os.path.expanduser("~"))
-        resolved = os.path.normpath(os.path.abspath(file_path))
+        home = os.path.realpath(os.path.expanduser("~"))
+        resolved = os.path.realpath(file_path)
         if not resolved.startswith(home + os.sep) and not resolved.startswith(
             "/tmp" + os.sep
         ):
