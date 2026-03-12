@@ -262,6 +262,21 @@ select option { background:var(--black); color:var(--green); }
 .waveform-wrap { display:none; margin-top:10px; border:1px solid var(--green-border); border-radius:12px; padding:10px 12px; }
 .waveform-wrap.visible { display:block; }
 #waveform { width:100%; height:48px; cursor:pointer; }
+.waveform-loader { display:flex; align-items:center; gap:8px; height:48px; padding-left:4px; }
+.waveform-loader-bars { display:flex; align-items:center; gap:3px; height:32px; }
+.waveform-loader-bar {
+    width:3px; border-radius:2px; background:var(--green);
+    animation: waveform-pulse 1s ease-in-out infinite;
+}
+.waveform-loader-bar:nth-child(1) { height:12px; animation-delay:0s; }
+.waveform-loader-bar:nth-child(2) { height:20px; animation-delay:0.1s; }
+.waveform-loader-bar:nth-child(3) { height:28px; animation-delay:0.2s; }
+.waveform-loader-bar:nth-child(4) { height:20px; animation-delay:0.3s; }
+.waveform-loader-bar:nth-child(5) { height:12px; animation-delay:0.4s; }
+@keyframes waveform-pulse {
+    0%, 100% { opacity:0.3; transform:scaleY(0.6); }
+    50% { opacity:1; transform:scaleY(1); }
+}
 .wave-controls { display:flex; align-items:center; gap:8px; margin-top:8px; }
 .wave-btn {
     background:none; border:1px solid var(--green-border); color:var(--green);
@@ -753,6 +768,10 @@ select option { background:var(--black); color:var(--green); }
             </div>
             <div class="hint">Or paste a video/audio URL instead of uploading</div>
             <div class="waveform-wrap" id="waveformWrap">
+                <div class="waveform-loader" id="waveformLoader">
+                    <div class="waveform-loader-bars"><div class="waveform-loader-bar"></div><div class="waveform-loader-bar"></div><div class="waveform-loader-bar"></div><div class="waveform-loader-bar"></div><div class="waveform-loader-bar"></div></div>
+                    <span style="color:var(--green);font-size:12px;opacity:0.7;">Loading audio...</span>
+                </div>
                 <div id="waveform"></div>
                 <div class="wave-controls">
                     <button class="wave-btn" id="skipStartBtn" onclick="waveSkipStart()" title="Back to start">
@@ -956,12 +975,21 @@ function searchFromMemory(cardEl) {
     uploadLabel.textContent = '📁 ' + title;
     uploadZone.classList.add('has-file');
 
+    // Load waveform from the audio file immediately
+    fetch('/api/audio-token?cache_key=' + encodeURIComponent(cacheKey))
+        .then(r => r.json())
+        .then(data => { if (data.url) loadWaveform(data.url); })
+        .catch(() => {});
+
     // Focus keywords
     document.getElementById('keywords').focus();
 }
 
 function loadWaveform(url) {
     if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; }
+    const loader = document.getElementById('waveformLoader');
+    loader.style.display = 'flex';
+    document.getElementById('waveform').style.display = 'none';
     waveformWrap.classList.add('visible');
 
     wavesurfer = WaveSurfer.create({
@@ -979,6 +1007,8 @@ function loadWaveform(url) {
     const playBtn = document.getElementById('playBtn');
 
     wavesurfer.on('ready', () => {
+        loader.style.display = 'none';
+        document.getElementById('waveform').style.display = 'block';
         timeEl.textContent = '0:00 / ' + fmtTime(wavesurfer.getDuration());
     });
     wavesurfer.on('audioprocess', () => {
@@ -1658,6 +1688,19 @@ async def serve_audio(token: str = Query("")):
 
     mime = mimetypes.guess_type(file_path)[0] or "audio/mpeg"
     return Response(content=pathlib.Path(file_path).read_bytes(), media_type=mime)
+
+
+@app.get("/api/audio-token")
+async def get_audio_token(cache_key: str = Query("")):
+    """Return an audio serving token for a memory entry's source audio file."""
+    if not cache_key:
+        return JSONResponse({"error": "Missing cache_key"}, status_code=400)
+    memory = get_transcription_memory()
+    entry = memory.get_by_cache_key(cache_key)
+    if not entry or not entry.file_path or not os.path.isfile(entry.file_path):
+        return JSONResponse({"error": "Audio file not found"}, status_code=404)
+    token = _register_audio(entry.file_path)
+    return JSONResponse({"url": f"/api/audio?token={token}"})
 
 
 @app.get("/static/banner.png")
