@@ -199,8 +199,10 @@ Open: **http://127.0.0.1:9797**
 - Browse all stored transcriptions with titles, durations, and dates
 - View full transcripts with clickable YouTube timestamps
 - **Delete** individual transcriptions from memory
-- **Show in Finder** to reveal the source file
+- **Show Audio** to reveal the source file in Finder
+- **Show Transcript** to reveal the `.md` transcript file in Finder
 - **Share as HTML** — self-contained, shareable transcript pages
+- **Google Translate** for non-English transcriptions
 - Search across all memories by keyword
 
 **YouTube URL persistence:** When audio is downloaded from YouTube (via MCP, CLI, or the web UI), the source URL is permanently stored by file hash. Any future search or transcription of that file — even weeks later, even from a different path — automatically includes clickable YouTube timestamps. No need to re-enter the URL.
@@ -221,6 +223,17 @@ Open: **http://127.0.0.1:9797**
 <picture>
   <img src="./images/webui-2.png" alt="Augent Web UI - Results">
 </picture>
+
+<br />
+
+## Multilingual
+
+Augent transcribes audio in its **original language** — Chinese, French, Spanish, Japanese, etc. — with full accuracy. Translation to English is handled by Claude (or your LLM), producing far better translations than any local model.
+
+- When a transcription returns a non-English language, the MCP response includes a **translation offer**
+- Accepting stores a clean English `(eng)` sibling file in memory alongside the original
+- The Web UI includes **Google Translate** for non-English transcriptions
+- Both the original and translated versions appear in the Memory Explorer
 
 <br />
 

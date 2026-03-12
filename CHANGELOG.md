@@ -4,6 +4,33 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.3.12] - 2026-03-12
+
+### Added
+
+- **`clip_export` MCP tool:** export a video clip from any URL for a specific time range. Downloads only the requested segment — not the full video. Supports YouTube, Instagram, TikTok, Twitter/X, and 1000+ sites via yt-dlp.
+- **Multilingual translation flow:** when `transcribe_audio` or `take_notes` detects non-English audio, a translation offer is returned. Accepting stores a clean English `(eng)` sibling file in memory alongside the original transcription.
+- **Web UI "Show Transcript" button:** new document icon on memory cards reveals the `.md` transcript file in Finder, separate from the audio file reveal.
+- **Web UI "Show Audio" / "Show Transcript" in detail view:** two distinct buttons to reveal either the audio source or the transcript file.
+- **Web UI Google Translate integration:** translate non-English transcriptions directly in the browser.
+- **Web UI re-search from memory:** search a previously transcribed file again without re-uploading.
+- **Web UI boxed results:** search results now render in styled containers for better readability.
+
+### Changed
+
+- **Download filenames now include video ID:** `%(title)s [%(id)s].%(ext)s` prevents overwrites when multiple videos share the same title (e.g., multiple Instagram reels from the same account).
+- **Translation `(eng)` files are now clean English text:** no timestamps, no per-segment mapping — just the full translated text with metadata header. Previously, the line-to-segment mapping produced broken files mixing English and original language.
+- **Translation offer moved to `transcribe_audio` level:** works for any transcription call, not just `take_notes`. Removed fragile global state (`_last_translation_offer`, `_last_audio_path`).
+
+### Fixed
+
+- **CI workflow auth failures:** downgraded `actions/checkout@v6` → `@v4` and `actions/setup-python@v6` → `@v5`; added explicit `permissions: contents: read` to Tests workflow.
+- **Test count mismatch:** updated expected tool count from 16 → 17 after `clip_export` was added.
+- **Ruff lint errors:** removed f-strings without placeholders, unused `label` variable, `dict()` calls.
+- **Black formatting:** reformatted all modified files to pass CI.
+
+---
+
 ## [2026.3.11] - 2026-03-11
 
 ### Added
