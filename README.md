@@ -186,7 +186,7 @@ Full CLI for terminal-based workflows. Works standalone or with any agent.
 Local web interface. Runs 100% locally. No internet, no API keys, no data leaves your machine.
 
 ```bash
-python3 -m augent.web
+augent-web
 ```
 
 Open: **http://127.0.0.1:8282**
@@ -213,8 +213,8 @@ Open: **http://127.0.0.1:8282**
 
 | Command | Description |
 |:--------|:------------|
-| `python3 -m augent.web` | Start on port 8282 |
-| `python3 -m augent.web --port 8585` | Custom port |
+| `augent-web` | Start on port 8282 |
+| `augent-web --port 8585` | Custom port |
 
 </details>
 

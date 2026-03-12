@@ -561,7 +561,7 @@ def cmd_help(args: argparse.Namespace):
 QUICK START
 -----------
   1. Install:    curl -fsSL https://augent.app/install.sh | bash
-  2. Run Web UI: python3 -m augent.web
+  2. Run Web UI: augent-web
   3. Open:       http://127.0.0.1:8282
 
 COMMANDS
