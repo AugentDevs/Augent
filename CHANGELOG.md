@@ -12,9 +12,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **Multilingual translation flow:** when `transcribe_audio` or `take_notes` detects non-English audio, a translation offer is returned. Accepting stores a clean English `(eng)` sibling file in memory alongside the original transcription.
 - **Web UI "Show Transcript" button:** new document icon on memory cards reveals the `.md` transcript file in Finder, separate from the audio file reveal.
 - **Web UI "Show Audio" / "Show Transcript" in detail view:** two distinct buttons to reveal either the audio source or the transcript file.
-- **Web UI Google Translate integration:** translate non-English transcriptions directly in the browser.
 - **Web UI re-search from memory:** search a previously transcribed file again without re-uploading.
-- **Web UI boxed results:** search results now render in styled containers for better readability.
 
 ### Changed
 

@@ -202,7 +202,6 @@ Open: **http://127.0.0.1:9797**
 - **Show Audio** to reveal the source audio file in Finder
 - **Show Transcript** to reveal the `.md` transcript file in Finder — drag it into a Claude Code session to run the full MCP pipeline on a previously transcribed file
 - **Share as HTML** — self-contained, shareable transcript pages
-- **Google Translate** for non-English transcriptions
 - **Search across all memories** by keyword — finds matches across every transcription in your library
 
 **YouTube URL persistence:** When audio is downloaded from YouTube (via MCP, CLI, or the web UI), the source URL is permanently stored by file hash. Any future search or transcription of that file — even weeks later, even from a different path — automatically includes clickable YouTube timestamps. No need to re-enter the URL.
@@ -232,7 +231,6 @@ Augent transcribes audio in its **original language** — Chinese, French, Spani
 
 - When a transcription returns a non-English language, the MCP response includes a **translation offer**
 - Accepting stores a clean English `(eng)` sibling file in memory alongside the original
-- The Web UI includes **Google Translate** for non-English transcriptions
 - Both the original and translated versions appear in the Memory Explorer
 
 <br />
