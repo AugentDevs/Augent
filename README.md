@@ -181,7 +181,7 @@ Full CLI for terminal-based workflows. Works standalone or with any agent.
 
 ## Web UI
 
-Local web interface. Runs 100% locally — no internet, no API keys, no data leaves your machine.
+Local web interface. Runs 100% locally. No internet, no API keys, no data leaves your machine.
 
 ```bash
 python3 -m augent.web
@@ -192,19 +192,19 @@ Open: **http://127.0.0.1:9797**
 **Search view:**
 1. **Upload** an audio file or **paste a YouTube/video URL** to download audio directly
 2. **Enter keywords** separated by commas
-3. **Click SEARCH** — results stream live with timestamps and context
+3. **Click SEARCH** and results stream live with timestamps and context
 4. **YouTube timestamps** are automatically hyperlinked when the source is YouTube
 
 **Memory Explorer:**
-- Browse **all** stored transcriptions — including files transcribed via MCP or CLI, not just the Web UI. Every tool writes to the same memory.
+- Browse **all** stored transcriptions, including files transcribed via MCP or CLI. Every tool writes to the same memory.
 - View full transcripts with clickable YouTube timestamps
 - **Delete** individual transcriptions from memory
 - **Show Audio** to reveal the source audio file in Finder
-- **Show Transcript** to reveal the `.md` transcript file in Finder — drag it into a Claude Code session to run the full MCP pipeline on a previously transcribed file
-- **Share as HTML** — self-contained, shareable transcript pages
-- **Search across all memories** by keyword — finds matches across every transcription in your library
+- **Show Transcript** to reveal the `.md` transcript file in Finder. Drag it into a Claude Code session to run the full MCP pipeline on a previously transcribed file.
+- **Share as HTML** to download a self-contained, shareable transcript page
+- **Search across all memories** by keyword to find matches across every transcription in your library
 
-**YouTube URL persistence:** When audio is downloaded from YouTube (via MCP, CLI, or the web UI), the source URL is permanently stored by file hash. Any future search or transcription of that file — even weeks later, even from a different path — automatically includes clickable YouTube timestamps. No need to re-enter the URL.
+**YouTube URL persistence:** When audio is downloaded from YouTube (via MCP, CLI, or the web UI), the source URL is permanently stored by file hash. Any future search or transcription of that file, even weeks later or from a different path, automatically includes clickable YouTube timestamps. No need to re-enter the URL.
 
 <details>
 <summary>Web UI options</summary>
