@@ -23,7 +23,6 @@ from augent.mcp import (
     handle_transcribe_audio,
 )
 
-
 # ---------------------------------------------------------------------------
 # download_audio
 # ---------------------------------------------------------------------------
@@ -127,7 +126,7 @@ class TestDownloadAudio:
                 with mock.patch("shutil.which", return_value="/usr/bin/yt-dlp"):
                     with mock.patch.dict("augent.mcp._downloaded_urls", {}, clear=True):
                         from augent import mcp
-                        result = handle_download_audio(
+                        handle_download_audio(
                             {"url": "https://youtube.com/watch?v=test123", "output_dir": tmpdir}
                         )
                         assert mcp._downloaded_urls[os.path.abspath(fake_file)] == "https://youtube.com/watch?v=test123"
