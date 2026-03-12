@@ -17,8 +17,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - **Download filenames now include video ID:** `%(title)s [%(id)s].%(ext)s` prevents overwrites when multiple videos share the same title (e.g., multiple Instagram reels from the same account).
+- **Download filenames sanitized to ASCII:** `--restrict-filenames` replaces Unicode characters (smart quotes, accented characters, etc.) with safe ASCII equivalents, preventing broken file paths in downstream tools.
 - **Translation `(eng)` files are now clean English text:** no timestamps, no per-segment mapping — just the full translated text with metadata header. Previously, the line-to-segment mapping produced broken files mixing English and original language.
 - **Translation offer moved to `transcribe_audio` level:** works for any transcription call, not just `take_notes`. Removed fragile global state (`_last_translation_offer`, `_last_audio_path`).
+- **Clip export now overwrites existing files:** `--force-overwrites` ensures re-exporting a clip with different padding replaces the previous file instead of silently skipping.
+- **Default clip padding increased to 15 seconds:** up from 10s (MCP) and 5s (CLI) for better context around keyword matches.
+- **Web UI default port changed to 8282:** moved from 9797 to avoid the crowded 9000s range.
 
 ### Fixed
 
@@ -26,6 +30,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **Test count mismatch:** updated expected tool count from 16 → 17 after `clip_export` was added.
 - **Ruff lint errors:** removed f-strings without placeholders, unused `label` variable, `dict()` calls.
 - **Black formatting:** reformatted all modified files to pass CI.
+- **Handler test coverage:** added 59 tests for `download_audio`, `clip_export`, `transcribe_audio`, `chapters`, `batch_search`, and `separate_audio` — covering command construction, flag verification, parameter defaults, and error handling.
 
 ---
 
