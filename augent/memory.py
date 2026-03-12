@@ -143,24 +143,38 @@ class TranscriptionMemory:
             conn.commit()
 
     @staticmethod
+    def _validate_path(file_path: str) -> str:
+        """Resolve and validate that a path is under ~ or /tmp. Returns the safe path."""
+        home = os.path.realpath(os.path.expanduser("~"))
+        tmp = os.path.realpath("/tmp")
+        resolved = os.path.realpath(file_path)
+        try:
+            common = os.path.commonpath([resolved, home])
+            if common == home:
+                return resolved
+        except ValueError:
+            pass
+        try:
+            common = os.path.commonpath([resolved, tmp])
+            if common == tmp:
+                return resolved
+        except ValueError:
+            pass
+        raise ValueError(
+            f"Access denied: path must be under home directory or /tmp: {resolved}"
+        )
+
+    @staticmethod
     def hash_audio_file(file_path: str) -> str:
         """
         Generate a hash of the audio file content.
         Uses SHA256 for reliable uniqueness.
         """
         hasher = hashlib.sha256()
-        home = os.path.realpath(os.path.expanduser("~"))
-        tmp = os.path.realpath("/tmp")
-        resolved = os.path.realpath(file_path)
-        if not resolved.startswith(home + os.sep) and not resolved.startswith(
-            tmp + os.sep
-        ):
-            raise ValueError(
-                f"Access denied: path must be under home directory or /tmp: {resolved}"
-            )
-        if not os.path.isfile(resolved):
-            raise FileNotFoundError(f"Audio file not found: {resolved}")
-        with open(resolved, "rb") as f:
+        safe_path = TranscriptionMemory._validate_path(file_path)
+        if not os.path.isfile(safe_path):
+            raise FileNotFoundError(f"Audio file not found: {safe_path}")
+        with open(safe_path, "rb") as f:
             # Read in chunks for memory efficiency with large files
             for chunk in iter(lambda: f.read(8192), b""):
                 hasher.update(chunk)

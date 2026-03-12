@@ -1959,17 +1959,28 @@ async def download_and_search(request: Request):
         local_path = None
         if url.startswith("file://"):
             raw_path = url[7:]  # strip file://
-            local_path = os.path.realpath(raw_path)
+            resolved = os.path.realpath(raw_path)
             home = os.path.realpath(os.path.expanduser("~"))
             tmp = os.path.realpath("/tmp")
-            if not local_path.startswith(home + os.sep) and not local_path.startswith(
-                tmp + os.sep
-            ):
+            path_ok = False
+            try:
+                if os.path.commonpath([resolved, home]) == home:
+                    path_ok = True
+            except ValueError:
+                pass
+            if not path_ok:
+                try:
+                    if os.path.commonpath([resolved, tmp]) == tmp:
+                        path_ok = True
+                except ValueError:
+                    pass
+            if not path_ok:
                 yield send(
                     "log",
                     text="  [error] access denied: path must be under home directory or /tmp",
                 )
                 return
+            local_path = resolved
             if not os.path.isfile(local_path):
                 yield send("log", text=f"  [error] file not found: {local_path}")
                 return
