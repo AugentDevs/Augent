@@ -290,7 +290,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - aria2c downloader-args format causing download failures
-- Web UI default port changed from 8888 to 9797
+- Web UI default port changed from 8888 to 8282
 
 ---
 

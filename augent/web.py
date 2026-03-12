@@ -2899,7 +2899,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Augent Web UI")
     parser.add_argument(
-        "--port", "-p", type=int, default=9797, help="Port to run on (default: 9797)"
+        "--port", "-p", type=int, default=8282, help="Port to run on (default: 8282)"
     )
     args = parser.parse_args()
 

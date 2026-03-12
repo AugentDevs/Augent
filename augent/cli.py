@@ -562,7 +562,7 @@ QUICK START
 -----------
   1. Install:    curl -fsSL https://augent.app/install.sh | bash
   2. Run Web UI: python3 -m augent.web
-  3. Open:       http://127.0.0.1:9797
+  3. Open:       http://127.0.0.1:8282
 
 COMMANDS
 --------
@@ -589,7 +589,7 @@ OTHER TOOLS
 -----------
   audio-downloader "URL"                Download audio from any video URL
   audio-downloader url1 url2 url3       Download multiple URLs
-  augent-web                            Launch Web UI (http://127.0.0.1:9797)
+  augent-web                            Launch Web UI (http://127.0.0.1:8282)
   python3 -m augent.mcp                 Start MCP server for Claude Code
 
 EXAMPLES
@@ -661,7 +661,7 @@ COMMANDS
   setup openclaw                   Configure augent for OpenClaw
 
 OTHER TOOLS
-  augent-web                       Launch Web UI (http://127.0.0.1:9797)
+  augent-web                       Launch Web UI (http://127.0.0.1:8282)
   audio-downloader "URL"           Download audio from video URLs
 
 OPTIONS

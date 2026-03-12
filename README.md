@@ -189,7 +189,7 @@ Local web interface. Runs 100% locally. No internet, no API keys, no data leaves
 python3 -m augent.web
 ```
 
-Open: **http://127.0.0.1:9797**
+Open: **http://127.0.0.1:8282**
 
 **Search view:**
 1. **Upload** an audio file or **paste a YouTube/video URL** to download audio directly
@@ -213,7 +213,7 @@ Open: **http://127.0.0.1:9797**
 
 | Command | Description |
 |:--------|:------------|
-| `python3 -m augent.web` | Start on port 9797 |
+| `python3 -m augent.web` | Start on port 8282 |
 | `python3 -m augent.web --port 8585` | Custom port |
 
 </details>
