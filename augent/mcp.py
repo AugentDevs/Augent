@@ -927,7 +927,7 @@ def handle_download_audio(arguments: dict) -> dict:
         "4",
         "--no-playlist",
         "-o",
-        f"{output_dir}/%(title)s.%(ext)s",
+        f"{output_dir}/%(title)s [%(id)s].%(ext)s",
         "--print",
         "after_move:filepath",  # Print the final file path
     ]
