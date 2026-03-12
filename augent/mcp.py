@@ -980,16 +980,15 @@ def handle_download_audio(arguments: dict) -> dict:
     # Register source URL so transcription can attach it to memory
     if output_file and os.path.exists(output_file):
         _downloaded_urls[os.path.abspath(output_file)] = url
-        # Persist YouTube URLs permanently (survives restarts)
-        if _extract_youtube_id(url):
-            try:
-                from .memory import get_transcription_memory
+        # Persist source URL permanently (survives restarts)
+        try:
+            from .memory import get_transcription_memory
 
-                get_transcription_memory().save_source_url(
-                    os.path.abspath(output_file), url
-                )
-            except Exception:
-                pass
+            get_transcription_memory().save_source_url(
+                os.path.abspath(output_file), url
+            )
+        except Exception:
+            pass
 
     return {
         "success": True,
