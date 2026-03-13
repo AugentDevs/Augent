@@ -696,12 +696,26 @@ verify_packages() {
     # --- Optional packages (warn if missing) ---
     local missing_extras=()
 
-    if ! $PYTHON_CMD -c "import sentence_transformers" 2>/dev/null; then
+    start_spinner "Checking optional packages"
+
+    local has_sentence_transformers=false
+    local has_pyannote=false
+    local has_kokoro=false
+    local has_demucs=false
+
+    $PYTHON_CMD -c "import sentence_transformers" 2>/dev/null && has_sentence_transformers=true
+    $PYTHON_CMD -c "import pyannote.audio" 2>/dev/null && has_pyannote=true
+    $PYTHON_CMD -c "import kokoro" 2>/dev/null && has_kokoro=true
+    $PYTHON_CMD -c "import demucs" 2>/dev/null && has_demucs=true
+
+    stop_spinner
+
+    if ! $has_sentence_transformers; then
         log_warn "sentence-transformers not available (deep search, chapters)"
         missing_extras+=("semantic")
     fi
 
-    if ! $PYTHON_CMD -c "import pyannote.audio" 2>/dev/null; then
+    if ! $has_pyannote; then
         log_warn "pyannote-audio not available (speaker identification)"
         missing_extras+=("speakers")
     else
@@ -709,12 +723,12 @@ verify_packages() {
         download_pyannote_models
     fi
 
-    if ! $PYTHON_CMD -c "import kokoro" 2>/dev/null; then
+    if ! $has_kokoro; then
         log_warn "kokoro not available (text-to-speech)"
         missing_extras+=("tts")
     fi
 
-    if ! $PYTHON_CMD -c "import demucs" 2>/dev/null; then
+    if ! $has_demucs; then
         log_warn "demucs not available (audio source separation)"
         missing_extras+=("separator")
     fi
