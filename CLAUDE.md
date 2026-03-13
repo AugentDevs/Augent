@@ -363,9 +363,11 @@ augent search "recordings/*.mp3" "keyword" --workers 4 --format json --output re
 augent search audio.mp3 "important moment" --export-clips ./clips --clip-padding 5
 ```
 
-## Web UI Batch Processing
+## Web UI
 
-The Web UI at `http://localhost:8282` runs 100% locally (no Claude credits used).
+To start the Web UI, run `augent-web` in the terminal. It opens at `http://localhost:8282` and runs 100% locally (no Claude credits used).
+
+If port 8282 is already in use, run `augent-web --port <port>` with an available port.
 
 For parallel processing: open multiple browser tabs to the same URL. Each tab processes independently, enabling manual batch workflows.
 
