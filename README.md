@@ -100,7 +100,7 @@ augent/
 ├── cli.py          # CLI interface
 ├── web.py          # Web UI (FastAPI)
 ├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)
-└── clips.py        # Audio clip extraction
+└── clips.py        # Video clip export
 ```
 
 <br />
