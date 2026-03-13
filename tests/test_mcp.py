@@ -75,7 +75,7 @@ class TestInitialize:
 
 
 class TestToolsList:
-    def test_returns_15_tools(self):
+    def test_returns_17_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
         assert len(tools) == 17

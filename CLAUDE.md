@@ -360,7 +360,7 @@ augent search "recordings/*.mp3" "keyword" --workers 4 --format json --output re
 ### Clip Extraction
 ```bash
 # Extract audio segments around keyword matches
-augent search audio.mp3 "important moment" --export-clips ./clips --clip-padding 5
+augent search audio.mp3 "important moment" --export-clips ./clips --clip-padding 15
 ```
 
 ## Web UI

@@ -20,7 +20,7 @@ Tools exposed:
 - memory_stats: View transcription memory statistics
 - clear_memory: Clear transcription memory
 - search_memory: Search across ALL stored transcriptions
-- separate_audio: Separate audio into stems (vocals, drums, bass, other) using Demucs v4 by meaning
+- separate_audio: Separate audio into stems (vocals, drums, bass, other) using Demucs v4
 
 Usage:
   python -m augent.mcp

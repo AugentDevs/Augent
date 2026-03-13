@@ -581,7 +581,7 @@ OPTIONS
   --output, -o <file>                   Write results to file
   --workers, -w <n>                     Parallel workers for batch processing
   --export-clips <dir>                  Extract audio clips around matches
-  --clip-padding <sec>                  Seconds before/after each clip (default: 5)
+  --clip-padding <sec>                  Seconds before/after each clip (default: 15)
   --no-cache                            Skip transcription cache
   --stream                              Stream progress to stderr
 
