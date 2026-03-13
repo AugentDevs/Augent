@@ -501,24 +501,22 @@ def _write_skill_md(dest: Path, mcp_cmd: Optional[str], python_abs: str):
 
     content = f"""---
 name: augent
-description: Audio intelligence toolkit. Transcribe, search by keyword or meaning, take notes, detect chapters, identify speakers, and text-to-speech — all local, all private. All MCP tools for audio.
+description: Audio intelligence toolkit. Transcribe, search, take notes, detect chapters, identify speakers, separate audio, export clips, and text-to-speech — all local, all private. 17 MCP tools for audio.
 homepage: https://github.com/AugentDevs/Augent
-metadata: {{"openclaw":{{"emoji":"🎙","requires":{{"bins":["augent-mcp","ffmpeg"]}},"install":[{{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp"],"label":"Install augent (uv)"}}]}}}}
+metadata: {{"openclaw":{{"emoji":"🎙","os":["darwin","linux","win32"],"requires":{{"bins":["augent-mcp","ffmpeg"]}},"install":[{{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (uv)"}},{{"id":"pip","kind":"pip","package":"augent[all]","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (pip)"}}]}}}}
 ---
 
 # Augent — Audio Intelligence for AI Agents
 
-All MCP tools for audio: transcribe, search, take notes, identify speakers, detect chapters, and text-to-speech. Fully local, fully private.
+17 MCP tools for audio: transcribe, search, take notes, identify speakers, detect chapters, separate audio, export clips, and text-to-speech. Fully local, fully private.
 
 ## Config
 
 ```json
 {{
-  "mcp": {{
-    "servers": {{
-      "augent": {{
+  "mcpServers": {{
+    "augent": {{
 {config_json}
-      }}
     }}
   }}
 }}
@@ -532,7 +530,7 @@ curl -fsSL https://augent.app/install.sh | bash
 
 ## Tools
 
-download_audio, transcribe_audio, search_audio, deep_search, take_notes, chapters, search_proximity, identify_speakers, batch_search, text_to_speech, list_files, list_memories, memory_stats, clear_memory
+download_audio, transcribe_audio, search_audio, deep_search, search_memory, take_notes, clip_export, chapters, search_proximity, identify_speakers, separate_audio, batch_search, text_to_speech, list_files, list_memories, memory_stats, clear_memory
 
 ## Links
 
