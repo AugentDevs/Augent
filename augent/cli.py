@@ -652,9 +652,8 @@ Usage:
   augent <command> [options]
 
 Commands:
-  search <file> "keywords"         Search audio for keywords
+  search <file> "keywords"         Search audio, export clips
   transcribe <file>                Full transcription
-    --export-clips <dir>           Export clips around matches
   proximity <file> "A" "B"         Find two keywords near each other
   memory stats                     View memory statistics
   memory list                      List stored transcriptions
