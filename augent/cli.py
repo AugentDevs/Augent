@@ -645,37 +645,45 @@ def print_simple_help():
     help_text = f"""
 {render_banner('AUGENT')}
 
-augent v{version}
+  augent v{version}
+  Audio intelligence for AI agents.
 
-Audio intelligence for agents
+Usage:
+  augent <command> [options]
 
-Usage: augent <command> [options]
-
-COMMANDS
+Commands:
   search <file> "keywords"         Search audio for keywords
   transcribe <file>                Full transcription
-  proximity <file> "A" "B"         Find keyword A near keyword B
-  memory <action>                  Manage memory (stats | list | clear)
+  proximity <file> "A" "B"         Find two keywords near each other
+  memory stats                     View memory statistics
+  memory list                      List stored transcriptions
+  memory search "query"            Search across all transcriptions
+  memory clear                     Clear transcription memory
+  memory clear-models              Remove downloaded Whisper models
   setup openclaw                   Configure augent for OpenClaw
 
-OTHER TOOLS
-  augent-web                       Launch Web UI (http://127.0.0.1:8282)
-  audio-downloader "URL"           Download audio from video URLs
+Related Tools:
+  augent-web                       Launch the web UI
+  augent-mcp                       Start the MCP server
+  audio-downloader "URL"           Download audio from any URL
 
-OPTIONS
-  --model, -m <size>               Whisper model (tiny | base | small | medium | large)
-  --format <fmt>                   Output format (json | csv | srt | vtt | markdown)
-  --output, -o <file>              Write results to file
-  --workers, -w <n>                Parallel workers for batch processing
+Global Options:
+  -m, --model <size>               Whisper model: tiny, base, small, medium, large
+  -f, --format <fmt>               Output: json, csv, srt, vtt, markdown
+  -o, --output <file>              Write results to file
+  -w, --workers <n>                Parallel workers for batch processing
+  -q, --quiet                      Suppress progress output
+  --no-cache                       Skip transcription cache
 
-EXAMPLES
-  audio-downloader "https://youtube.com/watch?v=xxx"
-  augent search tutorial.mp3 "install,setup,configure"
-  augent search "*.mp3" "keyword" --workers 4 --format csv
+Examples:
+  augent search podcast.mp3 "AI,automation"
+  augent search "*.mp3" "keyword" -w 4 --format csv
   augent transcribe lecture.mp3 --format srt -o subtitles.srt
+  augent proximity interview.mp3 "problem" "solution" -d 30
+  augent memory search "funding" --semantic
 
-Run 'augent help' for full documentation.
-Docs: https://docs.augent.app
+Run 'augent help' for the full reference.
+https://docs.augent.app
 """
     print(help_text)
 
