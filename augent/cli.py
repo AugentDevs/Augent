@@ -673,16 +673,13 @@ Global Options:
   -o, --output <file>              Write results to file
   -w, --workers <n>                Parallel workers for batch processing
   --export-clips <dir>             Extract audio clips around matches
-  -q, --quiet                      Suppress progress output
   --no-cache                       Skip transcription cache
 
 Examples:
-  augent search podcast.mp3 "AI,automation"
+  augent search podcast.mp3 "AI,automation" --export-clips ./clips
   augent search "*.mp3" "keyword" -w 4 --format csv
   augent transcribe lecture.mp3 --format srt -o subtitles.srt
   augent proximity interview.mp3 "problem" "solution" -d 30
-  augent search interview.mp3 "key moment" --export-clips ./clips
-  augent memory search "funding" --semantic
 
 Run 'augent help' for the full reference.
 https://docs.augent.app
