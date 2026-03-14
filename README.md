@@ -52,13 +52,19 @@ Works on macOS and Linux. Installs everything automatically.
 
 <br />
 
-The installer is a single bash script ([source](https://github.com/AugentDevs/Augent/blob/main/install.sh)). It does three things:
+The installer is a single bash script ([source](https://github.com/AugentDevs/Augent/blob/main/install.sh)). Every dependency is open source:
 
-1. **Dependencies** — installs open source system packages via your package manager ([Python](https://github.com/python/cpython), [FFmpeg](https://github.com/FFmpeg/FFmpeg), [yt-dlp](https://github.com/yt-dlp/yt-dlp), [aria2](https://github.com/aria2/aria2), [espeak-ng](https://github.com/espeak-ng/espeak-ng)) and Python packages via pip ([faster-whisper](https://github.com/SYSTRAN/faster-whisper), [sentence-transformers](https://github.com/UKPLab/sentence-transformers), [pyannote-audio](https://github.com/pyannote/pyannote-audio), [Kokoro](https://github.com/hexgrad/kokoro), [Demucs](https://github.com/adefossez/demucs), [PyTorch](https://github.com/pytorch/pytorch), [FastAPI](https://github.com/fastapi/fastapi))
-2. **PATH** — adds bin directories to your shell rc file if not already present
-3. **MCP** — registers the Augent MCP server with Claude Code (and [OpenClaw](https://openclaw.ai) if detected)
+| System packages | Python packages |
+|---|---|
+| [Python](https://github.com/python/cpython) | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) |
+| [FFmpeg](https://github.com/FFmpeg/FFmpeg) | [PyTorch](https://github.com/pytorch/pytorch) |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | [sentence-transformers](https://github.com/UKPLab/sentence-transformers) |
+| [aria2](https://github.com/aria2/aria2) | [pyannote-audio](https://github.com/pyannote/pyannote-audio) |
+| [espeak-ng](https://github.com/espeak-ng/espeak-ng) | [Kokoro](https://github.com/hexgrad/kokoro) |
+| | [Demucs](https://github.com/adefossez/demucs) |
+| | [FastAPI](https://github.com/fastapi/fastapi) |
 
-Every dependency is open source. No background services. No telemetry. No sudo on macOS.
+No background services. No telemetry. No sudo on macOS.
 
 | | |
 |---|---|
