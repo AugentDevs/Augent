@@ -3117,14 +3117,14 @@ async def clip_export(request: Request):
         "duration_formatted": duration_formatted,
         "file_size_mb": file_size_mb,
         "date": time.strftime("%Y-%m-%d"),
-        "title": out_filename,
+        "title": os.path.basename(out_path),
     }
     _save_clip(clip_entry)
 
     return JSONResponse(
         {
             "clip_path": out_path,
-            "filename": out_filename,
+            "filename": os.path.basename(out_path),
             "duration": duration,
             "duration_formatted": duration_formatted,
             "file_size_mb": file_size_mb,
