@@ -558,9 +558,9 @@ def cmd_help(args: argparse.Namespace):
 
 QUICK START
 -----------
-  1. Install:    curl -fsSL https://augent.app/install.sh | bash
-  2. Run Web UI: augent-web
-  3. Open:       http://127.0.0.1:8282
+  Install:    curl -fsSL https://augent.app/install.sh | bash
+  Run Web UI: augent-web
+  Open:       http://127.0.0.1:8282
 
 COMMANDS
 --------
@@ -569,8 +569,10 @@ COMMANDS
   augent proximity <file> "A" "B"       Find keyword A near keyword B
   augent memory stats                   View memory statistics
   augent memory list                    List stored transcriptions by title
+  augent memory search "query"          Search across all stored transcriptions
   augent memory clear                   Clear transcription memory
   augent memory clear-models            Clear downloaded Whisper models
+  augent setup openclaw                 Configure augent for OpenClaw
 
 OPTIONS
 -------
@@ -578,7 +580,7 @@ OPTIONS
   --format <fmt>                        Output format (json | csv | srt | vtt | markdown)
   --output, -o <file>                   Write results to file
   --workers, -w <n>                     Parallel workers for batch processing
-  --export-clips <dir>                  Extract audio clips around matches
+  --export-clips <dir>                  Extract audio clips around keyword matches
   --clip-padding <sec>                  Seconds before/after each clip (default: 15)
   --no-cache                            Skip transcription cache
   --stream                              Stream progress to stderr
@@ -588,13 +590,13 @@ OTHER TOOLS
   audio-downloader "URL"                Download audio from any video URL
   audio-downloader url1 url2 url3       Download multiple URLs
   augent-web                            Launch Web UI (http://127.0.0.1:8282)
-  python3 -m augent.mcp                 Start MCP server for Claude Code
+  augent-mcp                            Start MCP server for Claude Code
 
 EXAMPLES
 --------
   # Download and transcribe
   audio-downloader "https://youtube.com/watch?v=xxx"
-  augent transcribe ~/Downloads/JRE-2420.webm
+  augent transcribe ~/Downloads/podcast.webm
 
   # Search for keywords
   augent search podcast.mp3 "lucrative,funding,healthiest"
@@ -606,11 +608,14 @@ EXAMPLES
   augent search audio.mp3 "keyword" --format csv -o results.csv
   augent transcribe audio.mp3 --format srt -o subtitles.srt
 
-  # Extract audio clips around matches
+  # Extract audio clips around keyword matches
   augent search audio.mp3 "important" --export-clips ./clips
 
   # Proximity search
   augent proximity audio.mp3 "problem" "solution" --distance 30
+
+  # Search across all stored transcriptions
+  augent memory search "sea moss"
 
 MODEL SIZES
 -----------
@@ -620,8 +625,8 @@ MODEL SIZES
   medium   Slow, outstanding accuracy
   large    Slowest, maximum accuracy
 
-REQUIREMENTS
-------------
+INSTALLED BY THE ONE-LINER
+--------------------------
   Python 3.10+ | FFmpeg | yt-dlp + aria2
 
 Docs:   https://docs.augent.app
