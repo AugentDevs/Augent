@@ -1561,7 +1561,7 @@ function appendBox(lines, showBanner) {
         const img = document.createElement('img');
         img.src = '/static/banner.png';
         img.alt = 'AUGENT';
-        img.style.cssText = 'width:clamp(140px, 20vw, 280px);height:auto;image-rendering:auto;pointer-events:none;-webkit-user-drag:none;opacity:0.7;flex-shrink:0;';
+        img.style.cssText = 'width:clamp(140px, 20vw, 280px);height:auto;image-rendering:auto;pointer-events:none;-webkit-user-drag:none;flex-shrink:0;';
         box.appendChild(img);
     } else {
         box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;white-space:pre;';
