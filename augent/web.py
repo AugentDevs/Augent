@@ -339,12 +339,12 @@ select option { background:var(--black); color:var(--green); }
     pointer-events:none; user-select:none; -webkit-user-select:none;
 }
 .log-banner-img {
-    display:block; width:320px; height:auto;
+    display:block; width:clamp(240px, 30vw, 520px); height:auto;
     image-rendering: -webkit-optimize-contrast;
     pointer-events:none; -webkit-user-drag:none;
 }
 .log-tagline {
-    font-family: var(--sans); font-size:11px; font-weight:600;
+    font-family: var(--sans); font-size:clamp(11px, 1.2vw, 14px); font-weight:600;
     letter-spacing:1px; color:var(--green-dim); margin-top:8px;
 }
 .log-text {
