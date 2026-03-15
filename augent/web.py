@@ -364,9 +364,8 @@ select option { background:var(--black); color:var(--green); }
 .results-content table { width:100%; border-collapse:collapse; }
 .results-content th { text-align:left; padding:8px; border-bottom:1px solid var(--green-border-hover); font-size:12px; font-weight:600; }
 .results-content td { padding:8px; border-bottom:1px solid var(--green-border); font-size:13px; }
-.results-content tbody tr { transition: transform 0.12s ease-out; }
-.results-content tbody tr:hover { transform:translateY(-1px); }
-.results-content td:first-child { font-family:var(--mono); white-space:nowrap; width:70px; }
+.results-content td:first-child { font-family:var(--mono); white-space:nowrap; width:auto; vertical-align:middle; }
+.results-content td:last-child { vertical-align:middle; }
 .results-content .match-word { color:#FFFFFF; font-weight:700; }
 
 /* Progress bar */
@@ -467,10 +466,11 @@ select option { background:var(--black); color:var(--green); }
 .clip-btn {
     background:none; border:none; cursor:pointer; padding:2px 4px;
     color:var(--green-dim); opacity:0.5; transition:opacity 0.15s;
-    vertical-align:middle; margin-left:6px;
+    vertical-align:middle; margin-left:4px; display:inline-flex;
+    align-items:center;
 }
 .clip-btn:hover { opacity:1; }
-.clip-btn svg { width:14px; height:14px; vertical-align:middle; }
+.clip-btn svg { width:12px; height:12px; }
 .clip-modal {
     position:fixed; inset:0; z-index:1000;
     display:flex; align-items:center; justify-content:center;
