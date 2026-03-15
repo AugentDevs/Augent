@@ -1552,17 +1552,20 @@ function appendBox(lines, showBanner) {
     const container = document.createElement('div');
     container.style.cssText = 'margin:8px 0;display:inline-block;';
     const box = document.createElement('div');
-    box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;white-space:pre;';
-    box.textContent = lines.join('\n');
     if (showBanner) {
-        const bannerWrap = document.createElement('div');
-        bannerWrap.style.cssText = 'text-align:center;margin-bottom:6px;';
+        box.style.cssText = 'border:1px solid var(--green);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:16px;';
+        const textEl = document.createElement('div');
+        textEl.style.cssText = 'white-space:pre;';
+        textEl.textContent = lines.join('\n');
+        box.appendChild(textEl);
         const img = document.createElement('img');
         img.src = '/static/banner.png';
         img.alt = 'AUGENT';
-        img.style.cssText = 'width:180px;height:auto;image-rendering:-webkit-optimize-contrast;pointer-events:none;-webkit-user-drag:none;';
-        bannerWrap.appendChild(img);
-        container.appendChild(bannerWrap);
+        img.style.cssText = 'width:clamp(140px, 20vw, 280px);height:auto;image-rendering:auto;pointer-events:none;-webkit-user-drag:none;opacity:0.7;flex-shrink:0;';
+        box.appendChild(img);
+    } else {
+        box.style.cssText = 'border:1px solid var(--green);border-radius:6px;padding:8px 14px;white-space:pre;';
+        box.textContent = lines.join('\n');
     }
     container.appendChild(box);
     logBox.appendChild(container);
