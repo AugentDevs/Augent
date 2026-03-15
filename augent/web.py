@@ -942,14 +942,13 @@ select option { background:var(--black); color:var(--green); }
 
         <div class="tips">
             <strong>Tips:</strong>
-            <span class="tip-line">&#183; Click the film icon on any result to create a clip export</span>
-            <span class="tip-line">&#183; Drag on the waveform to select a custom clip range</span>
-            <span class="tip-line">&#183; Use nudge buttons to fine-tune clip boundaries by 1s or 5s</span>
-            <span class="tip-line">&#183; Preview your clip before exporting to hear exactly what you'll get</span>
-            <span class="tip-line">&#183; Results stored in memory — switch to Memory tab to re-search instantly</span>
+            <span class="tip-line">&#183; Click the film icon on any result to clip export</span>
+            <span class="tip-line">&#183; Drag on the waveform to select a clip range</span>
+            <span class="tip-line">&#183; Nudge clip edges by &#177;1s or &#177;5s, preview before export</span>
+            <span class="tip-line">&#183; Results persist in Memory for instant re-search</span>
+            <span class="tip-line">&#183; Paste a YouTube URL for clickable timestamps</span>
+            <span class="tip-line">&#183; Search across all transcriptions in Memory tab</span>
             <span class="tip-line">&#183; Open multiple tabs for parallel processing</span>
-            <span class="tip-line">&#183; Paste a YouTube URL to get clickable timestamps on every match</span>
-            <span class="tip-line">&#183; Use Memory search to find keywords across all your transcriptions</span>
         </div>
     </div>
 
