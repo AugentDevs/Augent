@@ -229,6 +229,13 @@ Open: **http://127.0.0.1:8282**
 3. **Click SEARCH** and results stream live with timestamps and context
 4. **YouTube timestamps** are automatically hyperlinked when the source is YouTube
 
+**Clip export:**
+- Click the **film icon** on any search result to create a visual region on the waveform, or **drag on the waveform** to select any range manually
+- **Nudge buttons** (±1s / ±5s) on each edge for precise boundary adjustment
+- **Preview** plays only the selected range so you hear exactly what will be exported
+- **Export MP4** downloads only the selected segment — not the full video
+- Keyboard shortcuts: `Space` preview, `Enter` export, `Esc` close
+
 **Memory Explorer:**
 - Browse **all** stored transcriptions, including files transcribed via MCP or CLI. Every tool writes to the same memory.
 - View full transcripts with clickable YouTube timestamps
