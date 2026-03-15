@@ -577,13 +577,44 @@ select option { background:var(--black); color:var(--green); }
 .clip-export-btn:active { transform:translateY(0); }
 .clip-export-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
 .clip-status-bar {
-    margin-top:8px; font-size:12px; color:var(--green-dim);
-    display:none; align-items:center; gap:8px;
+    margin-top:10px; display:none;
 }
-.clip-status-bar.visible { display:flex; }
-.clip-status-bar a { color:var(--green); text-decoration:none; font-weight:600; }
-.clip-status-bar a:hover { text-decoration:underline; }
-.clip-status-bar .clip-done-icon { color:var(--green); font-size:14px; }
+.clip-status-bar.visible { display:block; }
+.clip-status-bar.error { font-size:12px; color:#ff6b6b; padding:4px 0; }
+.clip-status-bar.loading { font-size:12px; color:var(--green-dim); padding:4px 0; }
+.clip-saved-card {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 14px; border:1px solid var(--green-border-hover);
+    border-radius:10px; background:rgba(0,240,96,0.04);
+}
+.clip-saved-icon {
+    width:36px; height:36px; border-radius:8px; flex-shrink:0;
+    background:rgba(0,240,96,0.1); border:1px solid var(--green-border);
+    display:flex; align-items:center; justify-content:center;
+}
+.clip-saved-icon svg { width:18px; height:18px; color:var(--green); }
+.clip-saved-info { flex:1; min-width:0; }
+.clip-saved-title {
+    font-size:12px; font-weight:600; color:var(--green);
+    word-break:break-word; line-height:1.4; margin-bottom:2px;
+}
+.clip-saved-meta {
+    font-size:11px; color:var(--green-dim); display:flex;
+    align-items:center; gap:6px; flex-wrap:wrap;
+}
+.clip-saved-meta .pill {
+    background:rgba(0,240,96,0.08); border:1px solid var(--green-border);
+    padding:1px 7px; border-radius:5px; font-size:10px; font-weight:600;
+    color:var(--green);
+}
+.clip-saved-reveal {
+    flex-shrink:0; background:none; border:1px solid var(--green-border);
+    color:var(--green); padding:6px 12px; border-radius:8px; cursor:pointer;
+    font-family:var(--sans); font-size:11px; font-weight:600;
+    display:flex; align-items:center; gap:5px;
+    transition:all 0.15s;
+}
+.clip-saved-reveal:hover { border-color:var(--green); background:var(--green-hover); }
 .clip-hints {
     margin-top:8px; border-top:1px solid var(--green-border); padding-top:8px;
 }
@@ -1848,8 +1879,21 @@ async function exportClip() {
         if (data.error) {
             setClipStatus('Error: ' + data.error, 'error');
         } else {
-            const revealLink = '<a href="#" onclick="event.preventDefault();revealClip(\'' + escHtml(data.clip_path).replace(/'/g, "\\'") + '\')">Reveal in Finder</a>';
-            setClipStatus('<span class="clip-done-icon">\u2713</span> Saved <strong>' + escHtml(data.filename) + '</strong> \u2014 ' + data.file_size_mb + ' MB, ' + data.duration_formatted + ' &middot; ' + revealLink, 'success');
+            const clipPath = escHtml(data.clip_path).replace(/'/g, "\\'");
+            setClipStatus(
+                '<div class="clip-saved-card">' +
+                '<div class="clip-saved-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>' +
+                '<div class="clip-saved-info">' +
+                '<div class="clip-saved-title">' + escHtml(data.filename) + '</div>' +
+                '<div class="clip-saved-meta"><span>' + data.duration_formatted + '</span><span class="pill">' + data.file_size_mb + ' MB</span></div>' +
+                '</div>' +
+                '<button class="clip-saved-reveal" onclick="revealClip(\'' + clipPath + '\')">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' +
+                'Reveal' +
+                '</button>' +
+                '</div>',
+                'success'
+            );
             playExportSound();
             if (document.getElementById('view-clips')) loadClipsList();
         }
@@ -1864,8 +1908,7 @@ async function exportClip() {
 function setClipStatus(html, type) {
     const bar = document.getElementById('clipStatusBar');
     bar.innerHTML = html;
-    bar.classList.add('visible');
-    bar.style.color = type === 'error' ? '#ff6b6b' : type === 'success' ? 'var(--green)' : 'var(--green-dim)';
+    bar.className = 'clip-status-bar visible' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' : '');
 }
 
 // Keyboard shortcuts for clip toolbar
