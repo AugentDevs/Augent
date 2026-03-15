@@ -3073,7 +3073,7 @@ async def clip_export(request: Request):
         section,
         "--force-keyframes-at-cuts",
         "-f",
-        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "bestvideo+bestaudio/best",
         "--merge-output-format",
         "mp4",
         "--no-playlist",
