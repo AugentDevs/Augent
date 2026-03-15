@@ -855,6 +855,104 @@ select option { background:var(--black); color:var(--green); }
     color: var(--green-dim);
     margin-top: 4px;
 }
+
+/* ======== CLIPS VIEW ======== */
+.clips-view {
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.clips-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--green-border);
+}
+.clips-toolbar .clips-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+.clips-toolbar .clips-stats {
+    font-size: 14px;
+    color: var(--green);
+    margin-left: auto;
+}
+
+.clips-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 24px 48px;
+}
+
+.clips-empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--green-dim);
+    font-size: 14px;
+}
+
+.clip-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    transition: border-color 0.15s, background 0.15s;
+}
+.clip-card:hover { border-color: var(--green-border); background: var(--green-hover); }
+
+.clip-card .clip-info { flex: 1; min-width: 0; }
+.clip-card .clip-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+.clip-card .clip-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--green-dim);
+}
+.clip-card .clip-meta .pill {
+    background: rgba(0,240,96,0.08);
+    border: 1px solid var(--green-border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--green);
+}
+
+.clip-card .clip-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.clip-card .clip-actions button {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--green-border);
+    background: none;
+    color: var(--green);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+.clip-card .clip-actions button:hover {
+    border-color: var(--green-border-hover);
+    background: var(--green-hover);
+}
+.clip-card .clip-actions button svg { width: 14px; height: 14px; }
 </style>
 </head>
 <body>
@@ -864,6 +962,7 @@ select option { background:var(--black); color:var(--green); }
     <span class="brand">Augent</span>
     <button class="nav-btn active" onclick="switchView('search', this)">Search</button>
     <button class="nav-btn" onclick="switchView('memory', this)">Memory</button>
+    <button class="nav-btn" onclick="switchView('clips', this)">Clips</button>
 </div>
 
 <!-- ============ SEARCH VIEW ============ -->
@@ -1050,6 +1149,17 @@ select option { background:var(--black); color:var(--green); }
     </div>
 </div>
 
+<!-- ============ CLIPS VIEW ============ -->
+<div class="view clips-view" id="view-clips">
+    <div class="clips-toolbar">
+        <span class="clips-title">Clip Exports</span>
+        <span class="clips-stats" id="clipsStats"></span>
+    </div>
+    <div class="clips-body" id="clipsBody">
+        <div class="clips-empty" id="clipsEmpty">Loading...</div>
+    </div>
+</div>
+
 <script>
 /* ============ GLOBALS ============ */
 let uploadedFile = null;
@@ -1065,6 +1175,7 @@ function switchView(name, btn) {
     document.getElementById('view-' + name).classList.add('active');
     if (btn) btn.classList.add('active');
     if (name === 'memory') loadMemoryList();
+    if (name === 'clips') loadClipsList();
 }
 
 /* ============ SEARCH VIEW ============ */
@@ -1728,6 +1839,8 @@ async function exportClip() {
             setClipStatus('Error: ' + data.error, 'error');
         } else {
             setClipStatus('<span class="clip-done-icon">\u2713</span> Saved <strong>' + escHtml(data.filename) + '</strong> \u2014 ' + data.file_size_mb + ' MB, ' + data.duration_formatted, 'success');
+            playExportSound();
+            if (document.getElementById('view-clips')) loadClipsList();
         }
     } catch (err) {
         setClipStatus('Error: ' + err.message, 'error');
@@ -1964,6 +2077,90 @@ async function deleteMemory(cacheKey, btnEl) {
     } catch (err) {
         alert('Error: ' + err.message);
     }
+}
+
+/* ============ CLIPS VIEW ============ */
+async function loadClipsList() {
+    const body = document.getElementById('clipsBody');
+    const statsEl = document.getElementById('clipsStats');
+    try {
+        const resp = await fetch('/api/clips/list');
+        const data = await resp.json();
+        const clips = data.clips || [];
+        statsEl.textContent = clips.length + ' clip' + (clips.length !== 1 ? 's' : '');
+
+        if (clips.length === 0) {
+            body.innerHTML = '<div class="clips-empty">No clip exports yet.<br>Use the clip export tool to save video segments.</div>';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < clips.length; i++) {
+            const c = clips[i];
+            html += '<div class="clip-card" data-index="' + i + '">';
+            html += '<div class="clip-info">';
+            html += '<div class="clip-title">' + escHtml(c.title) + '</div>';
+            html += '<div class="clip-meta">';
+            html += '<span>' + escHtml(c.duration_formatted) + '</span>';
+            html += '<span class="pill">' + c.file_size_mb + ' MB</span>';
+            html += '<span>' + escHtml(c.date) + '</span>';
+            html += '</div></div>';
+            html += '<div class="clip-actions">';
+            html += '<button onclick="revealClip(\'' + escHtml(c.path).replace(/'/g, "\\'") + '\')" title="Show in Finder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>';
+            html += '<button onclick="deleteClip(' + i + ', this)" title="Remove from list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
+            html += '</div></div>';
+        }
+        body.innerHTML = html;
+    } catch (err) {
+        body.innerHTML = '<div class="clips-empty">Error loading clips</div>';
+    }
+}
+
+async function revealClip(path) {
+    try {
+        await fetch('/api/clips/reveal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({path: path})
+        });
+    } catch (err) {
+        alert('Could not connect to server');
+    }
+}
+
+async function deleteClip(index, btnEl) {
+    try {
+        const resp = await fetch('/api/clips/' + index, {method: 'DELETE'});
+        if (resp.ok) {
+            const card = btnEl.closest('.clip-card');
+            if (card) card.remove();
+            const remaining = document.querySelectorAll('.clip-card').length;
+            document.getElementById('clipsStats').textContent =
+                remaining + ' clip' + (remaining !== 1 ? 's' : '');
+            if (remaining === 0) {
+                document.getElementById('clipsBody').innerHTML =
+                    '<div class="clips-empty">No clip exports yet.<br>Use the clip export tool to save video segments.</div>';
+            }
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function playExportSound() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.value = 0.15;
+    osc.start();
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime + 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.stop(ctx.currentTime + 0.3);
 }
 
 /* ============ STATE PERSISTENCE ============ */
@@ -2755,6 +2952,33 @@ async def download_and_search(request: Request):
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+def _clips_path() -> str:
+    """Return path to ~/.augent/clips.json."""
+    p = os.path.expanduser("~/.augent/clips.json")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    return p
+
+
+def _load_clips() -> list:
+    """Read clips.json, return list."""
+    p = _clips_path()
+    if not os.path.exists(p):
+        return []
+    try:
+        with open(p, "r") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _save_clip(clip_dict: dict):
+    """Append a clip entry to clips.json."""
+    clips = _load_clips()
+    clips.append(clip_dict)
+    with open(_clips_path(), "w") as f:
+        json.dump(clips, f, indent=2)
+
+
 @app.post("/api/clip-export")
 async def clip_export(request: Request):
     """Export a video clip from a URL for a specific time range."""
@@ -2783,6 +3007,35 @@ async def clip_export(request: Request):
 
     section = f"*{fmt_time(start)}-{fmt_time(end)}"
 
+    # Get the title first so we can find a unique filename
+    title_cmd = [ytdlp, "--print", "%(title)s", "--no-download", url]
+    try:
+        title_result = await asyncio.to_thread(
+            subprocess.run, title_cmd, capture_output=True, text=True, timeout=30
+        )
+        raw_title = title_result.stdout.strip().split("\n")[0] if title_result.returncode == 0 else ""
+    except Exception:
+        raw_title = ""
+
+    if not raw_title:
+        raw_title = "clip"
+
+    # Sanitize title for filesystem
+    safe_title = re.sub(r'[<>:"/\\|?*]', '_', raw_title).strip().rstrip('.')
+
+    # Find next available filename
+    base = os.path.join(output_dir, f"{safe_title}_clip")
+    ext = ".mp4"
+    if not os.path.exists(base + ext):
+        out_filename = f"{safe_title}_clip{ext}"
+    else:
+        counter = 2
+        while os.path.exists(f"{base}_{counter}{ext}"):
+            counter += 1
+        out_filename = f"{safe_title}_clip_{counter}{ext}"
+
+    out_path = os.path.join(output_dir, out_filename)
+
     cmd = [
         ytdlp,
         "--download-sections",
@@ -2794,9 +3047,7 @@ async def clip_export(request: Request):
         "mp4",
         "--no-playlist",
         "-o",
-        os.path.join(output_dir, "%(title)s_clip.%(ext)s"),
-        "--print",
-        "after_move:filepath",
+        out_path,
         url,
     ]
 
@@ -2811,24 +3062,94 @@ async def clip_export(request: Request):
         error_msg = result.stderr.strip()[-200:] if result.stderr else "Unknown error"
         return JSONResponse({"error": f"yt-dlp failed: {error_msg}"})
 
-    output_lines = result.stdout.strip().split("\n")
-    clip_path = output_lines[-1] if output_lines else None
-
-    if not clip_path or not os.path.exists(clip_path):
+    if not os.path.exists(out_path):
         return JSONResponse({"error": "Clip file not found after export"})
 
-    file_size = os.path.getsize(clip_path)
+    file_size = os.path.getsize(out_path)
     duration = end - start
+    duration_formatted = f"{int(duration // 60)}:{int(duration % 60):02d}"
+    file_size_mb = round(file_size / (1024 * 1024), 2)
+
+    # Track clip in clips.json
+    clip_entry = {
+        "path": out_path,
+        "url": url,
+        "start": start,
+        "end": end,
+        "duration": duration,
+        "duration_formatted": duration_formatted,
+        "file_size_mb": file_size_mb,
+        "date": time.strftime("%Y-%m-%d"),
+        "title": out_filename,
+    }
+    _save_clip(clip_entry)
 
     return JSONResponse(
         {
-            "clip_path": clip_path,
-            "filename": os.path.basename(clip_path),
+            "clip_path": out_path,
+            "filename": out_filename,
             "duration": duration,
-            "duration_formatted": f"{int(duration // 60)}:{int(duration % 60):02d}",
-            "file_size_mb": round(file_size / (1024 * 1024), 2),
+            "duration_formatted": duration_formatted,
+            "file_size_mb": file_size_mb,
         }
     )
+
+
+@app.get("/api/clips/list")
+async def api_clips_list():
+    """Return all tracked clips, filtering out deleted files."""
+    clips = _load_clips()
+    # Filter out clips whose files no longer exist
+    existing = [c for c in clips if os.path.exists(c.get("path", ""))]
+    # Save back if we filtered any out
+    if len(existing) != len(clips):
+        with open(_clips_path(), "w") as f:
+            json.dump(existing, f, indent=2)
+    return JSONResponse({"clips": existing})
+
+
+@app.post("/api/clips/reveal")
+async def api_clips_reveal(request: Request):
+    """Reveal a clip file in Finder."""
+    import platform
+
+    body = await request.json()
+    file_path = body.get("path", "")
+
+    if not file_path or not os.path.exists(file_path):
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    try:
+        if platform.system() == "Darwin":
+            subprocess.Popen(
+                [
+                    "osascript",
+                    "-e",
+                    f'tell application "Finder" to reveal POSIX file "{file_path}"',
+                    "-e",
+                    'tell application "Finder" to activate',
+                ]
+            )
+        elif platform.system() == "Linux":
+            subprocess.Popen(["xdg-open", os.path.dirname(file_path)])
+        else:
+            subprocess.Popen(["explorer", "/select,", file_path])
+    except Exception:
+        return JSONResponse({"error": "Could not open file manager"}, status_code=500)
+
+    return JSONResponse({"ok": True})
+
+
+@app.delete("/api/clips/{index}")
+async def api_clips_delete(index: int):
+    """Remove a clip entry from tracking (does not delete the file)."""
+    clips = _load_clips()
+    if index < 0 or index >= len(clips):
+        return JSONResponse({"error": "Invalid index"}, status_code=404)
+    clips.pop(index)
+    with open(_clips_path(), "w") as f:
+        json.dump(clips, f, indent=2)
+    return JSONResponse({"ok": True})
 
 
 @app.get("/api/export")
