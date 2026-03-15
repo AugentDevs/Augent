@@ -339,8 +339,8 @@ select option { background:var(--black); color:var(--green); }
     pointer-events:none; user-select:none; -webkit-user-select:none;
 }
 .log-banner-img {
-    display:block; width:clamp(240px, 30vw, 520px); height:auto;
-    image-rendering: -webkit-optimize-contrast;
+    display:block; width:clamp(320px, 40vw, 600px); height:auto;
+    image-rendering: auto;
     pointer-events:none; -webkit-user-drag:none;
 }
 .log-tagline {
