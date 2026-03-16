@@ -509,7 +509,11 @@ def handle_tools_list(id: Any) -> None:
                                 },
                                 "save_content": {
                                     "type": "string",
-                                    "description": "Formatted notes content to save. When provided, writes this content to the file from the previous take_notes call. No url needed.",
+                                    "description": "Formatted notes content to save. When provided, writes this content to a file. Works with a previous take_notes call OR with output_path for saving notes from memory transcripts.",
+                                },
+                                "output_path": {
+                                    "type": "string",
+                                    "description": "Explicit file path to save notes to. Use this when saving notes from a memory transcript (no prior take_notes url call). E.g. ~/Desktop/My_Notes.txt",
                                 },
                                 "output_dir": {
                                     "type": "string",
@@ -1621,12 +1625,17 @@ def handle_take_notes(arguments: dict) -> dict:
 
     global _last_notes_path
 
-    # --- Save mode: write formatted notes to the file from the previous call ---
+    # --- Save mode: write formatted notes to a file ---
     save_content = arguments.get("save_content")
     if save_content is not None:
+        output_path = arguments.get("output_path")
+        if output_path:
+            output_path = os.path.expanduser(output_path)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            _last_notes_path = output_path
         if not _last_notes_path:
             raise ValueError(
-                "No previous take_notes path. Call take_notes with a url first."
+                "No previous take_notes path. Call take_notes with a url first, or provide output_path."
             )
         # Post-process: convert plain A)/B)/C)/D) answer lines to checkbox syntax
         had_bare = bool(re.search(r"^\s*[A-D]\)", save_content, flags=re.MULTILINE))

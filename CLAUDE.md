@@ -46,6 +46,8 @@ When a user asks to "take notes" or "create a quiz" from a URL, use the `take_no
 
 **CRITICAL:** Use `audio_path` from the response for any follow-up tools (chapters, search, etc.) — do NOT guess filenames.
 
+**From memory transcripts:** When the user already has a transcript in memory (no URL), read the transcript, format notes, and save with `take_notes(save_content="...", output_path="~/Desktop/Title_Here.txt")`. The `output_path` parameter lets you save notes without a prior URL call.
+
 **MANDATORY — SAVE METHOD:** You MUST call `take_notes(save_content="...")` to save notes. NEVER use the Write tool or Edit tool on notes files. The take_notes tool applies essential post-processing (checkbox formatting for quizzes) that the Write tool bypasses. If you use Write instead of take_notes(save_content=...), the output will be broken. This includes the initial save AND any subsequent edits. Always rewrite the full file in one `take_notes(save_content=...)` call.
 
 **IMPORTANT:** Always output `.txt` files, NEVER `.md` files. Always rewrite the raw transcription into polished notes — never leave the raw dump.
