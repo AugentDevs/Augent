@@ -1,0 +1,7 @@
+# Default: all changes require review from AugentDevs
+* @AugentDevs
+
+# Security-sensitive files
+/SECURITY.md @AugentDevs
+/.github/dependabot.yml @AugentDevs
+/.github/workflows/codeql.yml @AugentDevs

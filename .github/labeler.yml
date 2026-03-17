@@ -1,0 +1,67 @@
+"web-ui":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/web.py"
+
+"mcp":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/mcp.py"
+
+"cli":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/cli.py"
+
+"core":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/core.py"
+          - "augent/memory.py"
+          - "augent/search.py"
+          - "augent/embeddings.py"
+
+"tts":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/tts.py"
+
+"speakers":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/speakers.py"
+
+"separator":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/separator.py"
+
+"clips":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/clips.py"
+
+"export":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "augent/export.py"
+
+"docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+
+"tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "tests/**"
+
+"ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+"installer":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "install.sh"
