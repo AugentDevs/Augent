@@ -102,7 +102,7 @@ augent-mcp = "augent.mcp:main"
 
 [project.urls]
 Homepage = "https://github.com/AugentDevs/Augent"
-Documentation = "https://github.com/AugentDevs/Augent#readme"
+Documentation = "https://docs.augent.app"
 Repository = "https://github.com/AugentDevs/Augent"
 Issues = "https://github.com/AugentDevs/Augent/issues"
 
