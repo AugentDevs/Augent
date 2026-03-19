@@ -844,6 +844,45 @@ def handle_tools_list(id: Any) -> None:
                             "required": ["url", "start", "end"],
                         },
                     },
+                    {
+                        "name": "highlights",
+                        "description": "Extract the best moments from a transcription as MP4 video clips. Two modes: auto (AI picks top moments by quotability and insight density) or focused (find moments matching a specific topic, person, or concept). Returns timestamps and text for each highlight — the calling agent decides which to export as clips.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "audio_path": {
+                                    "type": "string",
+                                    "description": "Path to the audio file (must be transcribed already)",
+                                },
+                                "query": {
+                                    "type": "string",
+                                    "description": "What to highlight. Omit for auto mode (top moments). Provide a topic, person, concept, or description for focused mode. Examples: 'product recommendations', 'heated debate moments', 'life advice'",
+                                },
+                                "top_k": {
+                                    "type": "number",
+                                    "description": "Number of highlights to return. Default: 5",
+                                },
+                                "model_size": {
+                                    "type": "string",
+                                    "description": "Whisper model size. ALWAYS use tiny unless the user explicitly requests a different size.",
+                                    "enum": ["tiny", "base", "small", "medium", "large"],
+                                },
+                                "clip": {
+                                    "type": "boolean",
+                                    "description": "Export each highlight as an MP4 video clip. Requires the audio to have been downloaded from a URL. Default: false",
+                                },
+                                "clip_padding": {
+                                    "type": "number",
+                                    "description": "Seconds of padding around each highlight when exporting clips. Default: 5",
+                                },
+                                "context_words": {
+                                    "type": "number",
+                                    "description": "Words of context around each highlight. Default: 40",
+                                },
+                            },
+                            "required": ["audio_path"],
+                        },
+                    },
                 ]
             },
         }
@@ -890,6 +929,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_separate_audio(arguments)
         elif tool_name == "clip_export":
             result = handle_clip_export(arguments)
+        elif tool_name == "highlights":
+            result = handle_highlights(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -2165,6 +2206,155 @@ def _export_clips_for_matches(
             )
 
     return clips
+
+
+def handle_highlights(arguments: dict) -> dict:
+    """Handle highlights tool call — extract best moments from a transcription."""
+    try:
+        from .embeddings import deep_search, detect_chapters
+    except ImportError as err:
+        raise RuntimeError(
+            "Missing dependencies: sentence-transformers. "
+            "Install with: pip install sentence-transformers"
+        ) from err
+
+    audio_path = arguments.get("audio_path")
+    query = arguments.get("query")
+    top_k = arguments.get("top_k", 5)
+    model_size = arguments.get("model_size", "tiny")
+    clip = arguments.get("clip", False)
+    clip_padding = arguments.get("clip_padding", 5)
+    context_words = arguments.get("context_words", 40)
+
+    if not audio_path:
+        raise ValueError("Missing required parameter: audio_path")
+
+    highlights = []
+
+    if query:
+        # Focused mode: semantic search for the query
+        search_result = deep_search(
+            audio_path,
+            query,
+            model_size=model_size,
+            top_k=top_k,
+            context_words=context_words,
+            dedup_seconds=30,
+        )
+        for r in search_result.get("results", []):
+            highlights.append({
+                "start": r["start"],
+                "end": r["end"],
+                "timestamp": r["timestamp"],
+                "text": r["text"],
+                "score": round(r["similarity"], 3),
+                "mode": "focused",
+            })
+    else:
+        # Auto mode: use chapters to find topic boundaries, then rank by density
+        # Get chapters with moderate sensitivity for meaningful segments
+        chapter_result = detect_chapters(
+            audio_path,
+            model_size=model_size,
+            sensitivity=0.3,
+        )
+        chapters = chapter_result.get("chapters", [])
+
+        if not chapters:
+            raise ValueError("No chapters detected — audio may be too short or uniform")
+
+        # Score each chapter by segment density (more segments = more content)
+        # and prefer chapters that aren't too short or too long
+        scored = []
+        for ch in chapters:
+            duration = ch["end"] - ch["start"]
+            seg_count = ch.get("segment_count", 1)
+            # Prefer medium-length segments (30s-120s) with high density
+            if duration < 5:
+                continue
+            density = seg_count / max(duration, 1)
+            # Penalize very short (<15s) and very long (>180s) chapters
+            length_score = 1.0
+            if duration < 15:
+                length_score = 0.5
+            elif duration > 180:
+                length_score = 0.7
+            score = density * length_score
+            scored.append((score, ch))
+
+        # Sort by score descending, take top_k
+        scored.sort(key=lambda x: x[0], reverse=True)
+        for score, ch in scored[:top_k]:
+            # Get full text for the chapter via deep_search on a representative query
+            text = ch.get("text", "")
+            highlights.append({
+                "start": ch["start"],
+                "end": ch["end"],
+                "timestamp": ch["start_timestamp"],
+                "text": text,
+                "score": round(score, 4),
+                "mode": "auto",
+                "chapter_number": ch["chapter_number"],
+                "duration": round(ch["end"] - ch["start"], 1),
+            })
+
+        # Sort highlights chronologically
+        highlights.sort(key=lambda x: x["start"])
+
+    result = {
+        "audio_path": audio_path,
+        "mode": "focused" if query else "auto",
+        "query": query,
+        "highlight_count": len(highlights),
+        "highlights": highlights,
+        "model_used": model_size,
+    }
+
+    # Export clips if requested
+    if clip:
+        source_url = _downloaded_urls.get(os.path.abspath(audio_path), "")
+        if not source_url:
+            from .memory import get_transcription_memory
+
+            mem = get_transcription_memory()
+            source_url = mem.get_source_url(audio_path, model_size)
+            if not source_url:
+                source_url = mem.get_source_url_by_hash(audio_path)
+
+        if source_url:
+            timestamps = [h["start"] for h in highlights]
+            if timestamps:
+                result["clips"] = _export_clips_for_matches(
+                    source_url, timestamps, padding=clip_padding
+                )
+            else:
+                result["clips"] = []
+                result["clip_note"] = "No highlights found to clip."
+        else:
+            result["clips"] = []
+            result["clip_note"] = (
+                "No source URL found for this audio file. "
+                "Clips can only be exported when the audio was downloaded from a URL."
+            )
+
+    # Add YouTube links if available
+    source_url = _downloaded_urls.get(os.path.abspath(audio_path), "")
+    if not source_url:
+        from .memory import get_transcription_memory
+
+        mem = get_transcription_memory()
+        source_url = mem.get_source_url(audio_path, model_size)
+        if not source_url:
+            source_url = mem.get_source_url_by_hash(audio_path)
+
+    if source_url and _extract_youtube_id(source_url):
+        for h in highlights:
+            secs = h.get("start", 0)
+            yt_link = _youtube_timestamp_link(source_url, secs)
+            if yt_link:
+                h["youtube_link"] = yt_link
+
+    return result
 
 
 def handle_clip_export(arguments: dict) -> dict:

@@ -170,6 +170,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | [`identify_speakers`](https://docs.augent.app/tools/identify-speakers) | Identify who speaks when in audio (speaker diarization) |
 | [`separate_audio`](https://docs.augent.app/tools/separate-audio) | Isolate vocals from music and background noise (Demucs v4) |
 | [`clip_export`](https://docs.augent.app/tools/clip-export) | Export a video clip from a URL for a specific time range |
+| [`highlights`](https://docs.augent.app/tools/highlights) | Extract the best moments from audio as timestamped highlights or MP4 clips |
 | [`search_memory`](https://docs.augent.app/tools/search-memory) | Search across ALL stored transcriptions by keyword or meaning |
 | [`list_files`](https://docs.augent.app/tools/list-files) | List media files in a directory |
 | [`list_memories`](https://docs.augent.app/tools/list-memories) | List stored transcriptions by title |
