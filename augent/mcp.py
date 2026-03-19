@@ -2237,7 +2237,7 @@ def _export_clips_for_matches(
 
 
 def handle_highlights(arguments: dict) -> dict:
-    """Handle highlights tool call — extract best moments from a transcription."""
+    """Handle highlights tool call — export best moments from a transcription."""
     try:
         from .embeddings import deep_search, detect_chapters
     except ImportError as err:

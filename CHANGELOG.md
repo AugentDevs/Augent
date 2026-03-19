@@ -4,6 +4,40 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.3.19] - 2026-03-19
+
+### Added
+
+- **`highlights` MCP tool:** export MP4 clips of specific moments, auto-pick the best or target exactly what you want. Two modes: auto (AI picks top moments by content density) or focused (find moments matching a specific topic, person, or concept). Supports optional clip export with configurable padding.
+- **Auto-tagging:** transcriptions created via `take_notes` now automatically extract and store tags for faster discovery.
+- **`search_audio` and `deep_search` clip export:** both tools now support `clip` and `clip_padding` parameters to export MP4 clips around keyword matches.
+- **Highlights tests:** added tests for highlights tool and auto-tagging pipeline.
+- **Expanded multilingual support:** multilingual section updated with 99 supported languages.
+
+### Changed
+
+- **Tool descriptions:** "extract" → "export" across highlights tool descriptions for consistency. Em dashes replaced with commas in tool table descriptions.
+- **CI dependency bumps:** `actions/labeler` v5 → v6, `actions/stale` v9 → v10, `actions/checkout` v4 → v6, `actions/setup-python` v5 → v6, `huggingface-hub` upper bound → <1.8.0.
+
+### Fixed
+
+- **CodeQL security fix:** validated clip reveal path against tracked clips to prevent path traversal.
+- **`take_notes` from memory:** new `output_path` parameter allows saving notes from memory transcripts without requiring a URL.
+- **Black formatting:** reformatted all modified files to pass CI.
+- **Ruff lint:** removed unused variables in tests and handlers.
+
+---
+
+## [2026.3.15] - 2026-03-15
+
+### Added
+
+- **Web UI visual clip export:** click the film icon on any search result to create a region on the waveform, or drag-select any range manually. A clip toolbar appears below the waveform with ±1s/±5s nudge buttons for precise boundary adjustment, a preview button to hear exactly what will be exported, and an Export MP4 button.
+- **WaveSurfer Regions plugin:** interactive regions on the audio waveform with draggable edges and body repositioning. Only one clip region active at a time.
+- **Expanded Web UI tips:** 8 tips (up from 3) covering clip export workflow, Memory tab re-search, parallel tabs, YouTube timestamps, and cross-memory search.
+
+---
+
 ## [2026.3.12] - 2026-03-12
 
 ### Added

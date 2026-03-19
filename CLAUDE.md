@@ -117,6 +117,8 @@ keywords: ["lucrative", "funding", "healthiest"]
 model_size: "tiny" (optional, default)
 include_full_text: false (optional)
 output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
+clip: false (optional, export MP4 clips around matches)
+clip_padding: 15 (optional, seconds of padding around clips)
 ```
 
 ### deep_search
@@ -129,6 +131,8 @@ top_k: 5 (optional, number of results)
 output: "~/Desktop/results.csv" (optional, .csv or .xlsx)
 context_words: 25 (optional, default. Use 150 for full evidence blocks)
 dedup_seconds: 0 (optional, default. Use 60 to merge overlapping matches)
+clip: false (optional, export MP4 clips around matches)
+clip_padding: 15 (optional, seconds of padding around clips)
 ```
 Returns `{query, results: [{start, end, text, timestamp, similarity}], total_segments}`
 
@@ -210,7 +214,7 @@ Returns `{stems: {vocals: "/path", ...}, vocals_path: "/path/to/vocals.wav", mod
 **Workflow:** Use `vocals_path` from the response as the `audio_path` for transcribe_audio, search_audio, deep_search, or any other tool.
 
 ### clip_export
-Export a video clip from a URL for a specific time range. Downloads only the requested segment — not the full video. Perfect for extracting moments around keyword matches.
+Export a video clip from a URL for a specific time range. Downloads only the requested segment, not the full video. Perfect for exporting moments around keyword matches.
 ```
 url: "https://youtube.com/watch?v=xxx"
 start: 120 (seconds)
@@ -219,6 +223,19 @@ output_dir: "~/Desktop" (optional, default)
 output_filename: "my_clip" (optional, auto-generated if not set)
 ```
 Returns `{file_path, duration, start, end, url}`
+
+### highlights
+Export MP4 clips of specific moments. Two modes: auto (AI picks top moments by content density) or focused (find moments matching a specific topic, person, or concept).
+```
+audio_path: "/path/to/audio.mp3"
+query: "product recommendations" (optional, omit for auto mode)
+top_k: 5 (optional, number of highlights)
+model_size: "tiny" (optional, default)
+clip: false (optional, export each highlight as MP4)
+clip_padding: 5 (optional, seconds of padding around clips)
+context_words: 40 (optional, words of context in focused mode)
+```
+Returns `{mode, highlight_count, highlights: [{start, end, timestamp, text, score, mode}], clips, youtube_link}`
 
 ### identify_speakers
 Identify who speaks when in audio using pyannote speaker diarization. No API keys or tokens required.
