@@ -1128,7 +1128,7 @@ class TestHighlights:
             "total_segments": 100,
         }
 
-        result = handle_highlights(
+        handle_highlights(
             {"audio_path": "/fake/audio.mp3", "query": "test", "top_k": 3}
         )
 
