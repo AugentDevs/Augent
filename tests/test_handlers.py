@@ -19,6 +19,7 @@ from augent.mcp import (
     handle_chapters,
     handle_clip_export,
     handle_download_audio,
+    handle_highlights,
     handle_separate_audio,
     handle_transcribe_audio,
 )
@@ -1013,3 +1014,124 @@ class TestClipPaddingDefaults:
                         )
 
                         assert mock_clips.call_args[1]["padding"] == 30
+
+
+# ---------------------------------------------------------------------------
+# highlights
+# ---------------------------------------------------------------------------
+
+
+class TestHighlights:
+    """Tests for handle_highlights."""
+
+    def test_missing_audio_path_raises(self):
+        with pytest.raises(ValueError, match="Missing required parameter: audio_path"):
+            handle_highlights({})
+
+    @mock.patch("augent.embeddings.deep_search")
+    def test_focused_mode_calls_deep_search(self, mock_ds):
+        mock_ds.return_value = {
+            "results": [
+                {
+                    "start": 100.0,
+                    "end": 110.0,
+                    "timestamp": "1:40",
+                    "text": "test result",
+                    "similarity": 0.8,
+                }
+            ],
+            "total_segments": 50,
+        }
+
+        result = handle_highlights(
+            {"audio_path": "/fake/audio.mp3", "query": "pricing strategy", "top_k": 3}
+        )
+
+        assert result["mode"] == "focused"
+        assert result["query"] == "pricing strategy"
+        assert len(result["highlights"]) == 1
+        assert result["highlights"][0]["score"] == 0.8
+        mock_ds.assert_called_once()
+
+    @mock.patch("augent.embeddings.detect_chapters")
+    def test_auto_mode_calls_detect_chapters(self, mock_ch):
+        mock_ch.return_value = {
+            "chapters": [
+                {
+                    "chapter_number": 1,
+                    "start": 0,
+                    "end": 60,
+                    "start_timestamp": "0:00",
+                    "end_timestamp": "1:00",
+                    "text": "intro text here",
+                    "segment_count": 10,
+                },
+                {
+                    "chapter_number": 2,
+                    "start": 60,
+                    "end": 120,
+                    "start_timestamp": "1:00",
+                    "end_timestamp": "2:00",
+                    "text": "main content here",
+                    "segment_count": 15,
+                },
+            ],
+            "total_chapters": 2,
+        }
+
+        result = handle_highlights({"audio_path": "/fake/audio.mp3", "top_k": 2})
+
+        assert result["mode"] == "auto"
+        assert result["query"] is None
+        assert len(result["highlights"]) == 2
+        mock_ch.assert_called_once()
+
+    @mock.patch("augent.embeddings.detect_chapters")
+    def test_auto_mode_skips_short_chapters(self, mock_ch):
+        mock_ch.return_value = {
+            "chapters": [
+                {
+                    "chapter_number": 1,
+                    "start": 0,
+                    "end": 3,
+                    "start_timestamp": "0:00",
+                    "end_timestamp": "0:03",
+                    "text": "hi",
+                    "segment_count": 1,
+                },
+                {
+                    "chapter_number": 2,
+                    "start": 3,
+                    "end": 60,
+                    "start_timestamp": "0:03",
+                    "end_timestamp": "1:00",
+                    "text": "real content",
+                    "segment_count": 10,
+                },
+            ],
+            "total_chapters": 2,
+        }
+
+        result = handle_highlights({"audio_path": "/fake/audio.mp3", "top_k": 5})
+
+        # Chapter 1 is under 5s so should be skipped
+        assert result["highlight_count"] == 1
+        assert result["highlights"][0]["chapter_number"] == 2
+
+    @mock.patch("augent.embeddings.deep_search")
+    def test_focused_mode_respects_top_k(self, mock_ds):
+        mock_ds.return_value = {
+            "results": [
+                {"start": i * 10.0, "end": i * 10.0 + 5, "timestamp": f"{i}:00", "text": f"r{i}", "similarity": 0.5}
+                for i in range(10)
+            ],
+            "total_segments": 100,
+        }
+
+        result = handle_highlights(
+            {"audio_path": "/fake/audio.mp3", "query": "test", "top_k": 3}
+        )
+
+        mock_ds.assert_called_once()
+        call_kwargs = mock_ds.call_args
+        assert call_kwargs[1]["top_k"] == 3

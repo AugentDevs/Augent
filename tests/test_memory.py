@@ -311,6 +311,105 @@ class TestTitleDerivation:
         assert "  " not in sanitized
 
 
+class TestTagging:
+    """Tests for tag CRUD and auto-tagging."""
+
+    @pytest.fixture
+    def temp_memory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            memory = TranscriptionMemory(memory_dir=tmpdir)
+            yield memory
+
+    @pytest.fixture
+    def stored_transcription(self, temp_memory):
+        """Store a sample transcription and return its cache_key."""
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", dir="/tmp") as f:
+            f.write(b"fake audio for tag testing")
+            audio_path = f.name
+
+        transcription = {
+            "text": "Hello world test content",
+            "language": "en",
+            "duration": 10.0,
+            "words": [],
+            "segments": [],
+        }
+        temp_memory.set(audio_path, "tiny", transcription)
+        audio_hash = TranscriptionMemory.hash_audio_file(audio_path)
+        cache_key = f"{audio_hash}:tiny"
+        os.unlink(audio_path)
+        return cache_key
+
+    def test_add_tags(self, temp_memory, stored_transcription):
+        added = temp_memory.add_tags(stored_transcription, ["AI", "productivity"])
+        assert len(added) == 2
+        assert added[0]["name"] == "AI"
+
+    def test_get_tags(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["AI", "testing"])
+        tags = temp_memory.get_tags(stored_transcription)
+        names = [t["name"] for t in tags]
+        assert "AI" in names
+        assert "testing" in names
+
+    def test_remove_tags(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["AI", "testing"])
+        temp_memory.remove_tags(stored_transcription, ["AI"])
+        tags = temp_memory.get_tags(stored_transcription)
+        names = [t["name"] for t in tags]
+        assert "AI" not in names
+        assert "testing" in names
+
+    def test_filter_by_tag(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["unique_tag"])
+        results = temp_memory.filter_by_tag("unique_tag")
+        assert len(results) == 1
+        assert results[0]["cache_key"] == stored_transcription
+
+    def test_filter_by_tag_empty(self, temp_memory):
+        results = temp_memory.filter_by_tag("nonexistent")
+        assert results == []
+
+    def test_add_duplicate_tags_idempotent(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["AI"])
+        temp_memory.add_tags(stored_transcription, ["AI"])
+        tags = temp_memory.get_tags(stored_transcription)
+        ai_tags = [t for t in tags if t["name"] == "AI"]
+        assert len(ai_tags) == 1
+
+    def test_auto_tag_extracts_capitalized_phrases(self, temp_memory, stored_transcription):
+        text = (
+            "Today we talked to Greg Eisenberg about startups. "
+            "Greg Eisenberg shared his thoughts on building products. "
+            "Later Greg Eisenberg discussed growth strategies with the team. "
+            "The audience loved hearing from Greg Eisenberg on this topic."
+        )
+        extracted = temp_memory.auto_tag(stored_transcription, text)
+        names = [t["name"] for t in extracted]
+        assert "Greg Eisenberg" in names
+
+    def test_auto_tag_skips_short_text(self, temp_memory, stored_transcription):
+        extracted = temp_memory.auto_tag(stored_transcription, "hi")
+        assert extracted == []
+
+    def test_auto_tag_frequency_mode_for_lowercase(self, temp_memory, stored_transcription):
+        text = " ".join(["obsidian"] * 20 + ["the"] * 50 + ["random"] * 2 + ["filler"] * 100)
+        extracted = temp_memory.auto_tag(stored_transcription, text)
+        names = [t["name"] for t in extracted]
+        assert "obsidian" in names
+
+    def test_clear_removes_tags(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["AI"])
+        temp_memory.clear()
+        tags = temp_memory.get_tags(stored_transcription)
+        assert tags == []
+
+    def test_stats_includes_tag_count(self, temp_memory, stored_transcription):
+        temp_memory.add_tags(stored_transcription, ["tag1", "tag2"])
+        stats = temp_memory.stats()
+        assert stats["tag_count"] == 2
+
+
 class TestModelCache:
     """Tests for ModelCache (singleton pattern)."""
 
