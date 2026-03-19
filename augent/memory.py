@@ -1248,7 +1248,6 @@ class TranscriptionMemory:
         unique = unique[:15]
 
         if unique:
-            tag_names = [t["name"] for t in unique]
             categories = {t["name"]: t["category"] for t in unique}
             for tag in unique:
                 self.add_tags(
