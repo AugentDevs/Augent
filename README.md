@@ -94,30 +94,16 @@ No background services. No telemetry. No sudo on macOS.
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-flowchart LR
-    A["URL / File"] --> B["Download"]
-    B --> S["Separate"]
-    S --> C["Transcribe"]
-    C --> D["Memory"]
-    D --> T["Tag"]
+flowchart TD
+    A["URL / File"] --> B["Download"] --> S["Separate"] --> C["Transcribe"] --> D["Memory + Tag"]
 
     D --> E["Search"]
     D --> F["Analyze"]
     D --> G["Export"]
 
-    E --> E1["Keyword"]
-    E --> E2["Semantic"]
-    E --> E3["Proximity"]
-    E --> E4["Batch"]
-    E --> E5["Cross-Memory"]
-
-    F --> F1["Chapters"]
-    F --> F2["Speaker ID"]
-    F --> F3["Notes"]
-    F --> F4["Highlights"]
-
-    G --> G1["Clip Export"]
-    G --> G2["Text to Speech"]
+    E --> E1["Keyword"] & E2["Semantic"] & E3["Proximity"] & E4["Batch"] & E5["Cross-Memory"]
+    F --> F1["Chapters"] & F2["Speaker ID"] & F3["Notes"] & F4["Highlights"]
+    G --> G1["Clip Export"] & G2["Text to Speech"]
 ```
 
 ## Project Structure
