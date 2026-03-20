@@ -903,7 +903,7 @@ def handle_tools_list(id: Any) -> None:
                                 },
                                 "clip_padding": {
                                     "type": "number",
-                                    "description": "Seconds of padding around each highlight when exporting clips. Default: 5",
+                                    "description": "Seconds of padding around each highlight when exporting clips. Default: 10",
                                 },
                                 "context_words": {
                                     "type": "number",
@@ -2048,14 +2048,14 @@ def handle_deep_search(arguments: dict) -> dict:
 
     # Export clips around matches if requested
     if clip and source_url:
-        timestamps = [
-            float(r.get("start", 0))
+        ranges = [
+            (float(r.get("start", 0)), float(r.get("end", r.get("start", 0))))
             for r in result.get("results", [])
             if r.get("start", 0)
         ]
-        if timestamps:
+        if ranges:
             result["clips"] = _export_clips_for_matches(
-                source_url, timestamps, padding=clip_padding
+                source_url, time_ranges=ranges, padding=clip_padding
             )
         else:
             result["clips"] = []
@@ -2253,28 +2253,44 @@ def handle_separate_audio(arguments: dict) -> dict:
 
 
 def _export_clips_for_matches(
-    source_url: str, timestamps: list[float], padding: int = 15
+    source_url: str,
+    timestamps: list[float] | None = None,
+    padding: int = 15,
+    time_ranges: list[tuple[float, float]] | None = None,
 ) -> list[dict]:
-    """Export video clips around a list of match timestamps.
+    """Export video clips around match timestamps or time ranges.
 
-    Returns a list of clip info dicts, one per exported clip.
+    Accepts either:
+      - timestamps: list of point-in-time matches (padding applied symmetrically)
+      - time_ranges: list of (start, end) ranges (padding added before start and after end)
+
     Merges overlapping time ranges to avoid redundant downloads.
+    Returns a list of clip info dicts.
     """
-    if not timestamps:
+    # Build padded time ranges from either input format
+    ranges = []
+
+    if time_ranges:
+        for seg_start, seg_end in time_ranges:
+            # Add padding around the natural segment boundaries
+            clip_start = max(0, seg_start - padding)
+            clip_end = seg_end + padding
+            ranges.append((clip_start, clip_end, seg_start))
+    elif timestamps:
+        for ts in sorted(set(timestamps)):
+            start = max(0, ts - padding)
+            end = ts + padding
+            ranges.append((start, end, ts))
+    else:
         return []
 
-    # Build time ranges with padding, clamping start to 0
-    ranges = []
-    for ts in sorted(set(timestamps)):
-        start = max(0, ts - padding)
-        end = ts + padding
-        ranges.append((start, end, ts))
+    # Sort by start time
+    ranges.sort(key=lambda x: x[0])
 
     # Merge overlapping ranges
-    merged = []
+    merged: list[tuple[float, float, list[float]]] = []
     for start, end, ts in ranges:
         if merged and start <= merged[-1][1]:
-            # Extend the previous range, keep both original timestamps
             prev_start, prev_end, prev_ts_list = merged[-1]
             merged[-1] = (prev_start, max(prev_end, end), prev_ts_list + [ts])
         else:
@@ -2320,7 +2336,7 @@ def handle_highlights(arguments: dict) -> dict:
     top_k = arguments.get("top_k", 5)
     model_size = arguments.get("model_size", "tiny")
     clip = arguments.get("clip", False)
-    clip_padding = arguments.get("clip_padding", 5)
+    clip_padding = arguments.get("clip_padding", 10)
     context_words = arguments.get("context_words", 40)
 
     if not audio_path:
@@ -2423,10 +2439,10 @@ def handle_highlights(arguments: dict) -> dict:
                 source_url = mem.get_source_url_by_hash(audio_path)
 
         if source_url:
-            timestamps = [h["start"] for h in highlights]
-            if timestamps:
+            ranges = [(h["start"], h["end"]) for h in highlights if "end" in h]
+            if ranges:
                 result["clips"] = _export_clips_for_matches(
-                    source_url, timestamps, padding=clip_padding
+                    source_url, time_ranges=ranges, padding=clip_padding
                 )
             else:
                 result["clips"] = []

@@ -79,8 +79,13 @@ def _build_snippet(
     center_idx: int,
     target_words: int = 25,
     highlight: Optional[List[str]] = None,
-) -> str:
-    """Build a ~target_words snippet by expanding from center segment into neighbors."""
+    return_boundaries: bool = False,
+):
+    """Build a ~target_words snippet by expanding from center segment into neighbors.
+
+    When return_boundaries=True, returns (text, start, end) where start/end cover
+    the full expanded range of segments used in the snippet.
+    """
     words = segments[center_idx].get("text", "").strip().split()
 
     left = center_idx - 1
@@ -114,6 +119,14 @@ def _build_snippet(
         text = "..." + text
     if right < len(segments) or trimmed:
         text = text + "..."
+
+    if return_boundaries:
+        # left+1 is the first segment index used, right-1 is the last
+        first_idx = max(0, left + 1)
+        last_idx = min(len(segments) - 1, right - 1)
+        span_start = segments[first_idx].get("start", 0)
+        span_end = segments[last_idx].get("end", segments[last_idx].get("start", 0))
+        return text, span_start, span_end
 
     return text
 
@@ -171,16 +184,18 @@ def _ranked_semantic_search(
                 continue
             used_ranges.setdefault(file_key, []).append((start, end))
 
+        snippet_text, span_start, span_end = _build_snippet(
+            meta["file_segments"],
+            meta["seg_idx"],
+            target_words=context_words,
+            highlight=highlight,
+            return_boundaries=True,
+        )
         entry = {
-            "start": start,
-            "end": end,
-            "text": _build_snippet(
-                meta["file_segments"],
-                meta["seg_idx"],
-                target_words=context_words,
-                highlight=highlight,
-            ),
-            "timestamp": f"{int(start // 60)}:{int(start % 60):02d}",
+            "start": span_start,
+            "end": span_end,
+            "text": snippet_text,
+            "timestamp": f"{int(span_start // 60)}:{int(span_start % 60):02d}",
             "similarity": round(float(similarities[idx]), 4),
         }
 
