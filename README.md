@@ -93,31 +93,24 @@ No background services. No telemetry. No sudo on macOS.
 ## How It Works
 
 ```mermaid
-graph LR
-    subgraph INPUT [" "]
-        A["URL / File"] --> B["Download"] --> S["Separate"] --> C["Transcribe"]
-    end
+graph TB
+    A["URL / File"] --> B["Download"]
+    B --> S["Separate Vocals"]
+    S --> C["Transcribe"]
+    C --> D["Memory + Tag"]
 
-    subgraph INTELLIGENCE [" "]
-        direction LR
-        E["Search\nKeyword · Semantic\nProximity · Batch\nCross-Memory"]
-        F["Analyze\nChapters · Speaker ID\nNotes · Highlights"]
-        G["Export\nClip Export · TTS\nTag · Memory"]
-    end
-
-    C --> E
-    C --> F
-    C --> G
+    D --> E["Search\nKeyword · Semantic · Proximity\nBatch · Cross-Memory"]
+    D --> F["Analyze\nChapters · Speaker ID\nNotes · Highlights"]
+    D --> G["Export\nClip Export · Text to Speech"]
 
     style A fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style B fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style S fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style C fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
+    style D fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style E fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
     style F fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
     style G fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
-    style INPUT fill:none,stroke:none
-    style INTELLIGENCE fill:none,stroke:none
 
     linkStyle default stroke:#00f060,stroke-width:1.5px
 ```
