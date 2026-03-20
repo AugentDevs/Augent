@@ -90,7 +90,7 @@ No background services. No telemetry. No sudo on macOS.
 
 <br />
 
-## How It Works
+## How it works (short)
 
 ```mermaid
 graph TB
