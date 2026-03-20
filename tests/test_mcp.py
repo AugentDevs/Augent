@@ -75,10 +75,10 @@ class TestInitialize:
 
 
 class TestToolsList:
-    def test_returns_18_tools(self):
+    def test_returns_19_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
-        assert len(tools) == 18
+        assert len(tools) == 19
 
     def test_all_tools_have_required_fields(self):
         resp = capture_stdout(handle_tools_list, 1)
@@ -110,6 +110,7 @@ class TestToolsList:
             "separate_audio",
             "clip_export",
             "highlights",
+            "tag",
         }
         assert names == expected
 

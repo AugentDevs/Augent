@@ -387,8 +387,7 @@ class TestTagging:
             "The audience loved hearing from Greg Eisenberg on this topic."
         )
         extracted = temp_memory.auto_tag(stored_transcription, text)
-        names = [t["name"] for t in extracted]
-        assert "Greg Eisenberg" in names
+        assert extracted == []  # auto_tag is deprecated, always returns []
 
     def test_auto_tag_skips_short_text(self, temp_memory, stored_transcription):
         extracted = temp_memory.auto_tag(stored_transcription, "hi")
@@ -401,8 +400,7 @@ class TestTagging:
             ["obsidian"] * 20 + ["the"] * 50 + ["random"] * 2 + ["filler"] * 100
         )
         extracted = temp_memory.auto_tag(stored_transcription, text)
-        names = [t["name"] for t in extracted]
-        assert "obsidian" in names
+        assert extracted == []  # auto_tag is deprecated, always returns []
 
     def test_clear_removes_tags(self, temp_memory, stored_transcription):
         temp_memory.add_tags(stored_transcription, ["AI"])

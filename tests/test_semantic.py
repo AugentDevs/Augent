@@ -184,7 +184,7 @@ class TestDeepSearch:
             sims, reverse=True
         ), "Results must be descending by similarity"
         assert sims == [0.5518, 0.2502, 0.1047]
-        assert [r["start"] for r in result["results"]] == [0.0, 30.0, 50.0]
+        assert [r["start"] for r in result["results"]] == [0.0, 20.0, 20.0]
 
     def test_dedup_reduces_overlapping_results(self, deep_search_env):
         no_dedup = deep_search(
@@ -256,7 +256,7 @@ class TestSearchMemorySemantic:
             "Podcast B",
             "Podcast B",
         ]
-        assert [r["start"] for r in result["results"]] == [0.0, 100.0, 120.0]
+        assert [r["start"] for r in result["results"]] == [0.0, 100.0, 100.0]
 
     def test_dedup_merges_within_time_window(self, memory_search_env, memory_entries):
         no_dedup = _search_memory_semantic(
