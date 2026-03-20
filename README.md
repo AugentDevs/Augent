@@ -98,24 +98,19 @@ flowchart LR
     A["URL / File"] --> B["Download"]
     B --> S["Separate"]
     S --> C["Transcribe"]
-    C --> D["Memory"]
+    C --> D["Memory + Tags"]
+
     D --> E["Search"]
     D --> F["Analyze"]
     D --> G["Export"]
 
-    E --> E1["Keyword"]
-    E --> E2["Semantic"]
-    E --> E3["Batch"]
-    E --> E4["Proximity"]
-    E --> E5["Cross-Memory"]
+    E --> E1["Keyword · Semantic · Proximity"]
+    E --> E2["Batch · Cross-Memory"]
 
-    F --> F1["Speaker ID"]
-    F --> F2["Chapters"]
-    F --> F3["Notes"]
+    F --> F1["Chapters · Speaker ID"]
+    F --> F2["Notes · Highlights"]
 
-    E --> E6["Clip Export"]
-
-    G --> G1["Text to Speech"]
+    G --> G1["Clip Export · TTS"]
 ```
 
 ## Project Structure
@@ -171,6 +166,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | [`separate_audio`](https://docs.augent.app/tools/separate-audio) | Isolate vocals from music and background noise (Demucs v4) |
 | [`clip_export`](https://docs.augent.app/tools/clip-export) | Export a video clip from a URL for a specific time range |
 | [`highlights`](https://docs.augent.app/tools/highlights) | Export MP4 clips of specific moments, auto-pick the best or target exactly what you want |
+| [`tag`](https://docs.augent.app/tools/tag) | Add, remove, or list tags on transcriptions for organized filtering |
 | [`search_memory`](https://docs.augent.app/tools/search-memory) | Search across ALL stored transcriptions by keyword or meaning |
 | [`list_files`](https://docs.augent.app/tools/list-files) | List media files in a directory |
 | [`list_memories`](https://docs.augent.app/tools/list-memories) | List stored transcriptions by title |
