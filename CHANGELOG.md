@@ -4,6 +4,29 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.3.20] - 2026-03-20
+
+### Added
+
+- **`tag` MCP tool:** add, remove, or list tags on any transcription. Tags are broad topic categories (e.g. "AI", "Health", "Gaming") for organizing and filtering memories.
+- **Semantic tagging:** new transcriptions are automatically tagged using sentence-transformer embeddings. Compares content against existing tagged transcriptions to assign matching tags — works on both Web UI and MCP flows, no LLM required.
+- **Web UI tag filter bar:** clickable tag pills above the Memory list. Click a tag to filter transcriptions by topic. Tag counts shown inline.
+- **Web UI tag pills on memory cards:** each memory card displays up to 5 tag pills for at-a-glance topic identification.
+- **Tags API:** `GET /api/memory/tags` returns all tags with usage counts.
+
+### Changed
+
+- **Highlights clip padding default:** increased from 5s to 10s — more context for the user to trim rather than missing content.
+- **Highlights and deep_search clip export:** clips now use full time ranges (start → end) instead of just a single timestamp with symmetric padding. A 45-second highlight now produces a ~65s clip, not a 10s clip around the start point.
+- **`_build_snippet` expanded boundaries:** snippet text and timestamps now cover the full range of segments used, not just the center segment.
+- **MCP tagging flow:** `transcribe_audio` and `take_notes` responses include existing tag library in the tagging hint, so Claude reuses existing categories instead of creating duplicates.
+
+### Removed
+
+- **Regex auto-tagger:** replaced by semantic tagging. The old approach extracted every repeated capitalized word (producing junk like "Greg", "Markdown", "Code" as tags).
+
+---
+
 ## [2026.3.19] - 2026-03-19
 
 ### Added
