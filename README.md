@@ -98,42 +98,17 @@ graph TB
     B --> C["Transcribe"]
     C --> D["Memory + Tag"]
 
-    D --> Search
-    D --> Analyze
-    D --> Export
-
-    subgraph Search
-        E1["Keyword"] ~~~ E2["Semantic"] ~~~ E3["Proximity"] ~~~ E4["Batch"] ~~~ E5["Cross-Memory"]
-    end
-
-    subgraph Analyze
-        F1["Chapters"] ~~~ F2["Speaker ID"] ~~~ F3["Notes"] ~~~ F4["Highlights"]
-    end
-
-    subgraph Export
-        G1["Clip Export"] ~~~ G2["TTS"]
-    end
+    D --> E["Search"]
+    D --> F["Analyze"]
+    D --> G["Export"]
 
     style A fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style B fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style C fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style D fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
-
-    style E1 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style E2 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style E3 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style E4 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style E5 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style F1 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style F2 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style F3 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style F4 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style G1 fill:#0a0a0a,stroke:#00f060,color:#00f060
-    style G2 fill:#0a0a0a,stroke:#00f060,color:#00f060
-
-    style Search fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
-    style Analyze fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
-    style Export fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
+    style E fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
+    style F fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
+    style G fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
 
     linkStyle default stroke:#00f060,stroke-width:1.5px
 ```
