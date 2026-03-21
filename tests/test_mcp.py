@@ -114,6 +114,40 @@ class TestToolsList:
         }
         assert names == expected
 
+    def test_disabled_tools_filtered(self):
+        """Config disabled_tools should hide tools from the list."""
+        import augent.config as config_mod
+
+        original = config_mod._config
+        try:
+            config_mod._config = dict(config_mod.DEFAULTS)
+            config_mod._config["disabled_tools"] = ["tag", "clear_memory"]
+            resp = capture_stdout(handle_tools_list, 1)
+            names = {t["name"] for t in resp["result"]["tools"]}
+            assert "tag" not in names
+            assert "clear_memory" not in names
+            assert len(resp["result"]["tools"]) == 17
+        finally:
+            config_mod._config = original
+
+    def test_disabled_tool_call_blocked(self):
+        """Calling a disabled tool should return an error."""
+        import augent.config as config_mod
+
+        original = config_mod._config
+        try:
+            config_mod._config = dict(config_mod.DEFAULTS)
+            config_mod._config["disabled_tools"] = ["clear_memory"]
+            resp = capture_stdout(
+                handle_tools_call,
+                1,
+                {"name": "clear_memory", "arguments": {}},
+            )
+            assert resp["error"]["code"] == -32602
+            assert "disabled" in resp["error"]["message"]
+        finally:
+            config_mod._config = original
+
 
 # --- Request routing ---
 
