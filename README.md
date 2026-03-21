@@ -113,6 +113,8 @@ graph TB
     linkStyle default stroke:#00f060,stroke-width:1.5px
 ```
 
+**[Full architecture →](https://docs.augent.app/architecture)**
+
 ## Project Structure
 
 ```
