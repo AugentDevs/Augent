@@ -9,7 +9,7 @@ Tools exposed:
 - transcribe_audio: Full transcription without keyword search
 - search_audio: Search for keywords in audio files
 - deep_search: Semantic search by meaning, not just keywords
-- take_notes: All-in-one note-taking: download + transcribe + save .txt to Desktop
+- take_notes: All-in-one note-taking: download + transcribe + save .md to Desktop
 - chapters: Auto-detect topic chapters in audio
 - batch_search: Search multiple audio files in parallel
 - text_to_speech: Convert text to natural speech audio using Kokoro TTS
@@ -24,6 +24,7 @@ Tools exposed:
 - clip_export: Export a video clip from a URL for a specific time range
 - highlights: Export the best moments from a transcription as MP4 clips
 - tag: Add, remove, or list tags on transcriptions
+- rebuild_graph: Rebuild Obsidian graph view data for all transcriptions
 
 Usage:
   python -m augent.mcp
@@ -328,7 +329,7 @@ def handle_initialize(id: Any, params: dict) -> None:
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "augent", "version": "2026.3.21"},
+                "serverInfo": {"name": "augent", "version": "2026.3.22"},
             },
         }
     )
@@ -495,7 +496,7 @@ _ALL_TOOLS = [
     },
     {
         "name": "take_notes",
-        "description": "Take notes from a URL. Downloads audio, transcribes, and saves .txt to Desktop. This single tool handles the entire pipeline — download, transcribe, and save — when the user asks for notes, summaries, highlights, takeaways, eye-candy, quiz, or any formatted content from a video/audio URL. Returns audio_path for follow-up tools (chapters, search). Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
+        "description": "Take notes from a URL. Downloads audio, transcribes, and saves .md to Desktop. This single tool handles the entire pipeline — download, transcribe, and save — when the user asks for notes, summaries, highlights, takeaways, eye-candy, quiz, or any formatted content from a video/audio URL. Returns audio_path for follow-up tools (chapters, search). Also used to SAVE formatted notes: call with save_content to write notes to the file from the previous take_notes call (no url needed).",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -509,11 +510,11 @@ _ALL_TOOLS = [
                 },
                 "output_path": {
                     "type": "string",
-                    "description": "Explicit file path to save notes to. Use this when saving notes from a memory transcript (no prior take_notes url call). E.g. ~/Desktop/My_Notes.txt",
+                    "description": "Explicit file path to save notes to. Use this when saving notes from a memory transcript (no prior take_notes url call). E.g. ~/Desktop/My_Notes.md",
                 },
                 "output_dir": {
                     "type": "string",
-                    "description": "Directory to save the .txt notes file. Default: ~/Desktop",
+                    "description": "Directory to save the .md notes file. Default: ~/Desktop",
                 },
                 "style": {
                     "type": "string",

@@ -159,7 +159,7 @@ output_dir: "~/Desktop" (optional, default)
 model_size: "tiny" (optional, default)
 read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obsidian for playback)
 ```
-Returns: transcription text + txt_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
+Returns: transcription text + md_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
 
 ### chapters
 Auto-detect topic chapters in audio with timestamps.

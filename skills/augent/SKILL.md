@@ -5,7 +5,7 @@ description: Use when working with audio or video content. Provides workflows fo
 
 # Augent — Audio Intelligence for Agents
 
-Augent is connected as an MCP server. All 19 tools are available. This skill teaches you how to use them effectively.
+Augent is connected as an MCP server. All 20 tools are available. This skill teaches you how to use them effectively.
 
 ## Key Workflows
 
@@ -32,7 +32,7 @@ When a user gives you a URL and asks to create notes, take notes, transcribe, cr
 When `transcribe_audio` or `take_notes` returns `language != "en"`, the response includes a `translation_hint`. After completing the main task, offer to translate:
 
 ```
-Done. Notes saved to ~/Desktop/filename.txt
+Done. Notes saved to ~/Desktop/filename.md
 
 ---
 This audio is in **Chinese**. Would you like me to translate it to English and store it in your augent memory?
@@ -80,4 +80,4 @@ Always use `tiny` unless the user explicitly requests a different size. It handl
 
 ## Notes Output
 
-Always output `.txt` files, never `.md`. Always rewrite raw transcription into polished notes. Always save via `take_notes(save_content=...)`, never the Write tool.
+Always output `.md` files. YAML frontmatter is added automatically. Always rewrite raw transcription into polished notes. Always save via `take_notes(save_content=...)`, never the Write tool.

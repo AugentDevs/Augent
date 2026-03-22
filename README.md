@@ -170,6 +170,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | [`clip_export`](https://docs.augent.app/tools/clip-export) | Export a video clip from a URL for a specific time range |
 | [`highlights`](https://docs.augent.app/tools/highlights) | Export MP4 clips of specific moments, auto-pick the best or target exactly what you want |
 | [`tag`](https://docs.augent.app/tools/tag) | Add, remove, or list tags on transcriptions for organized filtering |
+| [`rebuild_graph`](https://docs.augent.app/tools/rebuild-graph) | Rebuild Obsidian graph view data for all transcriptions |
 | [`search_memory`](https://docs.augent.app/tools/search-memory) | Search across ALL stored transcriptions by keyword or meaning |
 | [`list_files`](https://docs.augent.app/tools/list-files) | List media files in a directory |
 | [`list_memories`](https://docs.augent.app/tools/list-memories) | List stored transcriptions by title |

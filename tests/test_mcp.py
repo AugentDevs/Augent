@@ -64,7 +64,7 @@ class TestInitialize:
         result = resp["result"]
         assert "protocolVersion" in result
         assert result["serverInfo"]["name"] == "augent"
-        assert result["serverInfo"]["version"] == "2026.3.21"
+        assert result["serverInfo"]["version"] == "2026.3.22"
 
     def test_declares_tools_capability(self):
         resp = capture_stdout(handle_initialize, 1, {})
@@ -75,7 +75,7 @@ class TestInitialize:
 
 
 class TestToolsList:
-    def test_returns_19_tools(self):
+    def test_returns_20_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
         assert len(tools) == 20
