@@ -1768,7 +1768,9 @@ def _get_style_instruction(
 
 
 _last_notes_path = None
-_last_notes_metadata = {}  # Stored during initial take_notes for frontmatter in save_content
+_last_notes_metadata = (
+    {}
+)  # Stored during initial take_notes for frontmatter in save_content
 
 
 def handle_take_notes(arguments: dict) -> dict:
@@ -1802,7 +1804,7 @@ def handle_take_notes(arguments: dict) -> dict:
             stripped = save_content.lstrip()
             end_idx = stripped.find("\n---\n", 4)
             if end_idx != -1:
-                save_content = stripped[end_idx + 5:]
+                save_content = stripped[end_idx + 5 :]
 
         # Auto-prepend YAML frontmatter for Obsidian graph view
         if _last_notes_metadata:
@@ -1984,9 +1986,7 @@ def handle_take_notes(arguments: dict) -> dict:
         response["tagging_hint"] = hint
 
         # Store metadata for frontmatter generation in save_content
-        _source_sanitized = _mem._sanitize_filename(
-            _mem._title_from_path(audio_path)
-        )
+        _source_sanitized = _mem._sanitize_filename(_mem._title_from_path(audio_path))
         from datetime import datetime as _dt
 
         _last_notes_metadata = {

@@ -23,7 +23,10 @@ class TestWikilinkName:
         assert _wikilink_name("/path/to/My_File.md") == "My_File"
 
     def test_nested_path(self):
-        assert _wikilink_name("/a/b/c/Travel_INSIDE_a_Black_Hole.md") == "Travel_INSIDE_a_Black_Hole"
+        assert (
+            _wikilink_name("/a/b/c/Travel_INSIDE_a_Black_Hole.md")
+            == "Travel_INSIDE_a_Black_Hole"
+        )
 
     def test_no_extension(self):
         assert _wikilink_name("/path/to/file") == "file"
@@ -39,7 +42,9 @@ class TestWriteRelatedSection:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".md", delete=False, dir="/tmp"
         ) as f:
-            f.write("---\ntitle: \"Test\"\ntype: transcription\n---\n\n# Test\n\n## Transcription\n\nSome text.\n")
+            f.write(
+                '---\ntitle: "Test"\ntype: transcription\n---\n\n# Test\n\n## Transcription\n\nSome text.\n'
+            )
             path = f.name
 
         related = [
@@ -60,7 +65,7 @@ class TestWriteRelatedSection:
             mode="w", suffix=".md", delete=False, dir="/tmp"
         ) as f:
             f.write(
-                "---\ntitle: \"Test\"\n---\n\n# Test\n\n## Transcription\n\nText.\n\n"
+                '---\ntitle: "Test"\n---\n\n# Test\n\n## Transcription\n\nText.\n\n'
                 "## Related\n\n- [[Old_Link]]\n"
             )
             path = f.name
@@ -127,7 +132,7 @@ class TestBuildFrontmatter:
         fm = TranscriptionMemory._build_frontmatter(
             title='He said "hello" and left',
         )
-        assert r'\"hello\"' in fm
+        assert r"\"hello\"" in fm
 
     def test_yaml_escape_backslash(self):
         escaped = TranscriptionMemory._yaml_escape("path\\to\\file")
@@ -306,7 +311,9 @@ class TestMigrateMarkdownFiles:
                         30.0,
                         "Recreated content",
                         "[]",
-                        json.dumps([{"start": 0.0, "end": 5.0, "text": "Recreated content"}]),
+                        json.dumps(
+                            [{"start": 0.0, "end": 5.0, "text": "Recreated content"}]
+                        ),
                         1000000.0,
                         "/tmp/test.mp3",
                         "Recreated File",
@@ -368,7 +375,9 @@ class TestFrontmatterTagSync:
         assert "language: fr" in content
         assert 'duration: "5:00"' in content
 
-    def test_frontmatter_updates_correctly_on_multiple_tag_ops(self, memory_with_transcription):
+    def test_frontmatter_updates_correctly_on_multiple_tag_ops(
+        self, memory_with_transcription
+    ):
         memory, cache_key = memory_with_transcription
 
         memory.add_tags(cache_key, ["A", "B", "C"])
@@ -406,9 +415,18 @@ class TestFrontmatterTagSync:
                      text, words, segments, created_at, file_path, title, md_path)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        "old:tiny", "old", "tiny", "en", 10.0,
-                        "text", "[]", "[]", 1000000.0,
-                        "/tmp/old.mp3", "Old", str(md_path),
+                        "old:tiny",
+                        "old",
+                        "tiny",
+                        "en",
+                        10.0,
+                        "text",
+                        "[]",
+                        "[]",
+                        1000000.0,
+                        "/tmp/old.mp3",
+                        "Old",
+                        str(md_path),
                     ),
                 )
                 conn.commit()

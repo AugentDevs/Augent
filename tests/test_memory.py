@@ -86,13 +86,18 @@ class TestTranscriptionMemory:
             f.write(b"first audio file")
             path1 = f.name
 
-        temp_memory.set(path1, "tiny", {
-            "text": "First", "language": "en", "duration": 10.0,
-            "words": [], "segments": [{"start": 0.0, "end": 10.0, "text": "First"}],
-        })
-        first_name = temp_memory._sanitize_filename(
-            temp_memory._title_from_path(path1)
+        temp_memory.set(
+            path1,
+            "tiny",
+            {
+                "text": "First",
+                "language": "en",
+                "duration": 10.0,
+                "words": [],
+                "segments": [{"start": 0.0, "end": 10.0, "text": "First"}],
+            },
         )
+        first_name = temp_memory._sanitize_filename(temp_memory._title_from_path(path1))
         os.unlink(path1)
 
         # Create second transcription
@@ -100,10 +105,17 @@ class TestTranscriptionMemory:
             f.write(b"second audio file")
             path2 = f.name
 
-        temp_memory.set(path2, "tiny", {
-            "text": "Second", "language": "en", "duration": 15.0,
-            "words": [], "segments": [{"start": 0.0, "end": 15.0, "text": "Second"}],
-        })
+        temp_memory.set(
+            path2,
+            "tiny",
+            {
+                "text": "Second",
+                "language": "en",
+                "duration": 15.0,
+                "words": [],
+                "segments": [{"start": 0.0, "end": 15.0, "text": "Second"}],
+            },
+        )
         second_name = temp_memory._sanitize_filename(
             temp_memory._title_from_path(path2)
         )
@@ -121,28 +133,47 @@ class TestTranscriptionMemory:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", dir="/tmp") as f:
             f.write(b"audio A")
             path1 = f.name
-        temp_memory.set(path1, "tiny", {
-            "text": "A", "language": "en", "duration": 5.0,
-            "words": [], "segments": [],
-        })
-        first_name = temp_memory._sanitize_filename(
-            temp_memory._title_from_path(path1)
+        temp_memory.set(
+            path1,
+            "tiny",
+            {
+                "text": "A",
+                "language": "en",
+                "duration": 5.0,
+                "words": [],
+                "segments": [],
+            },
         )
+        first_name = temp_memory._sanitize_filename(temp_memory._title_from_path(path1))
         os.unlink(path1)
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3", dir="/tmp") as f:
             f.write(b"audio B")
             path2 = f.name
-        temp_memory.set(path2, "tiny", {
-            "text": "B", "language": "en", "duration": 5.0,
-            "words": [], "segments": [],
-        })
+        temp_memory.set(
+            path2,
+            "tiny",
+            {
+                "text": "B",
+                "language": "en",
+                "duration": 5.0,
+                "words": [],
+                "segments": [],
+            },
+        )
 
         # Set again (re-transcribe) — should not duplicate the link
-        temp_memory.set(path2, "tiny", {
-            "text": "B updated", "language": "en", "duration": 5.0,
-            "words": [], "segments": [],
-        })
+        temp_memory.set(
+            path2,
+            "tiny",
+            {
+                "text": "B updated",
+                "language": "en",
+                "duration": 5.0,
+                "words": [],
+                "segments": [],
+            },
+        )
         second_name = temp_memory._sanitize_filename(
             temp_memory._title_from_path(path2)
         )
@@ -246,7 +277,9 @@ class TestTranscriptionMemory:
         assert content.startswith("---\n")
         assert "\n---\n" in content[4:]
 
-    def test_markdown_frontmatter_contains_metadata(self, temp_memory, sample_audio_file):
+    def test_markdown_frontmatter_contains_metadata(
+        self, temp_memory, sample_audio_file
+    ):
         transcription = {
             "text": "Test content",
             "language": "en",

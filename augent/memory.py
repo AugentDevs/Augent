@@ -356,7 +356,7 @@ class TranscriptionMemory:
                     end_idx = content.find("\n---\n", 4)
                     if end_idx == -1:
                         return
-                    body = content[end_idx + 5:]
+                    body = content[end_idx + 5 :]
                 else:
                     # Old format without frontmatter — skip (migration handles these)
                     return
@@ -497,9 +497,7 @@ class TranscriptionMemory:
             # Silently fail on memory write errors
             pass
 
-    def _link_chronological_neighbor(
-        self, cache_key: str, md_path: Path
-    ) -> None:
+    def _link_chronological_neighbor(self, cache_key: str, md_path: Path) -> None:
         """Link a new transcription to the most recent previous one via [[wikilink]]."""
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -527,7 +525,9 @@ class TranscriptionMemory:
                 if "## Related" in content:
                     content = content.rstrip() + f"\n- [[{neighbor_name}]]\n"
                 else:
-                    content = content.rstrip() + f"\n\n## Related\n\n- [[{neighbor_name}]]\n"
+                    content = (
+                        content.rstrip() + f"\n\n## Related\n\n- [[{neighbor_name}]]\n"
+                    )
 
                 md_path.write_text(content, encoding="utf-8")
         except Exception:

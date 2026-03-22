@@ -95,9 +95,7 @@ def compute_related_links(
             ).fetchall()
             if rows:
                 r = rows[0]
-                entry_tags = {
-                    t["name"] for t in memory.get_tags(r["cache_key"])
-                }
+                entry_tags = {t["name"] for t in memory.get_tags(r["cache_key"])}
                 hash_to_info[entry["audio_hash"]] = {
                     "cache_key": r["cache_key"],
                     "md_path": r["md_path"] or "",
@@ -118,9 +116,7 @@ def compute_related_links(
 
         doc_emb = np.mean(entry["embeddings"], axis=0)
         sim = float(
-            _cosine_similarity(
-                target_doc_emb.reshape(1, -1), doc_emb.reshape(1, -1)
-            )[0]
+            _cosine_similarity(target_doc_emb.reshape(1, -1), doc_emb.reshape(1, -1))[0]
         )
 
         shared = target_tags & info["tags"]
@@ -403,9 +399,7 @@ def rebuild_graph(memory) -> dict:
     with sqlite3.connect(memory.db_path) as conn:
         cache_keys = [
             row[0]
-            for row in conn.execute(
-                "SELECT cache_key FROM transcriptions"
-            ).fetchall()
+            for row in conn.execute("SELECT cache_key FROM transcriptions").fetchall()
         ]
 
     for ck in cache_keys:
