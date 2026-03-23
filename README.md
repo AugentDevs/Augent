@@ -270,7 +270,7 @@ Open: **http://127.0.0.1:8282**
 
 ## Obsidian Graph View
 
-Every transcription builds a node. Every shared tag builds a connection. Your audio memory becomes a navigable knowledge graph — entirely automatic.
+Every transcription builds a node. Every shared tag builds a connection. Your audio memory becomes a navigable knowledge graph, entirely automatic.
 
 <picture>
   <img src="./images/obsidian-graph.png" alt="Augent knowledge graph in Obsidian">
