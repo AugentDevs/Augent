@@ -280,6 +280,8 @@ Point Obsidian at `~/.augent/memory/transcriptions/` as a dedicated vault. Every
 
 Use your main Obsidian vault for personal notes. Use the Augent vault for your audio knowledge network. Two vaults, two purposes. [Full guide](https://docs.augent.app/obsidian/overview).
 
+> **Using Claude Code with Obsidian?** Set up [obsidian-claude](https://github.com/AugentDevs/obsidian-claude) — it fixes a race condition where Obsidian silently reverts Claude's edits, and makes every `.txt` and `.md` file on your Mac open directly in Obsidian.
+
 <br />
 
 ## Multilingual
