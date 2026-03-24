@@ -22,6 +22,8 @@
   <a href="#mcp-tools">MCP Tools</a> ·
   <a href="#cli">CLI</a> ·
   <a href="#web-ui">Web UI</a> ·
+  <a href="#claude-code-skill">Claude Code Skill</a> ·
+  <a href="#openclaw">OpenClaw</a> ·
   <a href="https://augent.app">Website</a> ·
   <a href="https://docs.augent.app">Docs</a> ·
   <a href="https://docs.augent.app/tools/download-audio">Tool Reference</a> ·
@@ -327,6 +329,40 @@ disabled_tools: []         # Hide tools from MCP clients
 Per-call arguments always override config. No config file needed — all values have sensible defaults.
 
 **[Configuration docs →](https://docs.augent.app/guides/configuration)**
+
+<br />
+
+## Claude Code Skill
+
+Install the skill to teach Claude how to use Augent's tools effectively. Without it, Claude can call the tools but won't know the optimal workflows for note-taking, translation, search, tagging, and more.
+
+```bash
+mkdir -p ~/.claude/skills/augent
+curl -o ~/.claude/skills/augent/SKILL.md \
+  https://raw.githubusercontent.com/AugentDevs/Augent/main/skills/augent/SKILL.md
+```
+
+Works globally across all projects. One install, every conversation benefits.
+
+<br />
+
+## OpenClaw
+
+Augent is available as an [OpenClaw](https://github.com/openclaw/openclaw) skill on [ClawHub](https://clawhub.ai/augentdevs/augent).
+
+**Install via ClawHub:**
+
+```bash
+npx clawhub@latest install augent
+```
+
+**Or set up manually:**
+
+```bash
+augent setup openclaw
+```
+
+This installs the skill manifest and configures the MCP server in one command.
 
 <br />
 
