@@ -22,13 +22,10 @@
   <a href="#mcp-tools">MCP Tools</a> ·
   <a href="#cli">CLI</a> ·
   <a href="#web-ui">Web UI</a> ·
-  <a href="#claude-code-skill">Claude Code Skill</a> ·
   <a href="#openclaw">OpenClaw</a> ·
   <a href="https://augent.app">Website</a> ·
   <a href="https://docs.augent.app">Docs</a> ·
-  <a href="https://docs.augent.app/tools/download-audio">Tool Reference</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://discord.com/invite/DNmaZtaE7b">Discord</a> ·
   <a href="mailto:hello@augent.app">Contact</a>
 </p>
 
