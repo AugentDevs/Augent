@@ -48,6 +48,9 @@ augent/
 ├── speakers.py     # Speaker diarization
 ├── tts.py          # Text-to-speech (Kokoro)
 ├── memory.py       # Three-layer memory (SQLite)
+├── graph.py        # Obsidian graph view (wikilinks, MOCs, frontmatter)
+├── separator.py    # Audio source separation (Demucs v4)
+├── banner.py       # CLI/installer ASCII banner
 ├── cli.py          # CLI interface
 ├── web.py          # Web UI (FastAPI)
 ├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)
@@ -63,6 +66,7 @@ augent/
 5. If your tool needs a heavy dependency, import it lazily inside the handler
 6. Add tests in `tests/` and update the tool count in `test_mcp.py`
 7. Update `CLAUDE.md` with usage documentation
+8. Update `README.md` tool table, `openclaw/SKILL.md`, and `skills/augent/SKILL.md`
 
 ### Config Integration
 
