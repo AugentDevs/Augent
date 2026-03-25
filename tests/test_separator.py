@@ -3,9 +3,7 @@
 import os
 import tempfile
 
-import pytest
-
-from augent.separator import _collect_stems, _hash_file, SEPARATOR_DIR
+from augent.separator import SEPARATOR_DIR, _collect_stems, _hash_file
 
 
 class TestSeparatorUtils:
