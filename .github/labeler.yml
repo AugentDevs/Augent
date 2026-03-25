@@ -20,6 +20,8 @@
           - "augent/memory.py"
           - "augent/search.py"
           - "augent/embeddings.py"
+          - "augent/graph.py"
+          - "augent/config.py"
 
 "tts":
   - changed-files:
