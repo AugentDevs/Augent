@@ -6,7 +6,7 @@
 # Supports YouTube, Vimeo, TikTok, Twitter, and 1000+ sites
 #
 
-VERSION="2026.2.16"
+VERSION="2026.3.24"
 
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -86,7 +86,8 @@ download() {
         -f "bestaudio/best"
         --concurrent-fragments 4
         --no-playlist
-        -o "$OUTPUT_DIR/%(title)s.%(ext)s"
+        --restrict-filenames
+        -o "$OUTPUT_DIR/%(title)s [%(id)s].%(ext)s"
     )
 
     if [ "$USE_ARIA" = true ]; then
@@ -104,7 +105,8 @@ download() {
             -f "bestaudio/best"
             --concurrent-fragments 4
             --no-playlist
-            -o "$OUTPUT_DIR/%(title)s.%(ext)s"
+            --restrict-filenames
+        -o "$OUTPUT_DIR/%(title)s [%(id)s].%(ext)s"
             "$url"
         )
         if "${fallback_cmd[@]}"; then
