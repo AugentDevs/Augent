@@ -228,8 +228,8 @@ graph TB
     A["Expert explains workflow or automation"] --> B["Augent transcribes + structures"]
     B --> C["Builds workflow files + sequencing"]
 
-    C --> D["Detects decision points"]
-    C --> E["Extracts tool stack"]
+    C --> D["Maps decision logic"]
+    C --> E["Identifies tools + platforms"]
     C --> F["Flags visual gaps"]
 
     F --> G["Exports screenshots for context"]
