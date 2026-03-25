@@ -50,7 +50,6 @@ augent/
 ├── memory.py       # Three-layer memory (SQLite)
 ├── graph.py        # Obsidian graph view (wikilinks, MOCs, frontmatter)
 ├── separator.py    # Audio source separation (Demucs v4)
-├── banner.py       # CLI/installer ASCII banner
 ├── cli.py          # CLI interface
 ├── web.py          # Web UI (FastAPI)
 ├── export.py       # Export formats (JSON, CSV, SRT, VTT, MD)
