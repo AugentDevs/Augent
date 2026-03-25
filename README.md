@@ -253,7 +253,7 @@ graph TB
 
 ## Claude Code Skill
 
-Teaches Claude the best patterns for combining Augent's tools: note-taking workflows, auto-tagging, translation flows, quiz formatting, and when to use deep search vs keyword search.
+Claude and Codex already know how to use Augent's tools from their descriptions. The skill adds advanced workflows on top: multi-step note-taking pipelines, auto-tagging rules, translation flows, quiz formatting, and optimal search strategies.
 
 ```bash
 mkdir -p ~/.claude/skills/augent
