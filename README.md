@@ -225,21 +225,26 @@ But some steps are inherently visual. Augent detects where visual context is nee
 
 ```mermaid
 graph TB
-    A["Expert explains workflow"] --> B["Augent transcribes + structures"]
-    B --> C["Builds workflow files"]
-    C --> D["Visual context needed?"]
+    A["Expert explains workflow or automation"] --> B["Augent transcribes + structures"]
+    B --> C["Builds workflow files + sequencing"]
 
-    D --> E["Export screenshots"]
-    D --> F["Package ready"]
-    D --> G["Ready to run"]
+    C --> D["Detects decision points"]
+    C --> E["Extracts tool stack"]
+    C --> F["Flags visual gaps"]
+
+    F --> G["Exports screenshots for context"]
+    D --> H["Ready to run"]
+    E --> H
+    G --> H
 
     style A fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style B fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
     style C fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
-    style D fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
+    style D fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
     style E fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
     style F fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
     style G fill:#0a0a0a,stroke:#00f060,color:#00f060,stroke-width:2px
+    style H fill:#0d2618,stroke:#00f060,color:#00f060,stroke-width:2px
 ```
 
 **[Read more →](https://docs.augent.app/agents/eyes-and-ears)**
