@@ -253,7 +253,7 @@ graph TB
 
 ## Claude Code Skill
 
-Install the skill to teach Claude how to use Augent's tools effectively. Without it, Claude can call the tools but won't know the optimal workflows for note-taking, translation, search, tagging, and more.
+Teaches Claude the best patterns for combining Augent's tools: note-taking workflows, auto-tagging, translation flows, quiz formatting, and when to use deep search vs keyword search.
 
 ```bash
 mkdir -p ~/.claude/skills/augent
