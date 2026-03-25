@@ -103,3 +103,6 @@ Thumbs.db
 # Local development
 *.local
 .env.local
+
+# Local scripts
+simulate_*.py
