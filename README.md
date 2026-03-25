@@ -281,7 +281,7 @@ npx clawhub@latest install augent
 augent setup openclaw
 ```
 
-If you installed Augent with `install.sh`, OpenClaw is detected and configured automatically. These commands are for manual setup or if you installed via pip.
+If you installed Augent with `curl -fsSL https://augent.app/install.sh | bash`, OpenClaw is detected and configured automatically. These commands are only needed for manual setup or pip installs.
 
 <br />
 
