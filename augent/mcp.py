@@ -2095,19 +2095,33 @@ def handle_take_notes(arguments: dict) -> dict:
                     "model_size": model_size,
                 }
             )
+            frames_data = [
+                {
+                    "filename": f["filename"],
+                    "timestamp": f["timestamp_formatted"],
+                    "transcript": f.get("transcript", "")[:150],
+                }
+                for f in visual_result["frames"]
+            ]
             response["visual"] = {
                 "frame_count": visual_result["frame_count"],
                 "frames_dir": visual_result["frames_dir"],
-                "md_path": visual_result.get("md_path"),
-                "frames": [
-                    {
-                        "filename": f["filename"],
-                        "timestamp": f["timestamp_formatted"],
-                        "transcript": f.get("transcript", "")[:150],
-                    }
-                    for f in visual_result["frames"]
-                ],
+                "frames": frames_data,
             }
+            # Tell Claude to embed frames inline in the notes
+            if frames_data:
+                embed_lines = []
+                for fd in frames_data:
+                    embed_lines.append(
+                        f"- At {fd['timestamp']}: ![[{fd['filename']}]] (context: {fd['transcript'][:80]})"
+                    )
+                response["visual_embed_instruction"] = (
+                    "IMPORTANT: When formatting the notes, embed these visual frames inline "
+                    "at the relevant sections using Obsidian wikilink syntax. Place each "
+                    "![[filename.png]] embed on its own line right after the section it relates to. "
+                    "Do NOT create a separate visual section — weave them naturally into the notes.\n\n"
+                    "Frames to embed:\n" + "\n".join(embed_lines)
+                )
         except Exception as e:
             response["visual_error"] = str(e)
 
@@ -3031,7 +3045,182 @@ def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
             if s1 > 0.4 and s2 > 0.4 and s3 > 0.3:
                 scored[i] = (idx, min(1.0, s3 * 1.25), reason or "tutorial sequence")
 
+    # Suppress intro B-roll false positives:
+    # First 30 seconds require score > 0.9 to qualify.
+    # Detect intro pattern: 3+ qualifying segments within first 15 seconds = B-roll burst, suppress all.
+    intro_cutoff = 30.0
+    intro_burst_cutoff = 15.0
+    intro_burst_count = 0
+    for seg_idx, score, _reason in scored:
+        seg_start = segments[seg_idx].get("start", 0)
+        if seg_start < intro_burst_cutoff and score > 0.4:
+            intro_burst_count += 1
+    intro_is_broll = intro_burst_count >= 3
+
+    if intro_is_broll:
+        for i, (seg_idx, score, reason) in enumerate(scored):
+            seg_start = segments[seg_idx].get("start", 0)
+            if seg_start < intro_cutoff and score < 0.95:
+                scored[i] = (seg_idx, score * 0.3, reason)  # Heavily suppress
+    else:
+        # Even without burst detection, require higher confidence in first 30s
+        for i, (seg_idx, score, reason) in enumerate(scored):
+            seg_start = segments[seg_idx].get("start", 0)
+            if seg_start < intro_cutoff and score < 0.9:
+                scored[i] = (seg_idx, score * 0.6, reason)
+
     return scored
+
+
+def _extract_best_frame(
+    video_path: str, ts: float, duration: float, out_path: str
+) -> bool:
+    """Extract the best frame from 3 candidates around a timestamp.
+
+    Takes frames at ts, ts+1s, ts+2s and picks the one with the most
+    visual information (highest edge density = most UI/text content).
+    Returns True if a frame was saved to out_path.
+    """
+    import tempfile
+
+    candidates = []
+    offsets = [0.0, 1.0, 2.0]
+
+    for offset in offsets:
+        t = ts + offset
+        if t >= duration - 0.1:
+            continue
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        tmp.close()
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(t),
+            "-i",
+            video_path,
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale='min(1280,iw)':-1",
+            "-q:v",
+            "2",
+            tmp.name,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        if result.returncode != 0 or not os.path.exists(tmp.name):
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass
+            continue
+
+        # Score by edge density: convert to grayscale, compute gradient magnitude
+        try:
+            from PIL import Image
+
+            img = Image.open(tmp.name).convert("L").resize((320, 180))
+            import numpy as np
+
+            arr = np.array(img, dtype=np.float32)
+            # Sobel-like gradient: horizontal + vertical differences
+            gx = np.abs(arr[:, 1:] - arr[:, :-1])
+            gy = np.abs(arr[1:, :] - arr[:-1, :])
+            edge_score = float(np.mean(gx) + np.mean(gy))
+            candidates.append((tmp.name, edge_score))
+        except Exception:
+            # If PIL not available, just use the first candidate
+            candidates.append((tmp.name, 0.0))
+
+    if not candidates:
+        return False
+
+    # Pick highest edge score
+    candidates.sort(key=lambda x: x[1], reverse=True)
+    best_path = candidates[0][0]
+
+    # Move best to output, clean up others
+    import shutil
+
+    shutil.move(best_path, out_path)
+    for path, _ in candidates:
+        if path != best_path:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+    return True
+
+
+def _dedup_frames(frame_info: list) -> list:
+    """Remove near-duplicate frames using average perceptual hashing.
+
+    Downscales each frame to 8x8 grayscale, computes a 64-bit hash,
+    compares hamming distance. If two frames have distance < 5, drops
+    the lower-scored one. No new dependencies (PIL + numpy).
+    """
+    if len(frame_info) <= 1:
+        return frame_info
+
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return frame_info  # Can't dedup without PIL
+
+    def _ahash(path: str) -> int:
+        """Compute average hash: 8x8 grayscale, compare to mean."""
+        img = Image.open(path).convert("L").resize((8, 8))
+        arr = np.array(img, dtype=np.float32)
+        mean = arr.mean()
+        bits = (arr > mean).flatten()
+        h = 0
+        for bit in bits:
+            h = (h << 1) | int(bit)
+        return h
+
+    def _hamming(a: int, b: int) -> int:
+        return bin(a ^ b).count("1")
+
+    # Compute hashes
+    hashes = []
+    for fi in frame_info:
+        try:
+            hashes.append(_ahash(fi["path"]))
+        except Exception:
+            hashes.append(None)
+
+    # Mark duplicates (keep higher-scored frame)
+    keep = [True] * len(frame_info)
+    for i in range(len(frame_info)):
+        if not keep[i] or hashes[i] is None:
+            continue
+        for j in range(i + 1, len(frame_info)):
+            if not keep[j] or hashes[j] is None:
+                continue
+            if _hamming(hashes[i], hashes[j]) < 5:
+                # Drop the lower-scored one
+                score_i = frame_info[i].get("score", 0)
+                score_j = frame_info[j].get("score", 0)
+                if score_i >= score_j:
+                    keep[j] = False
+                    # Clean up the file
+                    try:
+                        os.unlink(frame_info[j]["path"])
+                    except OSError:
+                        pass
+                else:
+                    keep[i] = False
+                    try:
+                        os.unlink(frame_info[i]["path"])
+                    except OSError:
+                        pass
+                    break  # i is dropped, move on
+
+    return [fi for fi, k in zip(frame_info, keep, strict=False) if k]
 
 
 def handle_visual(arguments: dict) -> dict:
@@ -3328,7 +3517,7 @@ def handle_visual(arguments: dict) -> dict:
         )
     os.makedirs(desktop_dir, exist_ok=True)
 
-    # Extract frames
+    # Extract frames — picks best of 3 candidates per timestamp by edge density
     frame_info = []
     for _frame_num, (ts, score, reason, context) in enumerate(targets):
         # Unique filename: videoname_07m19s.png
@@ -3336,23 +3525,7 @@ def handle_visual(arguments: dict) -> dict:
         fname = f"{name_prefix}_{m:02d}m{s:02d}s.png"
         desktop_path = os.path.join(desktop_dir, fname)
 
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-ss",
-            str(ts),
-            "-i",
-            video_path,
-            "-frames:v",
-            "1",
-            "-vf",
-            "scale='min(1280,iw)':-1",
-            "-q:v",
-            "2",
-            desktop_path,
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode != 0 or not os.path.exists(desktop_path):
+        if not _extract_best_frame(video_path, ts, video_duration, desktop_path):
             continue
 
         frame_info.append(
@@ -3366,6 +3539,9 @@ def handle_visual(arguments: dict) -> dict:
                 "transcript": context,
             }
         )
+
+    # Remove near-duplicate frames (same UI state, minor cursor movement)
+    frame_info = _dedup_frames(frame_info)
 
     # Create visual context .md on Desktop with frame embeds.
     # augent-obsidian hard-links it into the vault automatically.
