@@ -3060,10 +3060,15 @@ def handle_visual(arguments: dict) -> dict:
         )
 
     if url and not video_path:
-        # Download video from URL using yt-dlp
+        # Download video from URL — prefer brew yt-dlp (stays current, avoids pip SSL issues)
+        ytdlp = shutil.which(
+            "yt-dlp", path="/opt/homebrew/bin:/usr/local/bin"
+        ) or shutil.which("yt-dlp")
+        if not ytdlp:
+            raise RuntimeError("yt-dlp not found. Install with: brew install yt-dlp")
         download_dir = os.path.expanduser("~/Downloads")
         cmd = [
-            "yt-dlp",
+            ytdlp,
             "-f",
             "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
             "--merge-output-format",
