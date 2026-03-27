@@ -294,9 +294,9 @@ Every transcription builds a node. Every shared tag builds a connection. Your au
   <img src="./images/obsidian-graph.png" alt="Augent knowledge graph in Obsidian">
 </picture>
 
-Point Obsidian at `~/.augent/memory/transcriptions/` as a dedicated vault. Every `take_notes` call, every transcription, every tag creates structure: YAML frontmatter, `[[wikilinks]]` between related content, and MOC hub files that cluster topics. Run `rebuild_graph` once to upgrade existing memory. The graph grows on its own from there.
+Every `take_notes` call, every transcription, every tag creates structure: YAML frontmatter, `[[wikilinks]]` between related content, and MOC hub files that cluster topics. Run `rebuild_graph` once to upgrade existing memory. The graph grows on its own from there.
 
-Use your main Obsidian vault for personal notes. Use the Augent vault for your audio knowledge network. Two vaults, two purposes. [Full guide](https://docs.augent.app/obsidian/overview).
+Use Augent inside your main Obsidian vault, alongside your personal notes, journals, and projects. Everything compounds together. [Full guide](https://docs.augent.app/obsidian/why-augent-obsidian).
 
 > **Using Claude Code or Codex with Obsidian?** Set up [augent-obsidian](https://github.com/AugentDevs/augent-obsidian) to make every `.txt` and `.md` file on your Mac open directly in Obsidian, with automatic sync for external edits.
 
