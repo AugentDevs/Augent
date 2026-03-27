@@ -2018,7 +2018,7 @@ def handle_take_notes(arguments: dict) -> dict:
     response["visual_hint"] = (
         f"If the user needs visual context (screenshots of UI, dashboards, workflows shown in the video), "
         f'use the `visual` tool with url: "{url}" and a query describing what they need to see. '
-        f"Example: visual(url=\"{url}\", query=\"setting up the automation\")"
+        f'Example: visual(url="{url}", query="setting up the automation")'
     )
 
     # Semantic tagging — assign existing tags based on content similarity
@@ -2088,17 +2088,23 @@ def handle_take_notes(arguments: dict) -> dict:
     # Visual context: download video and extract frames in one shot
     if visual_query:
         try:
-            visual_result = handle_visual({
-                "url": url,
-                "query": visual_query,
-                "model_size": model_size,
-            })
+            visual_result = handle_visual(
+                {
+                    "url": url,
+                    "query": visual_query,
+                    "model_size": model_size,
+                }
+            )
             response["visual"] = {
                 "frame_count": visual_result["frame_count"],
                 "frames_dir": visual_result["frames_dir"],
                 "md_path": visual_result.get("md_path"),
                 "frames": [
-                    {"filename": f["filename"], "timestamp": f["timestamp_formatted"], "transcript": f.get("transcript", "")[:150]}
+                    {
+                        "filename": f["filename"],
+                        "timestamp": f["timestamp_formatted"],
+                        "transcript": f.get("transcript", "")[:150],
+                    }
                     for f in visual_result["frames"]
                 ],
             }
@@ -2763,7 +2769,9 @@ def _get_obsidian_vault():
     """Get the first open Obsidian vault path from Obsidian's config."""
     from pathlib import Path
 
-    config_path = Path.home() / "Library" / "Application Support" / "obsidian" / "obsidian.json"
+    config_path = (
+        Path.home() / "Library" / "Application Support" / "obsidian" / "obsidian.json"
+    )
     if not config_path.exists():
         return None
     try:
@@ -2797,28 +2805,131 @@ def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
     # --- Pattern matching (fast, high precision) ---
     VISUAL_PATTERNS = [
         # Explicit visual references
-        (_re.compile(r"\b(as you can see|you can see|you'll see|see here|shown here|look at)\b", _re.I), 0.9, "explicit visual reference"),
-        (_re.compile(r"\b(on screen|on the screen|on your screen)\b", _re.I), 0.9, "on-screen reference"),
-        (_re.compile(r"\b(here'?s what it looks like|this is what it looks like|looks like this)\b", _re.I), 0.9, "visual demonstration"),
+        (
+            _re.compile(
+                r"\b(as you can see|you can see|you'll see|see here|shown here|look at)\b",
+                _re.I,
+            ),
+            0.9,
+            "explicit visual reference",
+        ),
+        (
+            _re.compile(r"\b(on screen|on the screen|on your screen)\b", _re.I),
+            0.9,
+            "on-screen reference",
+        ),
+        (
+            _re.compile(
+                r"\b(here'?s what it looks like|this is what it looks like|looks like this)\b",
+                _re.I,
+            ),
+            0.9,
+            "visual demonstration",
+        ),
         # UI actions
-        (_re.compile(r"\b(click|tap|press|hit|select|toggle|check|uncheck)\s+(on|the|this|that|here)\b", _re.I), 0.85, "UI action"),
-        (_re.compile(r"\b(drag|drop|swipe|scroll|hover)\b", _re.I), 0.85, "spatial UI action"),
-        (_re.compile(r"\b(navigate to|go to|open up|expand|collapse|minimize|maximize)\b", _re.I), 0.75, "navigation action"),
+        (
+            _re.compile(
+                r"\b(click|tap|press|hit|select|toggle|check|uncheck)\s+(on|the|this|that|here)\b",
+                _re.I,
+            ),
+            0.85,
+            "UI action",
+        ),
+        (
+            _re.compile(r"\b(drag|drop|swipe|scroll|hover)\b", _re.I),
+            0.85,
+            "spatial UI action",
+        ),
+        (
+            _re.compile(
+                r"\b(navigate to|go to|open up|expand|collapse|minimize|maximize)\b",
+                _re.I,
+            ),
+            0.75,
+            "navigation action",
+        ),
         # UI elements
-        (_re.compile(r"\b(button|icon|menu|dropdown|sidebar|toolbar|popup|modal|dialog|tooltip)\b", _re.I), 0.7, "UI element reference"),
-        (_re.compile(r"\b(dashboard|chart|graph|table|spreadsheet|form|field|checkbox|slider)\b", _re.I), 0.7, "data visualization"),
+        (
+            _re.compile(
+                r"\b(button|icon|menu|dropdown|sidebar|toolbar|popup|modal|dialog|tooltip)\b",
+                _re.I,
+            ),
+            0.7,
+            "UI element reference",
+        ),
+        (
+            _re.compile(
+                r"\b(dashboard|chart|graph|table|spreadsheet|form|field|checkbox|slider)\b",
+                _re.I,
+            ),
+            0.7,
+            "data visualization",
+        ),
         # Spatial/positional
-        (_re.compile(r"\b(top right|top left|bottom right|bottom left|upper right|upper left|lower right|lower left)\b", _re.I), 0.8, "spatial position"),
-        (_re.compile(r"\b(over here|right here|right there|over there|this area|this section|this part)\b", _re.I), 0.85, "deictic reference"),
+        (
+            _re.compile(
+                r"\b(top right|top left|bottom right|bottom left|upper right|upper left|lower right|lower left)\b",
+                _re.I,
+            ),
+            0.8,
+            "spatial position",
+        ),
+        (
+            _re.compile(
+                r"\b(over here|right here|right there|over there|this area|this section|this part)\b",
+                _re.I,
+            ),
+            0.85,
+            "deictic reference",
+        ),
         # Demonstration language
-        (_re.compile(r"\b(let me show|i'll show|i'm going to show|watch what happens|watch this|notice how)\b", _re.I), 0.85, "demonstration"),
-        (_re.compile(r"\b(step \d|first.{0,20}(click|select|open|type|enter)|next.{0,20}(click|select|open|type))\b", _re.I), 0.8, "step-by-step instruction"),
+        (
+            _re.compile(
+                r"\b(let me show|i'll show|i'm going to show|watch what happens|watch this|notice how)\b",
+                _re.I,
+            ),
+            0.85,
+            "demonstration",
+        ),
+        (
+            _re.compile(
+                r"\b(step \d|first.{0,20}(click|select|open|type|enter)|next.{0,20}(click|select|open|type))\b",
+                _re.I,
+            ),
+            0.8,
+            "step-by-step instruction",
+        ),
         # Code/terminal
-        (_re.compile(r"\b(the (code|output|error|terminal|console) (shows|says|reads|displays))\b", _re.I), 0.75, "code/terminal output"),
-        (_re.compile(r"\b(type|enter|run|execute|paste)\s+(this|the command|the following|in the)\b", _re.I), 0.7, "command input"),
+        (
+            _re.compile(
+                r"\b(the (code|output|error|terminal|console) (shows|says|reads|displays))\b",
+                _re.I,
+            ),
+            0.75,
+            "code/terminal output",
+        ),
+        (
+            _re.compile(
+                r"\b(type|enter|run|execute|paste)\s+(this|the command|the following|in the)\b",
+                _re.I,
+            ),
+            0.7,
+            "command input",
+        ),
         # Screen recording cues
-        (_re.compile(r"\b(recording|screen share|screen cast|let me walk you through)\b", _re.I), 0.7, "screen recording"),
-        (_re.compile(r"\b(you('ll| will) (notice|see|find))\b", _re.I), 0.75, "visual callout"),
+        (
+            _re.compile(
+                r"\b(recording|screen share|screen cast|let me walk you through)\b",
+                _re.I,
+            ),
+            0.7,
+            "screen recording",
+        ),
+        (
+            _re.compile(r"\b(you('ll| will) (notice|see|find))\b", _re.I),
+            0.75,
+            "visual callout",
+        ),
     ]
 
     # --- Semantic anchors (for embedding-based scoring) ---
@@ -2851,8 +2962,12 @@ def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
             from .embeddings import _cosine_similarity, _get_embedding_model_cache
 
             model = _get_embedding_model_cache().get()
-            visual_embs = model.encode(VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False)
-            non_visual_embs = model.encode(NON_VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False)
+            visual_embs = model.encode(
+                VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False
+            )
+            non_visual_embs = model.encode(
+                NON_VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False
+            )
 
             semantic_scores = []
             for i in range(len(segment_embeddings)):
@@ -2862,7 +2977,9 @@ def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
                 vis_max = float(np.max(vis_sims))
                 non_vis_max = float(np.max(non_vis_sims))
                 # Net visual score: how much more visual than non-visual
-                semantic_scores.append(max(0.0, min(1.0, (vis_max - non_vis_max + 0.3) / 0.6)))
+                semantic_scores.append(
+                    max(0.0, min(1.0, (vis_max - non_vis_max + 0.3) / 0.6))
+                )
         except Exception:
             semantic_scores = None
 
@@ -2879,7 +2996,9 @@ def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
                     best_reason = reason
 
         # Semantic score
-        sem_score = semantic_scores[i] if semantic_scores and i < len(semantic_scores) else 0.0
+        sem_score = (
+            semantic_scores[i] if semantic_scores and i < len(semantic_scores) else 0.0
+        )
 
         # Heuristic adjustments
         heuristic_mult = 1.0
@@ -2936,40 +3055,54 @@ def handle_visual(arguments: dict) -> dict:
     url = arguments.get("url")
 
     if not video_path and not url:
-        raise ValueError("Provide video_path (local file) or url (downloads video automatically).")
+        raise ValueError(
+            "Provide video_path (local file) or url (downloads video automatically)."
+        )
 
     if url and not video_path:
         # Download video from URL using yt-dlp
         download_dir = os.path.expanduser("~/Downloads")
         cmd = [
             "yt-dlp",
-            "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "--merge-output-format", "mp4",
+            "-f",
+            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "--merge-output-format",
+            "mp4",
             "--no-playlist",
-            "-o", os.path.join(download_dir, "%(title)s.%(ext)s"),
-            "--print", "after_move:filepath",
+            "-o",
+            os.path.join(download_dir, "%(title)s.%(ext)s"),
+            "--print",
+            "after_move:filepath",
             url,
         ]
         dl_result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if dl_result.returncode != 0:
-            raise RuntimeError(f"Video download failed: {dl_result.stderr.strip()[:300]}")
+            raise RuntimeError(
+                f"Video download failed: {dl_result.stderr.strip()[:300]}"
+            )
         video_path = dl_result.stdout.strip().split("\n")[-1]
         if not os.path.exists(video_path):
-            raise RuntimeError(f"Video download completed but file not found: {video_path}")
+            raise RuntimeError(
+                f"Video download completed but file not found: {video_path}"
+            )
 
     video_path = os.path.expanduser(video_path)
     if not os.path.exists(video_path):
         raise FileNotFoundError(f"Video file not found: {video_path}")
 
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
-        raise RuntimeError("ffmpeg and ffprobe are required. Install with: brew install ffmpeg")
+        raise RuntimeError(
+            "ffmpeg and ffprobe are required. Install with: brew install ffmpeg"
+        )
 
     query = arguments.get("query")
     timestamps = arguments.get("timestamps")
     auto_mode = arguments.get("auto", False)
     clear = arguments.get("clear", False)
     model_size = arguments.get("model_size", cfg.get("model_size", "tiny"))
-    max_frames = int(arguments.get("max_frames", cfg.get("visual_context_max_frames", 30)))
+    max_frames = int(
+        arguments.get("max_frames", cfg.get("visual_context_max_frames", 30))
+    )
     top_k = int(arguments.get("top_k", 10))
     context_words = int(arguments.get("context_words", 40))
 
@@ -2996,7 +3129,9 @@ def handle_visual(arguments: dict) -> dict:
                     pass
         # Remove visual context .md from Desktop
         md_name = f"{safe_name_for_clear} - Visual Context.md"
-        md_desktop = Path(os.path.expanduser(cfg.get("notes_output_dir", "~/Desktop"))) / md_name
+        md_desktop = (
+            Path(os.path.expanduser(cfg.get("notes_output_dir", "~/Desktop"))) / md_name
+        )
         if md_desktop.exists():
             md_desktop.unlink()
             removed_md = True
@@ -3030,12 +3165,18 @@ def handle_visual(arguments: dict) -> dict:
 
     # Probe video duration
     ffprobe_cmd = [
-        "ffprobe", "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1",
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
         video_path,
     ]
-    probe_result = subprocess.run(ffprobe_cmd, capture_output=True, text=True, timeout=30)
+    probe_result = subprocess.run(
+        ffprobe_cmd, capture_output=True, text=True, timeout=30
+    )
     if probe_result.returncode != 0:
         raise RuntimeError(f"ffprobe failed: {probe_result.stderr.strip()[:200]}")
     video_duration = float(probe_result.stdout.strip())
@@ -3110,7 +3251,9 @@ def handle_visual(arguments: dict) -> dict:
 
         for r in results[:max_frames]:
             ts = r["start"] + 1.0  # Offset into the visual moment
-            targets.append((ts, round(r["similarity"], 3), f"query match: {query}", r["text"]))
+            targets.append(
+                (ts, round(r["similarity"], 3), f"query match: {query}", r["text"])
+            )
 
     elif mode == "auto":
         # Autonomous detection using pattern + semantic scoring
@@ -3123,7 +3266,9 @@ def handle_visual(arguments: dict) -> dict:
         scored = _score_visual_necessity(segments, segment_embeddings)
 
         # Filter, sort by score, cap
-        qualifying = [(idx, score, reason) for idx, score, reason in scored if score >= 0.4]
+        qualifying = [
+            (idx, score, reason) for idx, score, reason in scored if score >= 0.4
+        ]
         qualifying.sort(key=lambda x: x[1], reverse=True)
         qualifying = qualifying[:max_frames]
         qualifying.sort(key=lambda x: segments[x[0]].get("start", 0))
@@ -3149,7 +3294,10 @@ def handle_visual(arguments: dict) -> dict:
             targets.append((ts, score, reason, " ".join(parts)))
 
     # Clamp timestamps to video bounds
-    targets = [(min(max(ts, 0.1), video_duration - 0.1), score, reason, ctx) for ts, score, reason, ctx in targets]
+    targets = [
+        (min(max(ts, 0.1), video_duration - 0.1), score, reason, ctx)
+        for ts, score, reason, ctx in targets
+    ]
 
     # Sort chronologically
     targets.sort(key=lambda t: t[0])
@@ -3184,27 +3332,35 @@ def handle_visual(arguments: dict) -> dict:
         desktop_path = os.path.join(desktop_dir, fname)
 
         cmd = [
-            "ffmpeg", "-y",
-            "-ss", str(ts),
-            "-i", video_path,
-            "-frames:v", "1",
-            "-vf", "scale='min(1280,iw)':-1",
-            "-q:v", "2",
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(ts),
+            "-i",
+            video_path,
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale='min(1280,iw)':-1",
+            "-q:v",
+            "2",
             desktop_path,
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode != 0 or not os.path.exists(desktop_path):
             continue
 
-        frame_info.append({
-            "path": desktop_path,
-            "filename": fname,
-            "timestamp": round(ts, 1),
-            "timestamp_formatted": _fmt_ts(ts),
-            "score": round(score, 2) if isinstance(score, float) else score,
-            "reason": reason,
-            "transcript": context,
-        })
+        frame_info.append(
+            {
+                "path": desktop_path,
+                "filename": fname,
+                "timestamp": round(ts, 1),
+                "timestamp_formatted": _fmt_ts(ts),
+                "score": round(score, 2) if isinstance(score, float) else score,
+                "reason": reason,
+                "transcript": context,
+            }
+        )
 
     # Create visual context .md on Desktop with frame embeds.
     # augent-obsidian hard-links it into the vault automatically.
@@ -3234,7 +3390,9 @@ def handle_visual(arguments: dict) -> dict:
                 md_lines.append(f"![[{fi['filename']}]]")
                 md_lines.append("")
                 if fi.get("transcript"):
-                    clean_transcript = _re.sub(r"\*\*(.+?)\*\*", r"\1", fi["transcript"])
+                    clean_transcript = _re.sub(
+                        r"\*\*(.+?)\*\*", r"\1", fi["transcript"]
+                    )
                     md_lines.append(f"> {clean_transcript[:300]}")
                     md_lines.append("")
 
