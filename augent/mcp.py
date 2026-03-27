@@ -542,6 +542,10 @@ _ALL_TOOLS = [
                     "type": "boolean",
                     "description": "Generate a spoken audio summary and embed it in the notes for Obsidian playback. Default: false",
                 },
+                "visual": {
+                    "type": "string",
+                    "description": "Extract visual context from the video. Pass a query describing what needs visual context (e.g. 'the workflow setup steps'). Frames are saved to the Obsidian vault with ![[]] embeds in a Visual Context .md file. Requires video URL (downloads the video automatically).",
+                },
             },
         },
     },
@@ -1908,6 +1912,7 @@ def handle_take_notes(arguments: dict) -> dict:
     model_size = arguments.get("model_size", cfg["model_size"])
     style = arguments.get("style", "notes")
     read_aloud = arguments.get("read_aloud", False)
+    visual_query = arguments.get("visual")
 
     if not url:
         raise ValueError("Missing required parameter: url")
@@ -2079,6 +2084,26 @@ def handle_take_notes(arguments: dict) -> dict:
             "source_transcription_filename": "",
             "cache_key": "",
         }
+
+    # Visual context: download video and extract frames in one shot
+    if visual_query:
+        try:
+            visual_result = handle_visual({
+                "url": url,
+                "query": visual_query,
+                "model_size": model_size,
+            })
+            response["visual"] = {
+                "frame_count": visual_result["frame_count"],
+                "frames_dir": visual_result["frames_dir"],
+                "md_path": visual_result.get("md_path"),
+                "frames": [
+                    {"filename": f["filename"], "timestamp": f["timestamp_formatted"], "transcript": f.get("transcript", "")[:150]}
+                    for f in visual_result["frames"]
+                ],
+            }
+        except Exception as e:
+            response["visual_error"] = str(e)
 
     return response
 

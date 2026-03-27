@@ -158,8 +158,11 @@ style: "notes" (optional, default)
 output_dir: "~/Desktop" (optional, default)
 model_size: "tiny" (optional, default)
 read_aloud: false (optional, generates spoken MP3 of the notes and embeds in Obsidian for playback)
+visual: "the workflow setup steps" (optional, extracts visual context frames for the given query)
 ```
 Returns: transcription text + md_path + formatting instructions. You MUST follow the `instruction` field and rewrite the file.
+
+When `visual` is provided, the response includes a `visual` object with frame details. The video is downloaded automatically, frames are extracted at transcript moments matching the query, and a Visual Context .md with `![[frame.png]]` embeds is saved to Desktop.
 
 ### chapters
 Auto-detect topic chapters in audio with timestamps.
