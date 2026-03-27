@@ -924,8 +924,8 @@ _ALL_TOOLS = [
         },
     },
     {
-        "name": "get_visual_context",
-        "description": "Extract frames/screenshots from a video file for visual context. Gives Claude eyes — see UI demos, dashboards, click sequences, and workflows where audio alone isn't enough. Works standalone or chained with clip_export. Scene detection mode extracts frames only when visuals change.",
+        "name": "visual",
+        "description": "Smart visual context extraction from video. Analyzes the transcript to identify moments where visual context is needed (UI demos, screen recordings, spatial actions, dashboards, code output) and extracts frames ONLY at those moments. Skips talking heads, B-roll, and audio-sufficient content. Works standalone or chained with clip_export.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -933,26 +933,22 @@ _ALL_TOOLS = [
                     "type": "string",
                     "description": "Path to a video file (MP4, MKV, etc). Can be output from clip_export.",
                 },
-                "mode": {
+                "model_size": {
                     "type": "string",
-                    "description": "Frame extraction mode: 'interval' (fixed time gap), 'scene' (visual change detection), or 'both' (scene detection with interval fallback for coverage). Default: 'both'",
-                    "enum": ["interval", "scene", "both"],
+                    "description": "Whisper model size for transcription. Default: 'tiny'",
+                    "enum": ["tiny", "base", "small", "medium", "large"],
                 },
-                "interval": {
+                "visual_threshold": {
                     "type": "number",
-                    "description": "Seconds between frames in interval/both mode. Default: 2",
+                    "description": "Minimum visual necessity score (0.0-1.0) for frame extraction. Lower = more frames, higher = only obvious visual moments. Default: 0.4",
                 },
                 "max_frames": {
                     "type": "number",
-                    "description": "Maximum frames to extract. Default: 50",
-                },
-                "scene_threshold": {
-                    "type": "number",
-                    "description": "Scene change sensitivity for scene/both mode. 0.0 = every tiny change, 1.0 = only dramatic changes. Default: 0.3",
+                    "description": "Maximum frames to extract. Default: 30",
                 },
                 "output_dir": {
                     "type": "string",
-                    "description": "Directory to save frames. Default: ~/Desktop/visual_context/<video_name>/",
+                    "description": "Directory to save frames. Default: ~/Desktop/visual/<video_name>/",
                 },
             },
             "required": ["video_path"],
@@ -1029,8 +1025,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_tag(arguments)
         elif tool_name == "rebuild_graph":
             result = handle_rebuild_graph(arguments)
-        elif tool_name == "get_visual_context":
-            result = handle_get_visual_context(arguments)
+        elif tool_name == "visual":
+            result = handle_visual(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -2710,12 +2706,143 @@ def handle_rebuild_graph(arguments: dict) -> dict:
     }
 
 
-def handle_get_visual_context(arguments: dict) -> dict:
-    """Handle get_visual_context tool call — extract frames from a video file."""
-    import glob as globmod
+def _score_visual_necessity(segments: list, segment_embeddings=None) -> list:
+    """Score each transcript segment for visual necessity (0.0-1.0).
+
+    Returns list of (segment_index, score, reason) tuples for ALL segments.
+    Uses a hybrid approach: pattern matching + semantic similarity + heuristics.
+    """
+    import numpy as np
+
+    # --- Pattern matching (fast, high precision) ---
+    VISUAL_PATTERNS = [
+        # Explicit visual references
+        (_re.compile(r"\b(as you can see|you can see|you'll see|see here|shown here|look at)\b", _re.I), 0.9, "explicit visual reference"),
+        (_re.compile(r"\b(on screen|on the screen|on your screen)\b", _re.I), 0.9, "on-screen reference"),
+        (_re.compile(r"\b(here'?s what it looks like|this is what it looks like|looks like this)\b", _re.I), 0.9, "visual demonstration"),
+        # UI actions
+        (_re.compile(r"\b(click|tap|press|hit|select|toggle|check|uncheck)\s+(on|the|this|that|here)\b", _re.I), 0.85, "UI action"),
+        (_re.compile(r"\b(drag|drop|swipe|scroll|hover)\b", _re.I), 0.85, "spatial UI action"),
+        (_re.compile(r"\b(navigate to|go to|open up|expand|collapse|minimize|maximize)\b", _re.I), 0.75, "navigation action"),
+        # UI elements
+        (_re.compile(r"\b(button|icon|menu|dropdown|sidebar|toolbar|popup|modal|dialog|tooltip)\b", _re.I), 0.7, "UI element reference"),
+        (_re.compile(r"\b(dashboard|chart|graph|table|spreadsheet|form|field|checkbox|slider)\b", _re.I), 0.7, "data visualization"),
+        # Spatial/positional
+        (_re.compile(r"\b(top right|top left|bottom right|bottom left|upper right|upper left|lower right|lower left)\b", _re.I), 0.8, "spatial position"),
+        (_re.compile(r"\b(over here|right here|right there|over there|this area|this section|this part)\b", _re.I), 0.85, "deictic reference"),
+        # Demonstration language
+        (_re.compile(r"\b(let me show|i'll show|i'm going to show|watch what happens|watch this|notice how)\b", _re.I), 0.85, "demonstration"),
+        (_re.compile(r"\b(step \d|first.{0,20}(click|select|open|type|enter)|next.{0,20}(click|select|open|type))\b", _re.I), 0.8, "step-by-step instruction"),
+        # Code/terminal
+        (_re.compile(r"\b(the (code|output|error|terminal|console) (shows|says|reads|displays))\b", _re.I), 0.75, "code/terminal output"),
+        (_re.compile(r"\b(type|enter|run|execute|paste)\s+(this|the command|the following|in the)\b", _re.I), 0.7, "command input"),
+        # Screen recording cues
+        (_re.compile(r"\b(recording|screen share|screen cast|let me walk you through)\b", _re.I), 0.7, "screen recording"),
+        (_re.compile(r"\b(you('ll| will) (notice|see|find))\b", _re.I), 0.75, "visual callout"),
+    ]
+
+    # --- Semantic anchors (for embedding-based scoring) ---
+    VISUAL_ANCHORS = [
+        "demonstrating a user interface action on screen",
+        "showing what something looks like visually",
+        "clicking buttons and navigating menus in software",
+        "pointing at something specific on a screen or dashboard",
+        "step by step tutorial showing visual actions",
+        "presenting a chart, graph, or data visualization",
+        "showing code output or terminal results on screen",
+        "walking through a workflow on screen",
+    ]
+    NON_VISUAL_ANCHORS = [
+        "expressing an opinion or abstract thought",
+        "discussing general concepts and ideas",
+        "telling a personal story or anecdote",
+        "greeting the audience or introducing the topic",
+        "summarizing what was previously discussed",
+        "background music or sound effects playing",
+    ]
+
+    # Score each segment
+    scored = []
+
+    # Pre-compute semantic scores if embeddings available
+    semantic_scores = None
+    if segment_embeddings is not None and len(segment_embeddings) > 0:
+        try:
+            from .embeddings import _get_embedding_model_cache, _cosine_similarity
+
+            model = _get_embedding_model_cache().get()
+            visual_embs = model.encode(VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False)
+            non_visual_embs = model.encode(NON_VISUAL_ANCHORS, convert_to_numpy=True, show_progress_bar=False)
+
+            semantic_scores = []
+            for i in range(len(segment_embeddings)):
+                seg_emb = segment_embeddings[i].reshape(1, -1)
+                vis_sims = _cosine_similarity(seg_emb, visual_embs)
+                non_vis_sims = _cosine_similarity(seg_emb, non_visual_embs)
+                vis_max = float(np.max(vis_sims))
+                non_vis_max = float(np.max(non_vis_sims))
+                # Net visual score: how much more visual than non-visual
+                semantic_scores.append(max(0.0, min(1.0, (vis_max - non_vis_max + 0.3) / 0.6)))
+        except Exception:
+            semantic_scores = None
+
+    for i, seg in enumerate(segments):
+        text = seg.get("text", "").strip()
+
+        # Pattern matching: take best match
+        best_pattern_score = 0.0
+        best_reason = ""
+        for pattern, score, reason in VISUAL_PATTERNS:
+            if pattern.search(text):
+                if score > best_pattern_score:
+                    best_pattern_score = score
+                    best_reason = reason
+
+        # Semantic score
+        sem_score = semantic_scores[i] if semantic_scores and i < len(semantic_scores) else 0.0
+
+        # Heuristic adjustments
+        heuristic_mult = 1.0
+        words = text.split()
+        if len(words) < 3:
+            heuristic_mult *= 0.4  # Very short segments are likely filler
+        if text.endswith("?") and best_pattern_score == 0:
+            heuristic_mult *= 0.5  # Questions without visual keywords
+
+        # Combine scores
+        if best_pattern_score >= 0.8:
+            combined = best_pattern_score
+            reason = best_reason
+        elif best_pattern_score > 0:
+            combined = 0.6 * best_pattern_score + 0.4 * sem_score
+            reason = best_reason
+        else:
+            combined = sem_score * 0.7
+            reason = "semantic: visual content detected" if sem_score > 0.5 else ""
+
+        final_score = min(1.0, combined * heuristic_mult)
+        scored.append((i, final_score, reason))
+
+    # Boost sequential visual segments (tutorial sequences)
+    for i in range(len(scored)):
+        if i >= 2:
+            _, s1, _ = scored[i - 2]
+            _, s2, _ = scored[i - 1]
+            idx, s3, reason = scored[i]
+            if s1 > 0.4 and s2 > 0.4 and s3 > 0.3:
+                scored[i] = (idx, min(1.0, s3 * 1.25), reason or "tutorial sequence")
+
+    return scored
+
+
+def handle_visual(arguments: dict) -> dict:
+    """Handle visual tool call — smart transcript-guided frame extraction."""
     import shutil
 
     from .config import get_config
+    from .core import transcribe_audio
+    from .embeddings import _get_or_compute_embeddings
+    from .memory import get_transcription_memory
 
     cfg = get_config()
 
@@ -2730,18 +2857,15 @@ def handle_get_visual_context(arguments: dict) -> dict:
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
         raise RuntimeError("ffmpeg and ffprobe are required. Install with: brew install ffmpeg")
 
-    mode = arguments.get("mode", "both")
-    interval = arguments.get("interval", 2)
-    max_frames = int(arguments.get("max_frames", cfg.get("visual_context_max_frames", 50)))
-    scene_threshold = arguments.get("scene_threshold", 0.3)
+    model_size = arguments.get("model_size", cfg.get("model_size", "tiny"))
+    visual_threshold = arguments.get("visual_threshold", 0.4)
+    max_frames = int(arguments.get("max_frames", cfg.get("visual_context_max_frames", 30)))
     output_dir = arguments.get("output_dir")
 
-    if interval <= 0:
-        raise ValueError("interval must be positive")
     if max_frames < 1:
         raise ValueError("max_frames must be at least 1")
-    if not 0.0 <= scene_threshold <= 1.0:
-        raise ValueError("scene_threshold must be between 0.0 and 1.0")
+    if not 0.0 <= visual_threshold <= 1.0:
+        raise ValueError("visual_threshold must be between 0.0 and 1.0")
 
     # Derive output directory
     if not output_dir:
@@ -2749,7 +2873,7 @@ def handle_get_visual_context(arguments: dict) -> dict:
         safe_name = _re.sub(r"[^\w\s-]", "", video_stem).strip()[:80]
         output_dir = os.path.join(
             os.path.expanduser(cfg.get("notes_output_dir", "~/Desktop")),
-            "visual_context",
+            "visual",
             safe_name,
         )
     else:
@@ -2776,140 +2900,156 @@ def handle_get_visual_context(arguments: dict) -> dict:
             return f"{h}:{m:02d}:{s:02d}"
         return f"{m}:{s:02d}"
 
-    def _extract_interval(out_dir: str, max_n: int) -> list[dict]:
-        """Extract frames at fixed intervals."""
-        fps_val = 1 / interval
+    # Stage 1: Transcribe (reuses cache)
+    transcription = transcribe_audio(video_path, model_size)
+    segments = transcription["segments"]
+
+    if not segments:
+        return {
+            "video_path": video_path,
+            "output_dir": output_dir,
+            "frame_count": 0,
+            "analyzed_segments": 0,
+            "visual_segments": 0,
+            "video_duration": round(video_duration, 1),
+            "video_duration_formatted": _fmt_ts(video_duration),
+            "frames": [],
+            "hint": "No transcript segments found. The video may have no speech.",
+        }
+
+    # Get embeddings for semantic scoring
+    memory = get_transcription_memory()
+    audio_hash = memory.hash_audio_file(video_path)
+    try:
+        segment_embeddings = _get_or_compute_embeddings(segments, audio_hash)
+    except Exception:
+        segment_embeddings = None
+
+    # Stage 2: Score each segment for visual necessity
+    scored = _score_visual_necessity(segments, segment_embeddings)
+
+    # Filter to segments above threshold, sort by score descending
+    qualifying = [(idx, score, reason) for idx, score, reason in scored if score >= visual_threshold]
+    qualifying.sort(key=lambda x: x[1], reverse=True)
+
+    # Cap at max_frames
+    qualifying = qualifying[:max_frames]
+
+    # Re-sort by timestamp for chronological frame extraction
+    qualifying.sort(key=lambda x: segments[x[0]].get("start", 0))
+
+    # Deduplicate: merge segments within 3 seconds of each other (keep higher score)
+    deduped = []
+    for idx, score, reason in qualifying:
+        ts = segments[idx].get("start", 0)
+        if deduped:
+            last_ts = segments[deduped[-1][0]].get("start", 0)
+            if abs(ts - last_ts) < 3.0:
+                # Keep the higher-scoring one
+                if score > deduped[-1][1]:
+                    deduped[-1] = (idx, score, reason)
+                continue
+        deduped.append((idx, score, reason))
+
+    # Stage 3: Extract frames at qualifying timestamps using seek-based ffmpeg
+    frame_info = []
+    for frame_num, (seg_idx, score, reason) in enumerate(deduped):
+        seg = segments[seg_idx]
+        # Extract 1 second after segment start (speaker has started describing, visual is likely on screen)
+        ts = seg.get("start", 0) + 1.0
+        ts = min(ts, video_duration - 0.1)  # Don't seek past end
+
+        out_path = os.path.join(output_dir, f"frame_{frame_num + 1:04d}.png")
+
         cmd = [
-            "ffmpeg", "-y", "-i", video_path,
-            "-vf", f"fps={fps_val},scale='min(1280,iw)':-1",
-            "-frames:v", str(max_n),
+            "ffmpeg", "-y",
+            "-ss", str(ts),
+            "-i", video_path,
+            "-frames:v", "1",
+            "-vf", "scale='min(1280,iw)':-1",
             "-q:v", "2",
-            os.path.join(out_dir, "frame_%04d.png"),
+            out_path,
         ]
-        subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-        frames = sorted(globmod.glob(os.path.join(out_dir, "frame_*.png")))
-        results = []
-        for i, path in enumerate(frames[:max_n]):
-            ts = i * interval
-            results.append({
-                "path": path,
-                "timestamp": round(ts, 1),
-                "timestamp_formatted": _fmt_ts(ts),
-            })
-        return results
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            continue
 
-    def _extract_scene(out_dir: str, max_n: int) -> list[dict]:
-        """Extract frames on scene changes using ffmpeg scene detection."""
-        cmd = [
-            "ffmpeg", "-y", "-i", video_path,
-            "-vf", f"select='gt(scene,{scene_threshold})',showinfo,scale='min(1280,iw)':-1",
-            "-vsync", "vfr",
-            "-frames:v", str(max_n),
-            "-q:v", "2",
-            os.path.join(out_dir, "frame_%04d.png"),
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-        # Parse timestamps from showinfo output in stderr
-        pts_pattern = _re.compile(r"pts_time:\s*([\d.]+)")
-        timestamps = [float(m.group(1)) for m in pts_pattern.finditer(result.stderr)]
+        if not os.path.exists(out_path):
+            continue
 
-        frames = sorted(globmod.glob(os.path.join(out_dir, "frame_*.png")))
-        results = []
-        for i, path in enumerate(frames[:max_n]):
-            ts = timestamps[i] if i < len(timestamps) else i * 2.0
-            results.append({
-                "path": path,
-                "timestamp": round(ts, 1),
-                "timestamp_formatted": _fmt_ts(ts),
-            })
-        return results
+        # Build context: the segment text + neighboring segments for fuller context
+        context_parts = []
+        for j in range(max(0, seg_idx - 1), min(len(segments), seg_idx + 2)):
+            context_parts.append(segments[j].get("text", "").strip())
+        context_text = " ".join(context_parts)
 
-    # Execute based on mode
-    if mode == "interval":
-        frame_info = _extract_interval(output_dir, max_frames)
+        frame_info.append({
+            "path": out_path,
+            "timestamp": round(ts, 1),
+            "timestamp_formatted": _fmt_ts(ts),
+            "visual_score": round(score, 2),
+            "transcript": context_text,
+            "reason": reason,
+        })
 
-    elif mode == "scene":
-        frame_info = _extract_scene(output_dir, max_frames)
+    # For very long segments (>8s) that scored high, extract a second frame at midpoint
+    extra_frames = []
+    for entry in list(frame_info):
+        seg_idx_match = None
+        for seg_idx, score, reason in deduped:
+            seg = segments[seg_idx]
+            if abs(seg.get("start", 0) + 1.0 - entry["timestamp"]) < 0.5:
+                seg_idx_match = seg_idx
+                break
+        if seg_idx_match is not None:
+            seg = segments[seg_idx_match]
+            seg_duration = seg.get("end", 0) - seg.get("start", 0)
+            if seg_duration > 8.0 and len(frame_info) + len(extra_frames) < max_frames:
+                mid_ts = seg.get("start", 0) + seg_duration / 2
+                mid_path = os.path.join(output_dir, f"frame_{len(frame_info) + len(extra_frames) + 1:04d}.png")
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", str(mid_ts),
+                    "-i", video_path,
+                    "-frames:v", "1",
+                    "-vf", "scale='min(1280,iw)':-1",
+                    "-q:v", "2",
+                    mid_path,
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode == 0 and os.path.exists(mid_path):
+                    extra_frames.append({
+                        "path": mid_path,
+                        "timestamp": round(mid_ts, 1),
+                        "timestamp_formatted": _fmt_ts(mid_ts),
+                        "visual_score": entry["visual_score"],
+                        "transcript": entry["transcript"],
+                        "reason": entry["reason"] + " (midpoint)",
+                    })
 
-    elif mode == "both":
-        # Scene detection first
-        scene_dir = os.path.join(output_dir, "_scene")
-        os.makedirs(scene_dir, exist_ok=True)
-        scene_frames = _extract_scene(scene_dir, max_frames)
+    frame_info.extend(extra_frames)
+    frame_info.sort(key=lambda f: f["timestamp"])
 
-        if len(scene_frames) >= max_frames // 2:
-            # Scene detection got enough frames — use them
-            # Move files from scene_dir to output_dir
-            for i, sf in enumerate(scene_frames[:max_frames]):
-                dest = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
-                os.rename(sf["path"], dest)
-                sf["path"] = dest
-            frame_info = scene_frames[:max_frames]
-        else:
-            # Scene detection was sparse — fill gaps with interval frames
-            scene_timestamps = {round(f["timestamp"]) for f in scene_frames}
-            # Move scene frames to output dir first
-            for i, sf in enumerate(scene_frames):
-                dest = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
-                os.rename(sf["path"], dest)
-                sf["path"] = dest
+    # Renumber files in chronological order
+    for i, fi in enumerate(frame_info):
+        new_path = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
+        if fi["path"] != new_path:
+            os.rename(fi["path"], new_path)
+            fi["path"] = new_path
 
-            # Generate interval frames to fill remaining slots
-            remaining = max_frames - len(scene_frames)
-            if remaining > 0:
-                interval_dir = os.path.join(output_dir, "_interval")
-                os.makedirs(interval_dir, exist_ok=True)
-                interval_frames = _extract_interval(interval_dir, remaining + len(scene_frames))
-
-                # Filter out interval frames too close to scene frames (within 1.5s)
-                added = 0
-                offset = len(scene_frames)
-                for ivf in interval_frames:
-                    if added >= remaining:
-                        break
-                    ts_rounded = round(ivf["timestamp"])
-                    too_close = any(abs(ts_rounded - st) <= 1 for st in scene_timestamps)
-                    if not too_close:
-                        dest = os.path.join(output_dir, f"frame_{offset + added + 1:04d}.png")
-                        os.rename(ivf["path"], dest)
-                        ivf["path"] = dest
-                        scene_frames.append(ivf)
-                        added += 1
-
-                # Clean up leftover interval files
-                for leftover in globmod.glob(os.path.join(interval_dir, "frame_*.png")):
-                    os.remove(leftover)
-                try:
-                    os.rmdir(interval_dir)
-                except OSError:
-                    pass
-
-            # Sort by timestamp, renumber files
-            scene_frames.sort(key=lambda f: f["timestamp"])
-            for i, sf in enumerate(scene_frames):
-                new_path = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
-                if sf["path"] != new_path:
-                    os.rename(sf["path"], new_path)
-                    sf["path"] = new_path
-            frame_info = scene_frames[:max_frames]
-
-        # Clean up scene temp dir
-        try:
-            shutil.rmtree(os.path.join(output_dir, "_scene"), ignore_errors=True)
-        except OSError:
-            pass
-    else:
-        raise ValueError(f"Invalid mode: {mode}. Use 'interval', 'scene', or 'both'.")
+    skipped = len(segments) - len(deduped)
 
     return {
         "video_path": video_path,
         "output_dir": output_dir,
-        "mode": mode,
         "frame_count": len(frame_info),
+        "analyzed_segments": len(segments),
+        "visual_segments": len(deduped),
+        "skipped_segments": skipped,
         "video_duration": round(video_duration, 1),
         "video_duration_formatted": _fmt_ts(video_duration),
         "frames": frame_info,
-        "hint": "Use the Read tool to view any frame PNG for visual context. Frames are sorted chronologically.",
+        "hint": "Use the Read tool to view any frame PNG. Each frame includes the transcript of what the speaker was saying at that moment.",
     }
 
 

@@ -257,21 +257,22 @@ Returns `{success, migration: {migrated, synced, recreated, errors}, related_lin
 
 **When to use:** Run once after upgrading to add Obsidian graph view support to existing memory. Also useful after bulk imports or manual tag changes. The user should point Obsidian at the `memory_dir` path as a vault.
 
-### get_visual_context
-Extract frames/screenshots from a video file for visual context. Use when audio transcription alone isn't enough: UI demos, dashboards, click sequences, visual workflows. Works standalone or chained with clip_export.
+### visual
+Smart visual context extraction from video. Analyzes the transcript to identify moments where visual context is needed (UI demos, screen recordings, spatial actions, dashboards, code output) and extracts frames ONLY at those moments. Skips talking heads, B-roll, and audio-sufficient content.
 ```
 video_path: "/path/to/video.mp4"
-mode: "both" (optional, default. "interval" for fixed gaps, "scene" for change detection, "both" for hybrid)
-interval: 2 (optional, seconds between frames)
-max_frames: 50 (optional, cap on total frames)
-scene_threshold: 0.3 (optional, 0.0=sensitive, 1.0=dramatic changes only)
-output_dir: "~/Desktop/visual_context/title/" (optional, auto-generated)
+model_size: "tiny" (optional, default)
+visual_threshold: 0.4 (optional, 0.0-1.0. Lower = more frames. Default: 0.4)
+max_frames: 30 (optional, cap on total frames)
+output_dir: "~/Desktop/visual/title/" (optional, auto-generated)
 ```
-Returns `{video_path, output_dir, mode, frame_count, video_duration, frames: [{path, timestamp, timestamp_formatted}], hint}`
+Returns `{video_path, output_dir, frame_count, analyzed_segments, visual_segments, skipped_segments, video_duration, frames: [{path, timestamp, timestamp_formatted, visual_score, transcript, reason}], hint}`
+
+**How it works:** Transcribes the video (reuses cache), then scores each segment for visual necessity using pattern matching (UI keywords, spatial references, demonstration language) + semantic similarity (embedding comparison to visual/non-visual anchor concepts). Only extracts frames at timestamps where the speaker is describing something visual.
 
 **Pipeline:** Use with clip_export to get visual context for specific moments:
 1. `clip_export(url="...", start=120, end=180)` returns `clip_path`
-2. `get_visual_context(video_path=<clip_path>)` extracts frames
+2. `visual(video_path=<clip_path>)` extracts frames at visually relevant moments
 3. Read individual frame PNGs with the Read tool to see them
 
 ### identify_speakers
