@@ -18,6 +18,7 @@ DEFAULTS = {
     "context_words": 25,
     "tts_voice": "af_heart",
     "tts_speed": 1.0,
+    "visual_context_max_frames": 50,
     "disabled_tools": [],
 }
 

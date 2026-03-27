@@ -257,6 +257,23 @@ Returns `{success, migration: {migrated, synced, recreated, errors}, related_lin
 
 **When to use:** Run once after upgrading to add Obsidian graph view support to existing memory. Also useful after bulk imports or manual tag changes. The user should point Obsidian at the `memory_dir` path as a vault.
 
+### get_visual_context
+Extract frames/screenshots from a video file for visual context. Use when audio transcription alone isn't enough: UI demos, dashboards, click sequences, visual workflows. Works standalone or chained with clip_export.
+```
+video_path: "/path/to/video.mp4"
+mode: "both" (optional, default. "interval" for fixed gaps, "scene" for change detection, "both" for hybrid)
+interval: 2 (optional, seconds between frames)
+max_frames: 50 (optional, cap on total frames)
+scene_threshold: 0.3 (optional, 0.0=sensitive, 1.0=dramatic changes only)
+output_dir: "~/Desktop/visual_context/title/" (optional, auto-generated)
+```
+Returns `{video_path, output_dir, mode, frame_count, video_duration, frames: [{path, timestamp, timestamp_formatted}], hint}`
+
+**Pipeline:** Use with clip_export to get visual context for specific moments:
+1. `clip_export(url="...", start=120, end=180)` returns `clip_path`
+2. `get_visual_context(video_path=<clip_path>)` extracts frames
+3. Read individual frame PNGs with the Read tool to see them
+
 ### identify_speakers
 Identify who speaks when in audio using pyannote speaker diarization. No API keys or tokens required.
 ```

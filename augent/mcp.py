@@ -923,6 +923,41 @@ _ALL_TOOLS = [
             },
         },
     },
+    {
+        "name": "get_visual_context",
+        "description": "Extract frames/screenshots from a video file for visual context. Gives Claude eyes — see UI demos, dashboards, click sequences, and workflows where audio alone isn't enough. Works standalone or chained with clip_export. Scene detection mode extracts frames only when visuals change.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "video_path": {
+                    "type": "string",
+                    "description": "Path to a video file (MP4, MKV, etc). Can be output from clip_export.",
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "Frame extraction mode: 'interval' (fixed time gap), 'scene' (visual change detection), or 'both' (scene detection with interval fallback for coverage). Default: 'both'",
+                    "enum": ["interval", "scene", "both"],
+                },
+                "interval": {
+                    "type": "number",
+                    "description": "Seconds between frames in interval/both mode. Default: 2",
+                },
+                "max_frames": {
+                    "type": "number",
+                    "description": "Maximum frames to extract. Default: 50",
+                },
+                "scene_threshold": {
+                    "type": "number",
+                    "description": "Scene change sensitivity for scene/both mode. 0.0 = every tiny change, 1.0 = only dramatic changes. Default: 0.3",
+                },
+                "output_dir": {
+                    "type": "string",
+                    "description": "Directory to save frames. Default: ~/Desktop/visual_context/<video_name>/",
+                },
+            },
+            "required": ["video_path"],
+        },
+    },
 ]
 
 
@@ -994,6 +1029,8 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_tag(arguments)
         elif tool_name == "rebuild_graph":
             result = handle_rebuild_graph(arguments)
+        elif tool_name == "get_visual_context":
+            result = handle_get_visual_context(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -2670,6 +2707,209 @@ def handle_rebuild_graph(arguments: dict) -> dict:
             "Enable Tags in graph view settings to see tag hub nodes. "
             "Use graph view Groups to color-code by type (transcription, notes, moc, translation)."
         ),
+    }
+
+
+def handle_get_visual_context(arguments: dict) -> dict:
+    """Handle get_visual_context tool call — extract frames from a video file."""
+    import glob as globmod
+    import shutil
+
+    from .config import get_config
+
+    cfg = get_config()
+
+    video_path = arguments.get("video_path")
+    if not video_path:
+        raise ValueError("Missing required parameter: video_path")
+
+    video_path = os.path.expanduser(video_path)
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found: {video_path}")
+
+    if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
+        raise RuntimeError("ffmpeg and ffprobe are required. Install with: brew install ffmpeg")
+
+    mode = arguments.get("mode", "both")
+    interval = arguments.get("interval", 2)
+    max_frames = int(arguments.get("max_frames", cfg.get("visual_context_max_frames", 50)))
+    scene_threshold = arguments.get("scene_threshold", 0.3)
+    output_dir = arguments.get("output_dir")
+
+    if interval <= 0:
+        raise ValueError("interval must be positive")
+    if max_frames < 1:
+        raise ValueError("max_frames must be at least 1")
+    if not 0.0 <= scene_threshold <= 1.0:
+        raise ValueError("scene_threshold must be between 0.0 and 1.0")
+
+    # Derive output directory
+    if not output_dir:
+        video_stem = os.path.splitext(os.path.basename(video_path))[0]
+        safe_name = _re.sub(r"[^\w\s-]", "", video_stem).strip()[:80]
+        output_dir = os.path.join(
+            os.path.expanduser(cfg.get("notes_output_dir", "~/Desktop")),
+            "visual_context",
+            safe_name,
+        )
+    else:
+        output_dir = os.path.expanduser(output_dir)
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Probe video duration
+    ffprobe_cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        video_path,
+    ]
+    probe_result = subprocess.run(ffprobe_cmd, capture_output=True, text=True, timeout=30)
+    if probe_result.returncode != 0:
+        raise RuntimeError(f"ffprobe failed: {probe_result.stderr.strip()[:200]}")
+    video_duration = float(probe_result.stdout.strip())
+
+    def _fmt_ts(seconds: float) -> str:
+        m, s = divmod(int(seconds), 60)
+        h, m = divmod(m, 60)
+        if h > 0:
+            return f"{h}:{m:02d}:{s:02d}"
+        return f"{m}:{s:02d}"
+
+    def _extract_interval(out_dir: str, max_n: int) -> list[dict]:
+        """Extract frames at fixed intervals."""
+        fps_val = 1 / interval
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", f"fps={fps_val},scale='min(1280,iw)':-1",
+            "-frames:v", str(max_n),
+            "-q:v", "2",
+            os.path.join(out_dir, "frame_%04d.png"),
+        ]
+        subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        frames = sorted(globmod.glob(os.path.join(out_dir, "frame_*.png")))
+        results = []
+        for i, path in enumerate(frames[:max_n]):
+            ts = i * interval
+            results.append({
+                "path": path,
+                "timestamp": round(ts, 1),
+                "timestamp_formatted": _fmt_ts(ts),
+            })
+        return results
+
+    def _extract_scene(out_dir: str, max_n: int) -> list[dict]:
+        """Extract frames on scene changes using ffmpeg scene detection."""
+        cmd = [
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", f"select='gt(scene,{scene_threshold})',showinfo,scale='min(1280,iw)':-1",
+            "-vsync", "vfr",
+            "-frames:v", str(max_n),
+            "-q:v", "2",
+            os.path.join(out_dir, "frame_%04d.png"),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        # Parse timestamps from showinfo output in stderr
+        pts_pattern = _re.compile(r"pts_time:\s*([\d.]+)")
+        timestamps = [float(m.group(1)) for m in pts_pattern.finditer(result.stderr)]
+
+        frames = sorted(globmod.glob(os.path.join(out_dir, "frame_*.png")))
+        results = []
+        for i, path in enumerate(frames[:max_n]):
+            ts = timestamps[i] if i < len(timestamps) else i * 2.0
+            results.append({
+                "path": path,
+                "timestamp": round(ts, 1),
+                "timestamp_formatted": _fmt_ts(ts),
+            })
+        return results
+
+    # Execute based on mode
+    if mode == "interval":
+        frame_info = _extract_interval(output_dir, max_frames)
+
+    elif mode == "scene":
+        frame_info = _extract_scene(output_dir, max_frames)
+
+    elif mode == "both":
+        # Scene detection first
+        scene_dir = os.path.join(output_dir, "_scene")
+        os.makedirs(scene_dir, exist_ok=True)
+        scene_frames = _extract_scene(scene_dir, max_frames)
+
+        if len(scene_frames) >= max_frames // 2:
+            # Scene detection got enough frames — use them
+            # Move files from scene_dir to output_dir
+            for i, sf in enumerate(scene_frames[:max_frames]):
+                dest = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
+                os.rename(sf["path"], dest)
+                sf["path"] = dest
+            frame_info = scene_frames[:max_frames]
+        else:
+            # Scene detection was sparse — fill gaps with interval frames
+            scene_timestamps = {round(f["timestamp"]) for f in scene_frames}
+            # Move scene frames to output dir first
+            for i, sf in enumerate(scene_frames):
+                dest = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
+                os.rename(sf["path"], dest)
+                sf["path"] = dest
+
+            # Generate interval frames to fill remaining slots
+            remaining = max_frames - len(scene_frames)
+            if remaining > 0:
+                interval_dir = os.path.join(output_dir, "_interval")
+                os.makedirs(interval_dir, exist_ok=True)
+                interval_frames = _extract_interval(interval_dir, remaining + len(scene_frames))
+
+                # Filter out interval frames too close to scene frames (within 1.5s)
+                added = 0
+                offset = len(scene_frames)
+                for ivf in interval_frames:
+                    if added >= remaining:
+                        break
+                    ts_rounded = round(ivf["timestamp"])
+                    too_close = any(abs(ts_rounded - st) <= 1 for st in scene_timestamps)
+                    if not too_close:
+                        dest = os.path.join(output_dir, f"frame_{offset + added + 1:04d}.png")
+                        os.rename(ivf["path"], dest)
+                        ivf["path"] = dest
+                        scene_frames.append(ivf)
+                        added += 1
+
+                # Clean up leftover interval files
+                for leftover in globmod.glob(os.path.join(interval_dir, "frame_*.png")):
+                    os.remove(leftover)
+                try:
+                    os.rmdir(interval_dir)
+                except OSError:
+                    pass
+
+            # Sort by timestamp, renumber files
+            scene_frames.sort(key=lambda f: f["timestamp"])
+            for i, sf in enumerate(scene_frames):
+                new_path = os.path.join(output_dir, f"frame_{i + 1:04d}.png")
+                if sf["path"] != new_path:
+                    os.rename(sf["path"], new_path)
+                    sf["path"] = new_path
+            frame_info = scene_frames[:max_frames]
+
+        # Clean up scene temp dir
+        try:
+            shutil.rmtree(os.path.join(output_dir, "_scene"), ignore_errors=True)
+        except OSError:
+            pass
+    else:
+        raise ValueError(f"Invalid mode: {mode}. Use 'interval', 'scene', or 'both'.")
+
+    return {
+        "video_path": video_path,
+        "output_dir": output_dir,
+        "mode": mode,
+        "frame_count": len(frame_info),
+        "video_duration": round(video_duration, 1),
+        "video_duration_formatted": _fmt_ts(video_duration),
+        "frames": frame_info,
+        "hint": "Use the Read tool to view any frame PNG for visual context. Frames are sorted chronologically.",
     }
 
 
