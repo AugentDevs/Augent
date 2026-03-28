@@ -402,6 +402,18 @@ Open: **http://127.0.0.1:8282**
 
 <br />
 
+## Star History
+
+<a href="https://www.star-history.com/#AugentDevs/Augent&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=AugentDevs/Augent&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=AugentDevs/Augent&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=AugentDevs/Augent&type=date&legend=top-left" />
+ </picture>
+</a>
+
+<br />
+
 ## Contributing
 
 PRs welcome. Open an [issue](https://github.com/AugentDevs/Augent/issues) for bugs or feature requests.
