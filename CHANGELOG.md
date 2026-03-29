@@ -4,6 +4,17 @@ All notable changes to Augent are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [2026.3.29] - 2026-03-29
+
+### Added
+
+- **`visual` MCP tool:** extract visual context from video at moments where audio alone isn't enough. Four modes: query (semantic search for specific moments), auto (autonomous detection of UI actions, demonstrations, spatial references), manual (user-specified timestamps), and assist (flags visual gaps for manual screenshots, ideal for talking-head videos). Frames are saved directly into the Obsidian vault with `![[filename.png]]` wikilink embeds.
+- **`take_notes` visual integration:** pass `visual="the workflow setup"` to `take_notes` for one-shot notes plus screenshots in a single call.
+- **Smart frame selection:** extracts three candidate frames per timestamp and picks the one with highest edge density, capturing the sharpest UI or screen content.
+- **Duplicate frame detection:** perceptual hashing drops near-identical frames automatically.
+- **Intro B-roll suppression:** first 30 seconds of a video require much higher confidence to prevent stock footage false positives.
+- **Obsidian vault auto-detection:** reads vault path from Obsidian's own config. No hardcoded paths.
+
 ## [2026.3.24] - 2026-03-24
 
 ### Added
