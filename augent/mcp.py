@@ -25,6 +25,7 @@ Tools exposed:
 - highlights: Export the best moments from a transcription as MP4 clips
 - tag: Add, remove, or list tags on transcriptions
 - rebuild_graph: Rebuild Obsidian graph view data for all transcriptions
+- visual: Extract visual context from video at moments that matter
 
 Usage:
   python -m augent.mcp
@@ -329,7 +330,7 @@ def handle_initialize(id: Any, params: dict) -> None:
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "augent", "version": "2026.3.24"},
+                "serverInfo": {"name": "augent", "version": "2026.3.29"},
             },
         }
     )
