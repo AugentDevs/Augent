@@ -1967,6 +1967,8 @@ def handle_take_notes(arguments: dict) -> dict:
         raise RuntimeError("Download succeeded but output file not found")
     audio_path = file_info["path"]
     title = os.path.splitext(file_info["filename"])[0]
+    # Strip yt-dlp video ID suffix (e.g. "Title [dQw4w9WgXcQ]" → "Title")
+    title = re.sub(r"\s*\[[\w-]{11}\]\s*$", "", title)
 
     # Step 2: Transcribe
     result = transcribe_audio(audio_path, model_size)
