@@ -180,7 +180,7 @@ Restart Claude Code. Run `/mcp` to verify connection.
 | [`list_memories`](https://docs.augent.app/tools/list-memories) | List stored transcriptions by title |
 | [`memory_stats`](https://docs.augent.app/tools/memory-stats) | View transcription memory statistics |
 | [`clear_memory`](https://docs.augent.app/tools/clear-memory) | Clear stored transcriptions |
-| `spaces` | Download, check, or stop X/Twitter Spaces recordings |
+| [`spaces`](https://docs.augent.app/tools/spaces) | Download, check, or stop X/Twitter Spaces recordings |
 
 **[Full tool reference →](https://docs.augent.app/tools/download-audio)**
 
