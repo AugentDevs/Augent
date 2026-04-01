@@ -1,6 +1,6 @@
 ---
 name: augent
-description: Audio intelligence toolkit for AI agents. 22 local MCP tools to download audio/video from 1000+ sites, transcribe in 99 languages, search by keyword or meaning, take notes, detect chapters, identify speakers, separate audio, export clips, tag, extract visual frames, generate speech, and build persistent searchable memory — with network access for media downloads and local filesystem access for transcription storage. All local, all private.
+description: The audio & video layer for agents. 22 local MCP tools. No cloud, no API keys.
 homepage: https://github.com/AugentDevs/Augent
 metadata: {"openclaw":{"emoji":"🎙","os":["darwin","linux","win32"],"requires":{"bins":["augent-mcp","ffmpeg"]},"install":[{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (uv)"},{"id":"pip","kind":"pip","package":"augent[all]","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (pip)"}]}}
 ---
