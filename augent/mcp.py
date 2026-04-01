@@ -3869,7 +3869,9 @@ def _get_twitter_cookies_path() -> str:
 
     if os.path.exists(auth_path):
         auth_mtime = os.path.getmtime(auth_path)
-        cookies_mtime = os.path.getmtime(cookies_path) if os.path.exists(cookies_path) else 0
+        cookies_mtime = (
+            os.path.getmtime(cookies_path) if os.path.exists(cookies_path) else 0
+        )
 
         if auth_mtime > cookies_mtime:
             with open(auth_path) as f:
@@ -3919,7 +3921,9 @@ def handle_spaces(arguments: dict) -> dict:
     elif arguments.get("url"):
         return _spaces_download(arguments)
     else:
-        raise ValueError("Provide either url (to start download) or recording_id (to check/stop)")
+        raise ValueError(
+            "Provide either url (to start download) or recording_id (to check/stop)"
+        )
 
 
 def _spaces_download(arguments: dict) -> dict:
@@ -3941,9 +3945,12 @@ def _spaces_download(arguments: dict) -> dict:
 
     meta_cmd = [
         "yt-dlp",
-        "--cookies", cookies_path,
-        "--add-header", "Referer:https://twitter.com/",
-        "--no-playlist", "--dump-json",
+        "--cookies",
+        cookies_path,
+        "--add-header",
+        "Referer:https://twitter.com/",
+        "--no-playlist",
+        "--dump-json",
         url,
     ]
     meta_result = subprocess.run(meta_cmd, capture_output=True, text=True, timeout=30)
@@ -3961,12 +3968,19 @@ def _spaces_download(arguments: dict) -> dict:
     if is_live:
         stream_cmd = [
             "yt-dlp",
-            "--cookies", cookies_path,
-            "--add-header", "Referer:https://twitter.com/",
-            "--no-playlist", "-g", "-f", "bestaudio",
+            "--cookies",
+            cookies_path,
+            "--add-header",
+            "Referer:https://twitter.com/",
+            "--no-playlist",
+            "-g",
+            "-f",
+            "bestaudio",
             url,
         ]
-        stream_result = subprocess.run(stream_cmd, capture_output=True, text=True, timeout=15)
+        stream_result = subprocess.run(
+            stream_cmd, capture_output=True, text=True, timeout=15
+        )
         if stream_result.returncode != 0:
             raise RuntimeError("Failed to get stream URL")
 
@@ -3976,20 +3990,27 @@ def _spaces_download(arguments: dict) -> dict:
 
         process = subprocess.Popen(
             ["ffmpeg", "-y", "-i", m3u8_url, "-c", "copy", output_file],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
     else:
         output_file = None
         process = subprocess.Popen(
             [
-                "yt-dlp", "-f", "bestaudio",
-                "--cookies", cookies_path,
-                "--add-header", "Referer:https://twitter.com/",
+                "yt-dlp",
+                "-f",
+                "bestaudio",
+                "--cookies",
+                cookies_path,
+                "--add-header",
+                "Referer:https://twitter.com/",
                 "--no-playlist",
-                "-o", f"{output_dir}/%(title)s.%(ext)s",
+                "-o",
+                f"{output_dir}/%(title)s.%(ext)s",
                 url,
             ],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
 
     recording_id = uuid.uuid4().hex[:8]
@@ -4005,7 +4026,11 @@ def _spaces_download(arguments: dict) -> dict:
         "output_file": output_file if is_live else None,
     }
 
-    mode_str = "Live recording from current moment" if is_live else "Downloading full recording"
+    mode_str = (
+        "Live recording from current moment"
+        if is_live
+        else "Downloading full recording"
+    )
     return {
         "success": True,
         "recording_id": recording_id,
@@ -4069,7 +4094,11 @@ def _spaces_check(arguments: dict) -> dict:
             "elapsed_seconds": round(elapsed),
             "elapsed_formatted": f"{int(elapsed // 60)}m {int(elapsed % 60)}s",
             "file": file_info,
-            "message": f"Download complete. Saved to {output_file}" if output_file else "Download complete",
+            "message": (
+                f"Download complete. Saved to {output_file}"
+                if output_file
+                else "Download complete"
+            ),
         }
 
     stderr = process.stderr.read().decode() if process.stderr else ""
@@ -4134,7 +4163,11 @@ def _spaces_stop(arguments: dict) -> dict:
         "elapsed_seconds": round(elapsed),
         "elapsed_formatted": f"{int(elapsed // 60)}m {int(elapsed % 60)}s",
         "file": file_info,
-        "message": f"Stopped after {int(elapsed // 60)}m {int(elapsed % 60)}s. Saved to {output_file}" if output_file else "Stopped",
+        "message": (
+            f"Stopped after {int(elapsed // 60)}m {int(elapsed % 60)}s. Saved to {output_file}"
+            if output_file
+            else "Stopped"
+        ),
     }
 
 

@@ -66,7 +66,9 @@ class TestSpacesToolsList:
 
 class TestURLNormalization:
     def test_x_to_twitter(self):
-        assert "twitter.com" in _normalize_twitter_space_url("https://x.com/i/spaces/abc")
+        assert "twitter.com" in _normalize_twitter_space_url(
+            "https://x.com/i/spaces/abc"
+        )
 
     def test_strips_peek(self):
         url = _normalize_twitter_space_url("https://x.com/i/spaces/abc/peek")
@@ -181,14 +183,18 @@ class TestSpacesDownload:
         mock_meta = mock.Mock(returncode=0, stdout=meta_json, stderr="")
         mock_process = mock.Mock(pid=12345)
 
-        with mock.patch("augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"):
+        with mock.patch(
+            "augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"
+        ):
             with mock.patch("subprocess.run", return_value=mock_meta):
                 with mock.patch("subprocess.Popen", return_value=mock_process):
                     with mock.patch("os.makedirs"):
-                        result = _spaces_download({
-                            "url": "https://x.com/i/spaces/abc",
-                            "output_dir": "/tmp/test_spaces",
-                        })
+                        result = _spaces_download(
+                            {
+                                "url": "https://x.com/i/spaces/abc",
+                                "output_dir": "/tmp/test_spaces",
+                            }
+                        )
 
         assert result["success"] is True
         assert result["mode"] == "recording"
@@ -199,16 +205,22 @@ class TestSpacesDownload:
     def test_live_space_starts_recording(self):
         meta_json = json.dumps({"title": "Live Space", "is_live": True})
         mock_meta = mock.Mock(returncode=0, stdout=meta_json, stderr="")
-        mock_stream = mock.Mock(returncode=0, stdout="https://stream.example.com/m3u8", stderr="")
+        mock_stream = mock.Mock(
+            returncode=0, stdout="https://stream.example.com/m3u8", stderr=""
+        )
         mock_process = mock.Mock(pid=99999)
 
-        with mock.patch("augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"):
+        with mock.patch(
+            "augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"
+        ):
             with mock.patch("subprocess.run", side_effect=[mock_meta, mock_stream]):
                 with mock.patch("subprocess.Popen", return_value=mock_process):
                     with mock.patch("os.makedirs"):
-                        result = _spaces_download({
-                            "url": "https://x.com/i/spaces/abc",
-                        })
+                        result = _spaces_download(
+                            {
+                                "url": "https://x.com/i/spaces/abc",
+                            }
+                        )
 
         assert result["success"] is True
         assert result["mode"] == "live"
@@ -219,10 +231,14 @@ class TestSpacesDownload:
     def test_meta_failure_raises(self):
         mock_meta = mock.Mock(returncode=1, stdout="", stderr="Login required")
 
-        with mock.patch("augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"):
+        with mock.patch(
+            "augent.mcp._get_twitter_cookies_path", return_value="/fake/cookies.txt"
+        ):
             with mock.patch("subprocess.run", return_value=mock_meta):
                 with mock.patch("os.makedirs"):
-                    with pytest.raises(RuntimeError, match="Failed to fetch space info"):
+                    with pytest.raises(
+                        RuntimeError, match="Failed to fetch space info"
+                    ):
                         _spaces_download({"url": "https://x.com/i/spaces/abc"})
 
 
