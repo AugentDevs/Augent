@@ -2756,6 +2756,12 @@ def handle_tag(arguments: dict) -> dict:
     action = arguments.get("action", "list")
     tags = arguments.get("tags", [])
 
+    # Guard against Claude passing tags as a string instead of a list
+    if isinstance(tags, str):
+        tags = [
+            t.strip() for t in tags.strip("[]").split(",") if t.strip().strip("\"'")
+        ]
+
     if not cache_key:
         return {"error": "cache_key is required"}
 
