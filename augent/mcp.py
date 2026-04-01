@@ -547,10 +547,6 @@ _ALL_TOOLS = [
                     "type": "boolean",
                     "description": "Generate a spoken audio summary and embed it in the notes for Obsidian playback. Default: false",
                 },
-                "visual": {
-                    "type": "string",
-                    "description": "ONLY use when the user explicitly asks for visual context or screenshots. Pass a query describing what needs visual context. Never use this automatically.",
-                },
             },
         },
     },
@@ -2052,12 +2048,6 @@ def handle_take_notes(arguments: dict) -> dict:
         response[
             "instruction"
         ] += f"\n\nAfter saving, respond ONLY with: Done. {label} saved to ~/Desktop/<filename>"
-
-    # Visual context hint — only if user explicitly asks
-    response["visual_hint"] = (
-        "The `visual` tool is available for this video but do NOT call it unless the user explicitly asks "
-        "for screenshots, frames, or visual context. Never call it automatically."
-    )
 
     # Semantic tagging — assign existing tags based on content similarity
     try:
