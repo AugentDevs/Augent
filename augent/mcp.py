@@ -26,9 +26,9 @@ Tools exposed:
 - tag: Add, remove, or list tags on transcriptions
 - rebuild_graph: Rebuild Obsidian graph view data for all transcriptions
 - visual: Extract visual context from video at moments that matter
-- augent_spaces: Download or live-record X/Twitter Spaces audio
-- augent_spaces_check: Check download/recording status
-- augent_spaces_stop: Stop a live recording
+- spaces: Download or live-record X/Twitter Spaces audio
+- spaces_check: Check download/recording status
+- spaces_stop: Stop a live recording
 
 Usage:
   python -m augent.mcp
@@ -991,8 +991,8 @@ _ALL_TOOLS = [
         },
     },
     {
-        "name": "augent_spaces",
-        "description": "Download a Twitter/X Space audio. Starts in the background and returns instantly with a recording_id. Use augent_spaces_check to check progress, augent_spaces_stop to cancel.",
+        "name": "spaces",
+        "description": "Download a Twitter/X Space audio. Starts in the background and returns instantly with a recording_id. Use spaces_check to check progress, spaces_stop to cancel.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1009,28 +1009,28 @@ _ALL_TOOLS = [
         },
     },
     {
-        "name": "augent_spaces_check",
-        "description": "Check the status of a Twitter Space download started by augent_spaces. Returns whether it's still downloading, complete, or errored, plus file details.",
+        "name": "spaces_check",
+        "description": "Check the status of a Twitter Space download started by spaces. Returns whether it's still downloading, complete, or errored, plus file details.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "recording_id": {
                     "type": "string",
-                    "description": "The recording ID returned by augent_spaces",
+                    "description": "The recording ID returned by spaces",
                 },
             },
             "required": ["recording_id"],
         },
     },
     {
-        "name": "augent_spaces_stop",
+        "name": "spaces_stop",
         "description": "Stop a live Twitter Space recording. Kills the download process and saves whatever has been captured so far.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "recording_id": {
                     "type": "string",
-                    "description": "The recording ID returned by augent_spaces",
+                    "description": "The recording ID returned by spaces",
                 },
             },
             "required": ["recording_id"],
@@ -1111,12 +1111,12 @@ def handle_tools_call(id: Any, params: dict) -> None:
             result = handle_rebuild_graph(arguments)
         elif tool_name == "visual":
             result = handle_visual(arguments)
-        elif tool_name == "augent_spaces":
-            result = handle_augent_spaces(arguments)
-        elif tool_name == "augent_spaces_check":
-            result = handle_augent_spaces_check(arguments)
-        elif tool_name == "augent_spaces_stop":
-            result = handle_augent_spaces_stop(arguments)
+        elif tool_name == "spaces":
+            result = handle_spaces(arguments)
+        elif tool_name == "spaces_check":
+            result = handle_spaces_check(arguments)
+        elif tool_name == "spaces_stop":
+            result = handle_spaces_stop(arguments)
         else:
             send_error(id, -32602, f"Unknown tool: {tool_name}")
             return
@@ -3933,8 +3933,8 @@ _SPACES_SETUP_INSTRUCTIONS = (
 )
 
 
-def handle_augent_spaces(arguments: dict) -> dict:
-    """Handle augent_spaces tool call. Auto-detects live vs ended, starts in background."""
+def handle_spaces(arguments: dict) -> dict:
+    """Handle spaces tool call. Auto-detects live vs ended, starts in background."""
     import glob as glob_module
 
     url = arguments.get("url")
@@ -4025,12 +4025,12 @@ def handle_augent_spaces(arguments: dict) -> dict:
         "url": url,
         "output_dir": output_dir,
         "pid": process.pid,
-        "message": f"{mode_str} (ID: {recording_id}). Use augent_spaces_check to check progress, augent_spaces_stop to stop.",
+        "message": f"{mode_str} (ID: {recording_id}). Use spaces_check to check progress, spaces_stop to stop.",
     }
 
 
-def handle_augent_spaces_check(arguments: dict) -> dict:
-    """Handle augent_spaces_check tool call. Check download/recording status."""
+def handle_spaces_check(arguments: dict) -> dict:
+    """Handle spaces_check tool call. Check download/recording status."""
     import glob as glob_module
 
     recording_id = arguments.get("recording_id")
@@ -4093,8 +4093,8 @@ def handle_augent_spaces_check(arguments: dict) -> dict:
     }
 
 
-def handle_augent_spaces_stop(arguments: dict) -> dict:
-    """Handle augent_spaces_stop tool call. Kill a live recording."""
+def handle_spaces_stop(arguments: dict) -> dict:
+    """Handle spaces_stop tool call. Kill a live recording."""
     import glob as glob_module
 
     recording_id = arguments.get("recording_id")

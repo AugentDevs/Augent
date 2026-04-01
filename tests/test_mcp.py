@@ -75,10 +75,10 @@ class TestInitialize:
 
 
 class TestToolsList:
-    def test_returns_21_tools(self):
+    def test_returns_24_tools(self):
         resp = capture_stdout(handle_tools_list, 1)
         tools = resp["result"]["tools"]
-        assert len(tools) == 21
+        assert len(tools) == 24
 
     def test_all_tools_have_required_fields(self):
         resp = capture_stdout(handle_tools_list, 1)
@@ -113,6 +113,9 @@ class TestToolsList:
             "tag",
             "rebuild_graph",
             "visual",
+            "spaces",
+            "spaces_check",
+            "spaces_stop",
         }
         assert names == expected
 
@@ -128,7 +131,7 @@ class TestToolsList:
             names = {t["name"] for t in resp["result"]["tools"]}
             assert "tag" not in names
             assert "clear_memory" not in names
-            assert len(resp["result"]["tools"]) == 19
+            assert len(resp["result"]["tools"]) == 22
         finally:
             config_mod._config = original
 
