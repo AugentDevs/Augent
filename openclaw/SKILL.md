@@ -56,14 +56,6 @@ pip install "augent[all]"
 
 **System dependencies:** FFmpeg is required. Install with `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux). For fast audio downloads, also install yt-dlp and aria2.
 
-**Alternative:** A one-liner that installs augent, FFmpeg, yt-dlp, aria2, and configures MCP automatically:
-
-```bash
-curl -fsSL https://augent.app/install.sh | bash
-```
-
-Source: [install.sh on GitHub](https://github.com/AugentDevs/Augent/blob/main/install.sh)
-
 ## Tools
 
 Augent exposes 22 MCP tools:
@@ -187,4 +179,3 @@ Transcriptions are stored by file content hash + model size. Same file = instant
 
 - [GitHub](https://github.com/AugentDevs/Augent)
 - [Documentation](https://docs.augent.app)
-- [Install Script](https://augent.app/install.sh)
