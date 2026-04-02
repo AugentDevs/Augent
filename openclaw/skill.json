@@ -1,6 +1,6 @@
 {
   "name": "augent",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "The audio & video layer for agents. 22 local MCP tools. No cloud, no API keys.",
   "author": "AugentDevs",
   "homepage": "https://augent.app",
