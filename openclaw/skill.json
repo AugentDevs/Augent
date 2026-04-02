@@ -95,5 +95,22 @@
       "description": "Download or live-record X/Twitter Spaces"
     }
   ],
-  "config": {}
+  "config": {
+    "AUGENT_AUTH_TOKEN": {
+      "description": "Optional. Path to Twitter/X auth token file for Spaces recording. Default ~/.augent/auth.json",
+      "required": false
+    },
+    "AUGENT_DOWNLOAD_DIR": {
+      "description": "Directory for downloaded audio files. Default ~/Downloads/",
+      "required": false
+    },
+    "AUGENT_NOTES_DIR": {
+      "description": "Directory for notes, clips, and TTS output. Default ~/Desktop/",
+      "required": false
+    },
+    "AUGENT_MEMORY_DIR": {
+      "description": "Directory for persistent transcription memory. Default ~/.augent/memory/",
+      "required": false
+    }
+  }
 }

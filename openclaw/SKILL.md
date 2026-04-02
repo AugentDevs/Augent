@@ -2,6 +2,19 @@
 name: augent
 description: The audio & video layer for agents. 22 local MCP tools. No cloud, no API keys.
 homepage: https://github.com/AugentDevs/Augent
+env:
+  AUGENT_AUTH_TOKEN:
+    description: Optional. Path to Twitter/X auth token file for Spaces recording. Default ~/.augent/auth.json. Only needed for X/Twitter Spaces.
+    required: false
+  AUGENT_DOWNLOAD_DIR:
+    description: Directory for downloaded audio files. Default ~/Downloads/
+    required: false
+  AUGENT_NOTES_DIR:
+    description: Directory for notes, clips, and TTS output. Default ~/Desktop/
+    required: false
+  AUGENT_MEMORY_DIR:
+    description: Directory for persistent transcription memory. Default ~/.augent/memory/
+    required: false
 metadata: {"openclaw":{"emoji":"🎙","os":["darwin","linux","win32"],"requires":{"bins":["augent-mcp","ffmpeg","yt-dlp","aria2c"]},"install":[{"id":"uv","kind":"uv","package":"augent","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (uv)"},{"id":"pip","kind":"pip","package":"augent[all]","bins":["augent-mcp","augent","augent-web"],"label":"Install augent (pip)"}]}}
 ---
 
