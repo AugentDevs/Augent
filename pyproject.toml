@@ -67,7 +67,7 @@ semantic = [
     "sentence-transformers>=2.2.0",
 ]
 tts = [
-    "kokoro>=0.7.0",
+    "kokoro>=0.9.4",
     "soundfile",
 ]
 separator = [
@@ -84,7 +84,7 @@ all = [
     "pydub>=0.25.0",
     "pyannote-audio>=3.1.0",
     "sentence-transformers>=2.2.0",
-    "kokoro>=0.7.0",
+    "kokoro>=0.9.4",
     "soundfile",
     "openpyxl>=3.1.0",
     "demucs>=4.0.0",
